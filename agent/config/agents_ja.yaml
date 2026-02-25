@@ -1,0 +1,234 @@
+# ═══════════════════════════════════════════════════════════════
+# Agent 設定 — プラグイン可能な外部機能の登録
+# ═══════════════════════════════════════════════════════════════
+#
+# 外部 agent（HTTPサービスまたはローカルコマンド）をここで宣言します。
+# LLM が自動的にいつ呼び出すかを判断します。
+# enabled: true で有効化、enabled: false で無効化（デフォルト: true）。
+# サービスを再起動すると反映されます。
+#
+# ── フィールド説明 ──
+#
+#   name         — 一意の識別子（組み込みツールと重複不可: web_search / image_describe / voice_transcribe）
+#   type         — http または command
+#   description  — 機能の一行説明（LLM の判断材料）
+#   parameters   — { パラメータ名: "パラメータ説明" }
+#   examples     — ユーザーが言いそうな例文 2-3 個（LLM のトリガー判定に使用）
+#   enabled      — true / false
+#
+# ── HTTP タイプ ──
+#
+#   http.url            — リクエストURL、{param} パス補間対応
+#   http.method         — GET / POST / PUT / DELETE
+#   http.headers        — リクエストヘッダー（例: Authorization）
+#   http.query_template — GET クエリパラメータテンプレート
+#   http.body_template  — POST/PUT ボディテンプレート（dict または string）
+#   http.timeout        — タイムアウト秒数
+#   http.result_path    — JSONレスポンスから結果を抽出するドット区切りパス（例: data.message）
+#
+# ── Command タイプ ──
+#
+#   command.template       — コマンドテンプレート、{param} プレースホルダー
+#   command.timeout        — タイムアウト秒数
+#   command.shell          — シェル経由で実行するか
+#   command.allowed_params — パラメータホワイトリスト（インジェクション防止）
+#
+# ═══════════════════════════════════════════════════════════════
+
+agents:
+
+  # ┌─────────────────────────────────────────┐
+  # │  利用可能 — すぐ使える無料 agent        │
+  # └─────────────────────────────────────────┘
+
+  - name: "weather_query"
+    type: http
+    description: "世界中の都市のリアルタイム天気を取得（気温、湿度、風速、天気状況）"
+    parameters:
+      city: "都市名（英語、例: Tokyo / Beijing / London）"
+    examples:
+      - "東京の今の天気は"
+      - "北京は今日何度"
+      - "ロンドンは雨降ってる？"
+    enabled: true
+    http:
+      url: "https://wttr.in/{city}"
+      method: GET
+      headers:
+        Accept: "application/json"
+      query_template:
+        format: "j1"
+      timeout: 15
+      result_path: "current_condition"
+
+  # ┌─────────────────────────────────────────┐
+  # │  テンプレート — URLを変えるだけで使える  │
+  # │  (enabled: false)                        │
+  # └─────────────────────────────────────────┘
+
+  # ── スマートホーム: Home Assistant ──
+  # セットアップ: https://www.home-assistant.io/installation/
+  # トークン取得: HA UI → プロフィール → 長期アクセストークン
+  - name: "home_lights"
+    type: http
+    description: "家の照明を制御（オン/オフ、明るさ、色）"
+    parameters:
+      entity_id: "照明のエンティティID、例: light.living_room"
+      action: "操作: turn_on / turn_off / toggle"
+    examples:
+      - "リビングの電気をつけて"
+      - "寝室の電気を消して"
+      - "明るさを50%にして"
+    enabled: false
+    http:
+      url: "http://homeassistant.local:8123/api/services/light/{action}"
+      method: POST
+      headers:
+        Authorization: "Bearer YOUR_HA_LONG_LIVED_TOKEN"
+        Content-Type: "application/json"
+      body_template:
+        entity_id: "{entity_id}"
+      timeout: 10
+
+  - name: "home_status"
+    type: http
+    description: "家のデバイス状態を取得（温度センサー、ドア、照明など）"
+    parameters:
+      entity_id: "デバイスのエンティティID、例: sensor.living_room_temperature"
+    examples:
+      - "リビングは今何度"
+      - "玄関のドアは閉まってる？"
+      - "エアコンついてる？"
+    enabled: false
+    http:
+      url: "http://homeassistant.local:8123/api/states/{entity_id}"
+      method: GET
+      headers:
+        Authorization: "Bearer YOUR_HA_LONG_LIVED_TOKEN"
+      timeout: 10
+
+  # ── ワークフロー自動化: n8n ──
+  # デプロイ: docker run -p 5678:5678 n8nio/n8n
+  # Webhook ワークフローを作成後、以下にURLを入力
+  - name: "n8n_email"
+    type: http
+    description: "n8n ワークフロー経由でメールを送信"
+    parameters:
+      to: "宛先メールアドレス"
+      subject: "件名"
+      body: "本文"
+    examples:
+      - "田中さんにメールを送って"
+      - "通知メールを送って"
+    enabled: false
+    http:
+      url: "http://localhost:5678/webhook/YOUR_WEBHOOK_ID"
+      method: POST
+      headers:
+        Content-Type: "application/json"
+      body_template:
+        to: "{to}"
+        subject: "{subject}"
+        body: "{body}"
+      timeout: 15
+
+  - name: "n8n_workflow"
+    type: http
+    description: "n8n カスタムワークフローをトリガー（汎用）"
+    parameters:
+      action: "実行するアクションの説明"
+      data: "追加データ"
+    examples:
+      - "データバックアップを実行"
+      - "日報を生成して"
+    enabled: false
+    http:
+      url: "http://localhost:5678/webhook/YOUR_WEBHOOK_ID"
+      method: POST
+      headers:
+        Content-Type: "application/json"
+      body_template:
+        action: "{action}"
+        data: "{data}"
+      timeout: 30
+
+  # ── サブエージェントプラットフォーム: Dify ──
+  # デプロイ: https://github.com/langgenius/dify → docker compose up -d
+  # App 作成後、API ページから api_key を取得
+  - name: "dify_agent"
+    type: http
+    description: "Dify サブエージェントを呼び出して複雑なタスクを処理（調査、分析、執筆など）"
+    parameters:
+      query: "タスクの説明"
+    examples:
+      - "このトピックを調べて"
+      - "このデータを分析して"
+    enabled: false
+    http:
+      url: "http://localhost/v1/chat-messages"
+      method: POST
+      headers:
+        Authorization: "Bearer app-YOUR_DIFY_API_KEY"
+        Content-Type: "application/json"
+      body_template:
+        inputs: {}
+        query: "{query}"
+        response_mode: "blocking"
+        user: "agent-user"
+      timeout: 60
+      result_path: "answer"
+
+  # ── ローカルコマンドテンプレート ──
+
+  - name: "backup_notes"
+    type: command
+    description: "ノートファイルを指定ディレクトリにバックアップ"
+    parameters:
+      scope: "バックアップ範囲: all / today / recent"
+    examples:
+      - "全ノートをバックアップして"
+      - "今日のノートをバックアップ"
+    enabled: false
+    command:
+      template: "python scripts/backup_notes.py --scope {scope}"
+      timeout: 30
+      shell: true
+      allowed_params:
+        scope: ["all", "today", "recent"]
+
+  - name: "system_info"
+    type: command
+    description: "システム情報を表示（CPU、メモリ、ディスク使用率）"
+    parameters:
+      target: "取得対象: cpu / memory / disk / all"
+    examples:
+      - "メモリの残りはどのくらい"
+      - "ディスク容量は足りてる？"
+      - "CPU使用率は"
+    enabled: false
+    command:
+      template: "python scripts/system_info.py --target {target}"
+      timeout: 10
+      shell: true
+      allowed_params:
+        target: ["cpu", "memory", "disk", "all"]
+
+  # ── デバッグ用 ──
+
+  - name: "httpbin_echo"
+    type: http
+    description: "HTTPエコーテストツール、パラメータをそのまま返す（エージェントパイプラインのデバッグ用）"
+    parameters:
+      message: "送信するテストメッセージ"
+    examples:
+      - "エージェント接続をテスト"
+      - "echo hello"
+    enabled: false
+    http:
+      url: "https://httpbin.org/get"
+      method: GET
+      headers: {}
+      query_template:
+        message: "{message}"
+      timeout: 10
+      result_path: "args"

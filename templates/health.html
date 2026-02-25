@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Health — {{ db_name }}</title>
+<link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
+<link rel="icon" type="image/x-icon" href="/img/favicon.ico" sizes="48x48">
+<link rel="icon" type="image/png" href="/img/favicon-96x96.png" sizes="96x96">
+<link rel="apple-touch-icon" sizes="180x180" href="/img/apple-touch-icon.png">
+<link rel="manifest" href="/img/site.webmanifest">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; background: #0f1117; color: #e1e4e8; min-height: 100vh; }
+
+.header { background: linear-gradient(135deg, #1a1f36 0%, #252a40 100%); padding: 24px 32px; border-bottom: 1px solid #2d3348; display: flex; justify-content: space-between; align-items: center; }
+.header h1 { font-size: 22px; font-weight: 600; color: #fff; }
+.header .subtitle { font-size: 13px; color: #8b92a5; margin-top: 4px; }
+.header-right { display: flex; gap: 8px; align-items: center; }
+.nav-link { padding: 5px 12px; background: #252a40; border: 1px solid #2d3348; border-radius: 4px; color: #8b92a5; text-decoration: none; font-size: 12px; }
+.nav-link:hover { color: #58a6ff; border-color: #58a6ff; }
+.lang-switch { display: flex; gap: 4px; }
+.lang-btn { padding: 4px 10px; background: #252a40; border: 1px solid #2d3348; border-radius: 4px; color: #8b92a5; cursor: pointer; font-size: 12px; }
+.lang-btn:hover { color: #c9d1d9; border-color: #444c5e; }
+.lang-btn.active { color: #58a6ff; border-color: #58a6ff; background: #1f2740; }
+
+.stats-bar { display: flex; gap: 24px; padding: 16px 32px; background: #161822; border-bottom: 1px solid #2d3348; flex-wrap: wrap; }
+.stat-item { text-align: center; }
+.stat-value { font-size: 28px; font-weight: 700; color: #58a6ff; }
+.stat-value.green { color: #3fb950; }
+.stat-value.yellow { color: #d29922; }
+.stat-value.purple { color: #bc8cff; }
+.stat-value.red { color: #f85149; }
+.stat-label { font-size: 11px; color: #8b92a5; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+.container { max-width: 1200px; margin: 0 auto; padding: 24px 32px; }
+
+.tabs { display: flex; gap: 4px; margin-bottom: 20px; flex-wrap: wrap; }
+.tab { padding: 8px 16px; background: #1c2033; border: 1px solid #2d3348; border-radius: 6px; color: #8b92a5; cursor: pointer; font-size: 13px; transition: all 0.15s; }
+.tab:hover { color: #c9d1d9; border-color: #444c5e; }
+.tab.active { background: #1f2740; color: #58a6ff; border-color: #58a6ff; }
+
+.panel { display: none; }
+.panel.active { display: block; }
+
+.filters { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+.filter-select { background: #1c2033; border: 1px solid #2d3348; border-radius: 6px; color: #e1e4e8; padding: 6px 10px; font-size: 13px; }
+.filter-select:focus { outline: none; border-color: #58a6ff; }
+.filter-label { font-size: 12px; color: #8b92a5; }
+.btn { padding: 6px 14px; background: #1f2740; border: 1px solid #58a6ff; border-radius: 6px; color: #58a6ff; cursor: pointer; font-size: 13px; transition: all 0.15s; }
+.btn:hover { background: #253050; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn.green { border-color: #3fb950; color: #3fb950; }
+.btn.danger { border-color: #f85149; color: #f85149; }
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; padding: 10px 12px; background: #1c2033; color: #8b92a5; border-bottom: 1px solid #2d3348; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+th.num-col { text-align: right; }
+td { padding: 10px 12px; border-bottom: 1px solid #1c2033; color: #e1e4e8; }
+tr:hover td { background: #161822; }
+.num-cell { text-align: right; font-variant-numeric: tabular-nums; }
+
+.bar-container { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.bar-label { width: 80px; text-align: right; font-size: 12px; color: #c9d1d9; }
+.bar-track { flex: 1; height: 24px; background: #161822; border-radius: 4px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; padding: 0 8px; font-size: 11px; color: #fff; font-weight: 600; min-width: fit-content; }
+.bar-value { width: 80px; text-align: right; font-size: 13px; color: #e1e4e8; font-weight: 600; }
+
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.metric-card { background: #1c2033; border: 1px solid #2d3348; border-radius: 8px; padding: 16px; }
+.metric-card .label { font-size: 12px; color: #8b92a5; margin-bottom: 4px; }
+.metric-card .value { font-size: 24px; font-weight: 700; color: #58a6ff; }
+.metric-card .value.green { color: #3fb950; }
+.metric-card .value.yellow { color: #d29922; }
+.metric-card .value.purple { color: #bc8cff; }
+.metric-card .delta { font-size: 12px; margin-top: 4px; }
+.metric-card .delta.up { color: #f85149; }
+.metric-card .delta.down { color: #3fb950; }
+
+.sync-section { background: #1c2033; border: 1px solid #2d3348; border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+.sync-section h3 { font-size: 14px; color: #c9d1d9; margin-bottom: 12px; }
+.sync-status { display: flex; gap: 16px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+.status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.status-dot.connected { background: #3fb950; }
+.status-dot.disconnected { background: #f85149; }
+.sync-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+.sync-result { margin-top: 12px; padding: 12px; background: #161822; border-radius: 6px; font-size: 13px; }
+.code-input { display: flex; gap: 8px; margin-top: 12px; }
+.code-input input { flex: 1; background: #252a40; border: 1px solid #2d3348; border-radius: 6px; color: #e1e4e8; padding: 8px 12px; font-size: 13px; }
+.code-input input:focus { outline: none; border-color: #58a6ff; }
+
+.empty { text-align: center; color: #6e7681; padding: 40px; font-size: 14px; }
+.loading { text-align: center; color: #8b92a5; padding: 60px; }
+.loading::after { content: ''; display: inline-block; width: 20px; height: 20px; border: 2px solid #2d3348; border-top-color: #58a6ff; border-radius: 50%; animation: spin 0.8s linear infinite; margin-left: 8px; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1 data-i18n="title">Withings Health</h1>
+    <div class="subtitle"><span data-i18n="db_label">Database</span>: {{ db_name }}</div>
+  </div>
+  <div class="header-right">
+    <a href="/" class="nav-link" data-i18n="nav_profile">Profile</a>
+    <a href="/finance" class="nav-link" data-i18n="nav_finance">Finance</a>
+    <div class="lang-switch">
+      <button class="lang-btn active" onclick="setLang('zh')">中文</button>
+      <button class="lang-btn" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" onclick="setLang('ja')">日本語</button>
+    </div>
+  </div>
+</div>
+
+<div class="stats-bar" id="stats-bar">
+  <div class="stat-item"><div class="stat-value" id="s-measures">-</div><div class="stat-label" data-i18n="stat_measures">Measures</div></div>
+  <div class="stat-item"><div class="stat-value green" id="s-weight">-</div><div class="stat-label" data-i18n="stat_weight">Latest Weight</div></div>
+  <div class="stat-item"><div class="stat-value yellow" id="s-activity">-</div><div class="stat-label" data-i18n="stat_activity_days">Activity Days</div></div>
+  <div class="stat-item"><div class="stat-value purple" id="s-sleep">-</div><div class="stat-label" data-i18n="stat_sleep_days">Sleep Days</div></div>
+  <div class="stat-item"><div class="stat-value" id="s-avg-steps">-</div><div class="stat-label" data-i18n="stat_avg_steps">30d Avg Steps</div></div>
+  <div class="stat-item"><div class="stat-value green" id="s-avg-score">-</div><div class="stat-label" data-i18n="stat_avg_score">30d Sleep Score</div></div>
+</div>
+
+<div class="container">
+  <div class="tabs">
+    <div class="tab active" data-tab="body" onclick="switchTab(this)" data-i18n="tab_body">Body</div>
+    <div class="tab" data-tab="activity" onclick="switchTab(this)" data-i18n="tab_activity">Activity</div>
+    <div class="tab" data-tab="sleep" onclick="switchTab(this)" data-i18n="tab_sleep">Sleep</div>
+    <div class="tab" data-tab="trends" onclick="switchTab(this)" data-i18n="tab_trends">Trends</div>
+    <div class="tab" data-tab="sync" onclick="switchTab(this)" data-i18n="tab_sync">Sync</div>
+  </div>
+
+  <!-- Body / Measures -->
+  <div class="panel active" id="panel-body">
+    <div class="filters">
+      <label class="filter-label" data-i18n="filter_days">Days:</label>
+      <select class="filter-select" id="f-body-days" onchange="loadBody()">
+        <option value="30">30</option>
+        <option value="90" selected>90</option>
+        <option value="180">180</option>
+        <option value="365">365</option>
+      </select>
+    </div>
+    <div id="body-content"><div class="loading" data-i18n="loading">Loading</div></div>
+  </div>
+
+  <!-- Activity -->
+  <div class="panel" id="panel-activity">
+    <div class="filters">
+      <label class="filter-label" data-i18n="filter_days">Days:</label>
+      <select class="filter-select" id="f-activity-days" onchange="loadActivity()">
+        <option value="30" selected>30</option>
+        <option value="90">90</option>
+        <option value="180">180</option>
+      </select>
+    </div>
+    <div id="activity-content"><div class="loading" data-i18n="loading">Loading</div></div>
+  </div>
+
+  <!-- Sleep -->
+  <div class="panel" id="panel-sleep">
+    <div class="filters">
+      <label class="filter-label" data-i18n="filter_days">Days:</label>
+      <select class="filter-select" id="f-sleep-days" onchange="loadSleep()">
+        <option value="30" selected>30</option>
+        <option value="90">90</option>
+        <option value="180">180</option>
+      </select>
+    </div>
+    <div id="sleep-content"><div class="loading" data-i18n="loading">Loading</div></div>
+  </div>
+
+  <!-- Trends -->
+  <div class="panel" id="panel-trends">
+    <div id="trends-content"><div class="loading" data-i18n="loading">Loading</div></div>
+  </div>
+
+  <!-- Sync -->
+  <div class="panel" id="panel-sync">
+    <div id="sync-content"></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+// i18n
+// ══════════════════════════════════════
+const I18N = {
+  zh: {
+    title: '健康追踪', db_label: '数据库',
+    nav_profile: '用户画像', nav_finance: '财务追踪',
+    stat_measures: '总测量数', stat_weight: '最新体重', stat_activity_days: '活动天数',
+    stat_sleep_days: '睡眠天数', stat_avg_steps: '30天均步数', stat_avg_score: '30天睡眠评分',
+    tab_body: '体重/体组成', tab_activity: '活动', tab_sleep: '睡眠', tab_trends: '趋势', tab_sync: '同步',
+    filter_days: '天数:', loading: '加载中',
+    col_date: '日期', col_weight: '体重(kg)', col_fat_ratio: '体脂率(%)', col_muscle: '肌肉量(kg)',
+    col_fat_mass: '脂肪量(kg)', col_bone: '骨量(kg)',
+    col_steps: '步数', col_distance: '距离(m)', col_calories: '卡路里', col_active_min: '活动时长(min)',
+    col_duration: '时长', col_deep: '深睡', col_light: '浅睡', col_rem: 'REM',
+    col_awake: '清醒', col_score: '评分', col_hr: '心率',
+    trend_7d: '7天均值', trend_30d: '30天均值', trend_90d: '90天均值',
+    trend_weight: '体重变化', trend_steps: '日均步数', trend_sleep: '日均睡眠', trend_score: '睡眠评分',
+    sync_title: '连接状态', sync_connected: '已连接', sync_disconnected: '未连接',
+    sync_expires: 'Token 过期时间', sync_connect: '连接 Withings', sync_paste_hint: '或粘贴回调 URL/code:',
+    sync_exchange: '交换 Token', sync_all: '同步全部', sync_full: '全量重新同步', sync_measures: '同步体重',
+    sync_activity: '同步活动', sync_sleep: '同步睡眠', sync_syncing: '同步中...',
+    empty_data: '暂无数据，请先同步',
+    no_change: '-', kg: 'kg',
+  },
+  en: {
+    title: 'Health Tracker', db_label: 'Database',
+    nav_profile: 'Profile', nav_finance: 'Finance',
+    stat_measures: 'Measures', stat_weight: 'Latest Weight', stat_activity_days: 'Activity Days',
+    stat_sleep_days: 'Sleep Days', stat_avg_steps: '30d Avg Steps', stat_avg_score: '30d Sleep Score',
+    tab_body: 'Body', tab_activity: 'Activity', tab_sleep: 'Sleep', tab_trends: 'Trends', tab_sync: 'Sync',
+    filter_days: 'Days:', loading: 'Loading',
+    col_date: 'Date', col_weight: 'Weight(kg)', col_fat_ratio: 'Fat(%)', col_muscle: 'Muscle(kg)',
+    col_fat_mass: 'Fat Mass(kg)', col_bone: 'Bone(kg)',
+    col_steps: 'Steps', col_distance: 'Distance(m)', col_calories: 'Calories', col_active_min: 'Active(min)',
+    col_duration: 'Duration', col_deep: 'Deep', col_light: 'Light', col_rem: 'REM',
+    col_awake: 'Awake', col_score: 'Score', col_hr: 'HR',
+    trend_7d: '7-day Avg', trend_30d: '30-day Avg', trend_90d: '90-day Avg',
+    trend_weight: 'Weight Change', trend_steps: 'Avg Steps', trend_sleep: 'Avg Sleep', trend_score: 'Sleep Score',
+    sync_title: 'Connection Status', sync_connected: 'Connected', sync_disconnected: 'Disconnected',
+    sync_expires: 'Token Expires', sync_connect: 'Connect Withings', sync_paste_hint: 'Or paste callback URL/code:',
+    sync_exchange: 'Exchange Token', sync_all: 'Sync All', sync_full: 'Full Re-sync', sync_measures: 'Sync Weight',
+    sync_activity: 'Sync Activity', sync_sleep: 'Sync Sleep', sync_syncing: 'Syncing...',
+    empty_data: 'No data yet. Please sync first.',
+    no_change: '-', kg: 'kg',
+  },
+  ja: {
+    title: '健康トラッカー', db_label: 'データベース',
+    nav_profile: 'プロフィール', nav_finance: '家計簿',
+    stat_measures: '測定数', stat_weight: '最新体重', stat_activity_days: '活動日数',
+    stat_sleep_days: '睡眠日数', stat_avg_steps: '30日平均歩数', stat_avg_score: '30日睡眠スコア',
+    tab_body: '体重/体組成', tab_activity: '活動', tab_sleep: '睡眠', tab_trends: 'トレンド', tab_sync: '同期',
+    filter_days: '日数:', loading: '読み込み中',
+    col_date: '日付', col_weight: '体重(kg)', col_fat_ratio: '体脂肪率(%)', col_muscle: '筋肉量(kg)',
+    col_fat_mass: '脂肪量(kg)', col_bone: '骨量(kg)',
+    col_steps: '歩数', col_distance: '距離(m)', col_calories: 'カロリー', col_active_min: '活動時間(分)',
+    col_duration: '時間', col_deep: '深い', col_light: '浅い', col_rem: 'REM',
+    col_awake: '覚醒', col_score: 'スコア', col_hr: '心拍',
+    trend_7d: '7日平均', trend_30d: '30日平均', trend_90d: '90日平均',
+    trend_weight: '体重変化', trend_steps: '平均歩数', trend_sleep: '平均睡眠', trend_score: '睡眠スコア',
+    sync_title: '接続状況', sync_connected: '接続済み', sync_disconnected: '未接続',
+    sync_expires: 'トークン有効期限', sync_connect: 'Withings接続', sync_paste_hint: 'またはコールバックURL/codeを貼り付け:',
+    sync_exchange: 'トークン交換', sync_all: '全て同期', sync_full: '全量再同期', sync_measures: '体重同期',
+    sync_activity: '活動同期', sync_sleep: '睡眠同期', sync_syncing: '同期中...',
+    empty_data: 'データなし。先に同期してください。',
+    no_change: '-', kg: 'kg',
+  }
+};
+
+function detectLang() {
+  const lang = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
+  if (lang.startsWith('zh')) return 'zh';
+  if (lang.startsWith('ja')) return 'ja';
+  return 'en';
+}
+
+let currentLang = detectLang();
+
+function t(key) { return (I18N[currentLang] || I18N.en)[key] || key; }
+
+function setLang(lang) {
+  currentLang = lang;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent.trim() === {zh:'中文',en:'EN',ja:'日本語'}[lang]));
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    if (I18N[lang][key]) el.textContent = I18N[lang][key];
+  });
+  renderCurrentPanel();
+}
+
+// ══════════════════════════════════════
+// State
+// ══════════════════════════════════════
+let overview = {};
+let bodyData = [];
+let activityData = [];
+let sleepData = [];
+let currentTab = 'body';
+
+function switchTab(el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  currentTab = el.dataset.tab;
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + currentTab).classList.add('active');
+  renderCurrentPanel();
+}
+
+function renderCurrentPanel() {
+  if (currentTab === 'body') loadBody();
+  else if (currentTab === 'activity') loadActivity();
+  else if (currentTab === 'sleep') loadSleep();
+  else if (currentTab === 'trends') loadTrends();
+  else if (currentTab === 'sync') renderSync();
+}
+
+// ══════════════════════════════════════
+// Stats
+// ══════════════════════════════════════
+function renderOverview(data) {
+  overview = data;
+  document.getElementById('s-measures').textContent = data.total_measures || 0;
+  document.getElementById('s-weight').textContent = data.latest_weight ? data.latest_weight.toFixed(1) + ' kg' : '-';
+  document.getElementById('s-activity').textContent = data.activity_days || 0;
+  document.getElementById('s-sleep').textContent = data.sleep_days || 0;
+  document.getElementById('s-avg-steps').textContent = data.avg_steps_30d ? data.avg_steps_30d.toLocaleString() : '-';
+  document.getElementById('s-avg-score').textContent = data.avg_sleep_score_30d || '-';
+}
+
+// ══════════════════════════════════════
+// Body / Measures
+// ══════════════════════════════════════
+async function loadBody() {
+  const days = document.getElementById('f-body-days').value;
+  const rows = await fetch(`/api/health/measures?days=${days}`).then(r => r.json());
+  bodyData = rows;
+  renderBody();
+}
+
+function renderBody() {
+  if (bodyData.length === 0) {
+    document.getElementById('body-content').innerHTML = `<div class="empty">${t('empty_data')}</div>`;
+    return;
+  }
+
+  // Group by date, pivot measure types
+  const byDate = {};
+  bodyData.forEach(r => {
+    const d = (r.measured_at || '').substring(0, 10);
+    if (!byDate[d]) byDate[d] = {};
+    byDate[d][r.measure_type] = parseFloat(r.value);
+  });
+
+  const dates = Object.keys(byDate).sort().reverse();
+  let html = `<table><thead><tr>
+    <th>${t('col_date')}</th><th class="num-col">${t('col_weight')}</th><th class="num-col">${t('col_fat_ratio')}</th>
+    <th class="num-col">${t('col_muscle')}</th><th class="num-col">${t('col_fat_mass')}</th><th class="num-col">${t('col_bone')}</th>
+  </tr></thead><tbody>`;
+
+  dates.forEach(d => {
+    const m = byDate[d];
+    html += `<tr>
+      <td>${d}</td>
+      <td class="num-cell">${m[1] != null ? m[1].toFixed(1) : '-'}</td>
+      <td class="num-cell">${m[6] != null ? m[6].toFixed(1) : '-'}</td>
+      <td class="num-cell">${m[76] != null ? m[76].toFixed(1) : '-'}</td>
+      <td class="num-cell">${m[8] != null ? m[8].toFixed(1) : '-'}</td>
+      <td class="num-cell">${m[88] != null ? m[88].toFixed(2) : '-'}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('body-content').innerHTML = html;
+}
+
+// ══════════════════════════════════════
+// Activity
+// ══════════════════════════════════════
+async function loadActivity() {
+  const days = document.getElementById('f-activity-days').value;
+  const rows = await fetch(`/api/health/activity?days=${days}`).then(r => r.json());
+  activityData = rows;
+  renderActivity();
+}
+
+function renderActivity() {
+  if (activityData.length === 0) {
+    document.getElementById('activity-content').innerHTML = `<div class="empty">${t('empty_data')}</div>`;
+    return;
+  }
+
+  const maxSteps = Math.max(...activityData.map(r => r.steps || 0), 1);
+
+  // Steps bar chart
+  let html = '<div style="margin-bottom:24px">';
+  activityData.slice(0, 30).forEach(r => {
+    const steps = r.steps || 0;
+    const pct = Math.round((steps / maxSteps) * 100);
+    const color = steps >= 10000 ? '#3fb950' : steps >= 5000 ? '#d29922' : '#f85149';
+    html += `<div class="bar-container">
+      <div class="bar-label">${(r.activity_date||'').substring(5)}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}">${steps > 0 ? steps.toLocaleString() : ''}</div></div>
+    </div>`;
+  });
+  html += '</div>';
+
+  // Table
+  html += `<table><thead><tr>
+    <th>${t('col_date')}</th><th class="num-col">${t('col_steps')}</th><th class="num-col">${t('col_distance')}</th>
+    <th class="num-col">${t('col_calories')}</th><th class="num-col">${t('col_active_min')}</th>
+  </tr></thead><tbody>`;
+
+  activityData.forEach(r => {
+    const totalMin = ((r.soft_activity_duration||0) + (r.moderate_activity_duration||0) + (r.intense_activity_duration||0)) / 60;
+    html += `<tr>
+      <td>${r.activity_date || '-'}</td>
+      <td class="num-cell">${(r.steps||0).toLocaleString()}</td>
+      <td class="num-cell">${r.distance ? parseFloat(r.distance).toFixed(0) : '-'}</td>
+      <td class="num-cell">${r.calories ? parseFloat(r.calories).toFixed(0) : '-'}</td>
+      <td class="num-cell">${totalMin > 0 ? totalMin.toFixed(0) : '-'}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('activity-content').innerHTML = html;
+}
+
+// ══════════════════════════════════════
+// Sleep
+// ══════════════════════════════════════
+async function loadSleep() {
+  const days = document.getElementById('f-sleep-days').value;
+  const rows = await fetch(`/api/health/sleep?days=${days}`).then(r => r.json());
+  sleepData = rows;
+  renderSleep();
+}
+
+function fmtDuration(sec) {
+  if (!sec) return '-';
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  return `${h}h ${m}m`;
+}
+
+function renderSleep() {
+  if (sleepData.length === 0) {
+    document.getElementById('sleep-content').innerHTML = `<div class="empty">${t('empty_data')}</div>`;
+    return;
+  }
+
+  let html = `<table><thead><tr>
+    <th>${t('col_date')}</th><th class="num-col">${t('col_duration')}</th><th class="num-col">${t('col_deep')}</th>
+    <th class="num-col">${t('col_light')}</th><th class="num-col">${t('col_rem')}</th><th class="num-col">${t('col_awake')}</th>
+    <th class="num-col">${t('col_score')}</th><th class="num-col">${t('col_hr')}</th>
+  </tr></thead><tbody>`;
+
+  sleepData.forEach(r => {
+    const scoreColor = (r.sleep_score||0) >= 80 ? 'color:#3fb950' : (r.sleep_score||0) >= 60 ? 'color:#d29922' : 'color:#f85149';
+    html += `<tr>
+      <td>${r.sleep_date || '-'}</td>
+      <td class="num-cell">${fmtDuration(r.duration_seconds)}</td>
+      <td class="num-cell">${fmtDuration(r.deep_sleep_seconds)}</td>
+      <td class="num-cell">${fmtDuration(r.light_sleep_seconds)}</td>
+      <td class="num-cell">${fmtDuration(r.rem_sleep_seconds)}</td>
+      <td class="num-cell">${fmtDuration(r.awake_seconds)}</td>
+      <td class="num-cell" style="${scoreColor};font-weight:600">${r.sleep_score || '-'}</td>
+      <td class="num-cell">${r.hr_average ? r.hr_average + ' / ' + (r.hr_min||'-') : '-'}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('sleep-content').innerHTML = html;
+}
+
+// ══════════════════════════════════════
+// Trends
+// ══════════════════════════════════════
+async function loadTrends() {
+  // Fetch all needed data
+  const [measures, activity, sleep] = await Promise.all([
+    fetch('/api/health/measures?days=90').then(r => r.json()),
+    fetch('/api/health/activity?days=90').then(r => r.json()),
+    fetch('/api/health/sleep?days=90').then(r => r.json()),
+  ]);
+
+  const now = new Date();
+
+  function avgField(arr, field, daysBack) {
+    const cutoff = new Date(now - daysBack * 86400000);
+    const filtered = arr.filter(r => {
+      const d = new Date(r.activity_date || r.sleep_date || r.measured_at || '');
+      return d >= cutoff;
+    });
+    if (filtered.length === 0) return null;
+    const sum = filtered.reduce((s, r) => s + (parseFloat(r[field]) || 0), 0);
+    return sum / filtered.length;
+  }
+
+  function avgMeasure(arr, type, daysBack) {
+    const cutoff = new Date(now - daysBack * 86400000);
+    const filtered = arr.filter(r => r.measure_type === type && new Date(r.measured_at) >= cutoff);
+    if (filtered.length === 0) return null;
+    const sum = filtered.reduce((s, r) => s + parseFloat(r.value), 0);
+    return sum / filtered.length;
+  }
+
+  const periods = [
+    { key: '7d', label: t('trend_7d'), days: 7 },
+    { key: '30d', label: t('trend_30d'), days: 30 },
+    { key: '90d', label: t('trend_90d'), days: 90 },
+  ];
+
+  let html = '';
+
+  periods.forEach(p => {
+    const w = avgMeasure(measures, 1, p.days);
+    const steps = avgField(activity, 'steps', p.days);
+    const dur = avgField(sleep, 'duration_seconds', p.days);
+    const score = avgField(sleep, 'sleep_score', p.days);
+
+    html += `<h3 style="color:#c9d1d9;margin:16px 0 12px">${p.label}</h3>`;
+    html += '<div class="card-grid">';
+    html += `<div class="metric-card"><div class="label">${t('trend_weight')}</div><div class="value">${w != null ? w.toFixed(1) + ' kg' : '-'}</div></div>`;
+    html += `<div class="metric-card"><div class="label">${t('trend_steps')}</div><div class="value green">${steps != null ? Math.round(steps).toLocaleString() : '-'}</div></div>`;
+    html += `<div class="metric-card"><div class="label">${t('trend_sleep')}</div><div class="value purple">${dur != null ? fmtDuration(Math.round(dur)) : '-'}</div></div>`;
+    html += `<div class="metric-card"><div class="label">${t('trend_score')}</div><div class="value yellow">${score != null ? Math.round(score) : '-'}</div></div>`;
+    html += '</div>';
+  });
+
+  document.getElementById('trends-content').innerHTML = html || `<div class="empty">${t('empty_data')}</div>`;
+}
+
+// ══════════════════════════════════════
+// Sync
+// ══════════════════════════════════════
+function renderSync() {
+  const connected = overview.token_connected;
+  const dotClass = connected ? 'connected' : 'disconnected';
+  const statusText = connected ? t('sync_connected') : t('sync_disconnected');
+  const expiresText = overview.token_expires_at ? new Date(overview.token_expires_at).toLocaleString() : '-';
+
+  let html = `
+    <div class="sync-section">
+      <h3>${t('sync_title')}</h3>
+      <div class="sync-status">
+        <span class="status-dot ${dotClass}"></span>
+        <span style="font-size:14px;color:#e1e4e8">${statusText}</span>
+        <span style="font-size:12px;color:#8b92a5;margin-left:16px">${t('sync_expires')}: ${expiresText}</span>
+      </div>
+      <button class="btn" onclick="connectWithings()">${t('sync_connect')}</button>
+      <div style="margin-top:16px;font-size:12px;color:#8b92a5">${t('sync_paste_hint')}</div>
+      <div class="code-input">
+        <input type="text" id="code-input" placeholder="https://localhost:8400/callback/withings?code=xxx">
+        <button class="btn" onclick="exchangeCode()">${t('sync_exchange')}</button>
+      </div>
+    </div>
+    <div class="sync-section">
+      <h3>Sync Data</h3>
+      <div class="sync-buttons">
+        <button class="btn green" onclick="syncData('all')">${t('sync_all')}</button>
+        <button class="btn" onclick="syncData('measures')">${t('sync_measures')}</button>
+        <button class="btn" onclick="syncData('activity')">${t('sync_activity')}</button>
+        <button class="btn" onclick="syncData('sleep')">${t('sync_sleep')}</button>
+        <button class="btn danger" onclick="syncData('all', true)">${t('sync_full')}</button>
+      </div>
+      <div id="sync-result"></div>
+    </div>`;
+
+  document.getElementById('sync-content').innerHTML = html;
+}
+
+async function connectWithings() {
+  const data = await fetch('/api/health/authorize').then(r => r.json());
+  if (data.url) window.open(data.url, '_blank');
+}
+
+async function exchangeCode() {
+  const code = document.getElementById('code-input').value.trim();
+  if (!code) return;
+  try {
+    const res = await fetch('/api/health/exchange-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      alert('Connected! User ID: ' + data.userid);
+      await refreshOverview();
+      renderSync();
+    } else {
+      alert('Error: ' + (data.error || 'Unknown'));
+    }
+  } catch (e) { alert('Request failed: ' + e.message); }
+}
+
+async function syncData(type, full) {
+  const resultEl = document.getElementById('sync-result');
+  resultEl.innerHTML = `<div class="loading">${t('sync_syncing')}</div>`;
+  try {
+    const res = await fetch('/api/health/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, full: !!full }),
+    });
+    const data = await res.json();
+    if (data.error) {
+      resultEl.innerHTML = `<div class="sync-result" style="color:#f85149">Error: ${data.error}</div>`;
+      return;
+    }
+    let html = '<div class="sync-result">';
+    for (const [key, val] of Object.entries(data)) {
+      if (val.error) {
+        html += `<div style="color:#f85149">${key}: Error - ${val.error}</div>`;
+      } else {
+        html += `<div style="color:#3fb950">${key}: ${val.synced} records synced</div>`;
+      }
+    }
+    html += '</div>';
+    resultEl.innerHTML = html;
+    await refreshOverview();
+  } catch (e) {
+    resultEl.innerHTML = `<div class="sync-result" style="color:#f85149">Request failed: ${e.message}</div>`;
+  }
+}
+
+async function refreshOverview() {
+  const data = await fetch('/api/health/overview').then(r => r.json());
+  renderOverview(data);
+}
+
+// ══════════════════════════════════════
+// Init
+// ══════════════════════════════════════
+async function init() {
+  setLang(currentLang);
+  const data = await fetch('/api/health/overview').then(r => r.json());
+  renderOverview(data);
+  loadBody();
+  renderSync();
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,157 @@
+# 语言 | Language | 言語 : zh / en / ja
+language: "zh"
+
+# 数据库 | Database | データベース
+# user: 改为你的 PostgreSQL 用户名 | change to your PostgreSQL username | PostgreSQL ユーザー名に変更
+database:
+    name: "Riverse"
+    user: "postgres"
+    host: "localhost"
+
+# 当前 LLM 提供者 | Active LLM provider | 使用する LLM : openai / local
+llm_provider: "openai"
+
+# 本地 Ollama | Local Ollama | ローカル Ollama
+local:
+    model: "qwen2.5:14b"
+    api_base: "http://localhost:11434"
+    temperature: 0.7
+    max_tokens: 2048
+
+# OpenAI API
+openai:
+    model: "gpt-4o-mini"
+    api_base: "https://api.openai.com"
+    api_key: ""
+    temperature: 0.7
+    max_tokens: 2048
+
+# 云端 LLM 升级链 | Cloud LLM escalation | クラウド LLM エスカレーション
+cloud_llm:
+    enabled: true
+    providers:
+        - name: "openai"
+          model: "gpt-4o"
+          api_base: "https://api.openai.com"
+          api_key: ""
+          temperature: 0.7
+          max_tokens: 2048
+          search: true
+          priority: 1
+        - name: "deepseek"
+          model: "deepseek-chat"
+          api_base: "https://api.deepseek.com"
+          api_key: ""
+          temperature: 0.7
+          max_tokens: 2048
+          priority: 2
+    escalation:
+        auto: true
+        feedback: true
+        min_response_length: 20
+        failure_keywords:
+            - "我不确定"
+            - "我无法"
+            - "抱歉，我不知道"
+            - "超出了我的能力"
+
+# 工具 | Tools | ツール
+tools:
+    enabled: true
+    # 语音转文字 | Voice transcription | 音声文字起こし
+    voice_transcribe:
+        # 不填 api_base/api_key 则复用主 LLM | Inherits main LLM config if empty | 未設定なら主LLM設定を継承
+        model: "whisper-1"
+        language: "zh"
+    # 图像识别 | Image description | 画像認識 : "openai" / "local" (Ollama llava)
+    image_describe:
+        provider: "openai"
+        model: "gpt-4o"
+    # 文件读取 | File read | ファイル読み取り
+    file_read:
+        enabled: true
+        max_file_size: 1048576          # 1 MB
+        allowed_dirs: []                # 空=不限 | empty=no restriction | 空=制限なし
+    # Shell 命令 | Shell exec | シェル実行
+    shell_exec:
+        enabled: false                  # 默认禁用 | Disabled by default | デフォルト無効
+        timeout: 30
+        whitelist:
+            - "ls"
+            - "dir"
+            - "cat"
+            - "head"
+            - "tail"
+            - "find"
+            - "grep"
+            - "wc"
+            - "date"
+            - "python --version"
+            - "pip list"
+            - "git status"
+            - "git log"
+            - "git diff"
+            - "git branch"
+    # 网页搜索 | Web search | ウェブ検索
+    # 自动取 cloud_llm 中 search=true 的 provider | Auto-picks search-enabled provider | search=trueのproviderを自動選択
+    web_search:
+
+# Telegram Bot
+telegram:
+    bot_token: ""
+    temp_dir: "tmp/telegram"
+    allowed_user_ids: []                # 留空=不限 | empty=allow all | 空=全員許可
+
+# 语音合成 | Text-to-Speech | 音声合成
+tts:
+    enabled: false
+    voices:
+        zh: "zh-CN-XiaoxiaoNeural"
+        en: "en-US-AriaNeural"
+    temp_dir: "tmp/tts"
+    max_chars: 500                      # 超长截断 | Truncate if longer | 超過分は切り捨て
+
+# 语义搜索 | Embedding search | セマンティック検索
+embedding:
+    enabled: false
+    model: "bge-m3"
+    api_base: "http://localhost:11434"
+    search:
+        top_k: 5
+        min_score: 0.40
+
+# 技能系统 | Skills | スキル
+skills:
+    enabled: true
+
+# MCP 服务 | MCP servers | MCPサーバー
+mcp:
+    enabled: false
+    servers: []
+
+# Discord Bot
+discord:
+    bot_token: ""
+    temp_dir: "tmp/discord"
+    allowed_user_ids: []
+
+# 主动推送 | Proactive messaging | プロアクティブ通知
+proactive:
+    enabled: true
+    scan_interval_minutes: 30
+    quiet_hours:
+        start: "23:00"
+        end: "08:00"
+    max_messages_per_day: 3
+    min_gap_minutes: 120
+    triggers:
+        event_followup:
+            enabled: true
+            min_importance: 0.6
+            followup_after_hours: 24
+            max_age_days: 7
+        strategy:
+            enabled: true
+        idle_checkin:
+            enabled: true
+            idle_hours: 48

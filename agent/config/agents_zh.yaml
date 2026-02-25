@@ -1,0 +1,232 @@
+# ═══════════════════════════════════════════════════════════════
+# Agent 配置表 — 可配置的外部能力注册
+# ═══════════════════════════════════════════════════════════════
+#
+# 在这里声明外部 agent（HTTP 服务或本地命令），LLM 自动判断何时调用。
+# 设 enabled: true 启用，enabled: false 禁用（默认 true）。
+# 重启服务后生效。
+#
+# ── 字段说明 ──
+#
+#   name         — 唯一标识（不能和内置 tool 同名：web_search / image_describe / voice_transcribe）
+#   type         — http 或 command
+#   description  — 一句话描述功能（喂给 LLM 做决策）
+#   parameters   — { 参数名: "参数说明" }
+#   examples     — 2-3 个用户可能说的话（帮 LLM 判断何时触发）
+#   enabled      — true / false
+#
+# ── HTTP 类型 ──
+#
+#   http.url            — 请求地址，支持 {param} 路径插值
+#   http.method         — GET / POST / PUT / DELETE
+#   http.headers        — 请求头（如 Authorization）
+#   http.query_template — GET query 参数模板
+#   http.body_template  — POST/PUT body 模板（dict 或 string）
+#   http.timeout        — 超时秒数
+#   http.result_path    — 从 JSON 响应提取结果的点分路径（如 data.message）
+#
+# ── Command 类型 ──
+#
+#   command.template       — 命令模板，{param} 占位符
+#   command.timeout        — 超时秒数
+#   command.shell          — 是否用 shell 执行
+#   command.allowed_params — 参数白名单（防注入）
+#
+# ═══════════════════════════════════════════════════════════════
+
+agents:
+
+  # ┌─────────────────────────────────────────┐
+  # │  可用 — 开箱即用的免费 agent            │
+  # └─────────────────────────────────────────┘
+
+  - name: "weather_query"
+    type: http
+    description: "查询全球任意城市的实时天气（温度、湿度、风速、天气状况）"
+    parameters:
+      city: "城市名（英文，如 Tokyo / Beijing / London）"
+    examples:
+      - "东京现在天气怎么样"
+      - "北京今天多少度"
+      - "伦敦下雨了吗"
+    enabled: true
+    http:
+      url: "https://wttr.in/{city}"
+      method: GET
+      headers:
+        Accept: "application/json"
+      query_template:
+        format: "j1"
+      timeout: 15
+      result_path: "current_condition"
+
+  # ┌─────────────────────────────────────────┐
+  # │  模板 — 改个 URL 就能用（enabled: false）│
+  # └─────────────────────────────────────────┘
+
+  # ── 智能家居：Home Assistant ──
+  # 部署教程：https://www.home-assistant.io/installation/
+  # 获取 Token：HA 界面 → 个人资料 → 长期访问令牌
+  - name: "home_lights"
+    type: http
+    description: "控制家里的灯光（开关、亮度、颜色）"
+    parameters:
+      entity_id: "灯的实体ID，如 light.living_room"
+      action: "操作：turn_on / turn_off / toggle"
+    examples:
+      - "把客厅灯打开"
+      - "关掉卧室的灯"
+      - "把灯调到50%"
+    enabled: false
+    http:
+      url: "http://homeassistant.local:8123/api/services/light/{action}"
+      method: POST
+      headers:
+        Authorization: "Bearer YOUR_HA_LONG_LIVED_TOKEN"
+        Content-Type: "application/json"
+      body_template:
+        entity_id: "{entity_id}"
+      timeout: 10
+
+  - name: "home_status"
+    type: http
+    description: "查询家中设备状态（温度传感器、门窗、灯光等）"
+    parameters:
+      entity_id: "设备实体ID，如 sensor.living_room_temperature"
+    examples:
+      - "客厅现在多少度"
+      - "前门关了吗"
+      - "空调开着吗"
+    enabled: false
+    http:
+      url: "http://homeassistant.local:8123/api/states/{entity_id}"
+      method: GET
+      headers:
+        Authorization: "Bearer YOUR_HA_LONG_LIVED_TOKEN"
+      timeout: 10
+
+  # ── 工作流自动化：n8n ──
+  # 部署：docker run -p 5678:5678 n8nio/n8n
+  # 创建 Webhook 工作流后，将 URL 填入下方
+  - name: "n8n_email"
+    type: http
+    description: "通过 n8n 工作流发送邮件"
+    parameters:
+      to: "收件人邮箱"
+      subject: "邮件主题"
+      body: "邮件正文"
+    examples:
+      - "发封邮件给张三"
+      - "帮我发个邮件通知一下"
+    enabled: false
+    http:
+      url: "http://localhost:5678/webhook/YOUR_WEBHOOK_ID"
+      method: POST
+      headers:
+        Content-Type: "application/json"
+      body_template:
+        to: "{to}"
+        subject: "{subject}"
+        body: "{body}"
+      timeout: 15
+
+  - name: "n8n_workflow"
+    type: http
+    description: "触发 n8n 自定义工作流（通用）"
+    parameters:
+      action: "要执行的动作描述"
+      data: "附加数据"
+    examples:
+      - "运行数据备份流程"
+      - "执行日报生成"
+    enabled: false
+    http:
+      url: "http://localhost:5678/webhook/YOUR_WEBHOOK_ID"
+      method: POST
+      headers:
+        Content-Type: "application/json"
+      body_template:
+        action: "{action}"
+        data: "{data}"
+      timeout: 30
+
+  # ── 子 Agent 平台：Dify ──
+  # 部署：https://github.com/langgenius/dify → docker compose up -d
+  # 创建 App 后从 API 页面获取 api_key
+  - name: "dify_agent"
+    type: http
+    description: "调用 Dify 子 agent 处理复杂任务（研究、分析、写作等）"
+    parameters:
+      query: "要处理的任务描述"
+    examples:
+      - "帮我研究一下这个话题"
+      - "分析这段数据"
+    enabled: false
+    http:
+      url: "http://localhost/v1/chat-messages"
+      method: POST
+      headers:
+        Authorization: "Bearer app-YOUR_DIFY_API_KEY"
+        Content-Type: "application/json"
+      body_template:
+        inputs: {}
+        query: "{query}"
+        response_mode: "blocking"
+        user: "agent-user"
+      timeout: 60
+      result_path: "answer"
+
+  # ── 本地命令模板 ──
+
+  - name: "backup_notes"
+    type: command
+    description: "备份笔记文件到指定目录"
+    parameters:
+      scope: "备份范围：all / today / recent"
+    examples:
+      - "帮我备份所有笔记"
+      - "备份今天的笔记"
+    enabled: false
+    command:
+      template: "python scripts/backup_notes.py --scope {scope}"
+      timeout: 30
+      shell: true
+      allowed_params:
+        scope: ["all", "today", "recent"]
+
+  - name: "system_info"
+    type: command
+    description: "查看本机系统信息（CPU、内存、磁盘使用率）"
+    parameters:
+      target: "查询目标：cpu / memory / disk / all"
+    examples:
+      - "电脑内存还剩多少"
+      - "磁盘空间够吗"
+      - "CPU占用多少"
+    enabled: false
+    command:
+      template: "python scripts/system_info.py --target {target}"
+      timeout: 10
+      shell: true
+      allowed_params:
+        target: ["cpu", "memory", "disk", "all"]
+
+  # ── 调试用 ──
+
+  - name: "httpbin_echo"
+    type: http
+    description: "HTTP echo 测试工具，将参数原样返回（用于调试 agent 链路）"
+    parameters:
+      message: "要发送的测试消息"
+    examples:
+      - "测试一下 agent 连通性"
+      - "echo hello"
+    enabled: false
+    http:
+      url: "https://httpbin.org/get"
+      method: GET
+      headers: {}
+      query_template:
+        message: "{message}"
+      timeout: 10
+      result_path: "args"

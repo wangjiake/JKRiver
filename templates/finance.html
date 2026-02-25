@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finance — {{ db_name }}</title>
+<link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
+<link rel="icon" type="image/x-icon" href="/img/favicon.ico" sizes="48x48">
+<link rel="icon" type="image/png" href="/img/favicon-96x96.png" sizes="96x96">
+<link rel="apple-touch-icon" sizes="180x180" href="/img/apple-touch-icon.png">
+<link rel="manifest" href="/img/site.webmanifest">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; background: #0f1117; color: #e1e4e8; min-height: 100vh; }
+
+.header { background: linear-gradient(135deg, #1a1f36 0%, #252a40 100%); padding: 24px 32px; border-bottom: 1px solid #2d3348; display: flex; justify-content: space-between; align-items: center; }
+.header h1 { font-size: 22px; font-weight: 600; color: #fff; }
+.header .subtitle { font-size: 13px; color: #8b92a5; margin-top: 4px; }
+.header-right { display: flex; gap: 8px; align-items: center; }
+.nav-link { padding: 5px 12px; background: #252a40; border: 1px solid #2d3348; border-radius: 4px; color: #8b92a5; text-decoration: none; font-size: 12px; }
+.nav-link:hover { color: #58a6ff; border-color: #58a6ff; }
+.lang-switch { display: flex; gap: 4px; }
+.lang-btn { padding: 4px 10px; background: #252a40; border: 1px solid #2d3348; border-radius: 4px; color: #8b92a5; cursor: pointer; font-size: 12px; }
+.lang-btn:hover { color: #c9d1d9; border-color: #444c5e; }
+.lang-btn.active { color: #58a6ff; border-color: #58a6ff; background: #1f2740; }
+
+.stats-bar { display: flex; gap: 24px; padding: 16px 32px; background: #161822; border-bottom: 1px solid #2d3348; flex-wrap: wrap; }
+.stat-item { text-align: center; }
+.stat-value { font-size: 28px; font-weight: 700; color: #58a6ff; }
+.stat-value.green { color: #3fb950; }
+.stat-value.yellow { color: #d29922; }
+.stat-value.purple { color: #bc8cff; }
+.stat-label { font-size: 11px; color: #8b92a5; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+.container { max-width: 1200px; margin: 0 auto; padding: 24px 32px; }
+
+.tabs { display: flex; gap: 4px; margin-bottom: 20px; flex-wrap: wrap; }
+.tab { padding: 8px 16px; background: #1c2033; border: 1px solid #2d3348; border-radius: 6px; color: #8b92a5; cursor: pointer; font-size: 13px; transition: all 0.15s; }
+.tab:hover { color: #c9d1d9; border-color: #444c5e; }
+.tab.active { background: #1f2740; color: #58a6ff; border-color: #58a6ff; }
+
+.panel { display: none; }
+.panel.active { display: block; }
+
+.filters { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+.filter-select { background: #1c2033; border: 1px solid #2d3348; border-radius: 6px; color: #e1e4e8; padding: 6px 10px; font-size: 13px; }
+.filter-select:focus { outline: none; border-color: #58a6ff; }
+.filter-input { background: #1c2033; border: 1px solid #2d3348; border-radius: 6px; color: #e1e4e8; padding: 6px 10px; font-size: 13px; width: 160px; }
+.filter-input:focus { outline: none; border-color: #58a6ff; }
+.filter-label { font-size: 12px; color: #8b92a5; }
+.btn { padding: 6px 14px; background: #1f2740; border: 1px solid #58a6ff; border-radius: 6px; color: #58a6ff; cursor: pointer; font-size: 13px; transition: all 0.15s; }
+.btn:hover { background: #253050; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn.danger { border-color: #f85149; color: #f85149; }
+.btn.green { border-color: #3fb950; color: #3fb950; }
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; padding: 10px 12px; background: #1c2033; color: #8b92a5; border-bottom: 1px solid #2d3348; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+td { padding: 10px 12px; border-bottom: 1px solid #1c2033; color: #e1e4e8; }
+tr:hover td { background: #161822; }
+.amount { font-weight: 600; text-align: right; color: #f85149; }
+.cat-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.cat-食品 { background: #1b3a2a; color: #3fb950; }
+.cat-网购 { background: #1f2740; color: #58a6ff; }
+.cat-订阅 { background: #2a1b3a; color: #bc8cff; }
+.cat-交通 { background: #3a2a1b; color: #d29922; }
+.cat-餐饮 { background: #3a1b2a; color: #f778ba; }
+.cat-衣服 { background: #1b2a3a; color: #79c0ff; }
+.cat-日用品 { background: #2a3a1b; color: #7ee787; }
+.cat-default { background: #252a40; color: #8b92a5; }
+
+.pagination { display: flex; gap: 8px; margin-top: 16px; justify-content: center; align-items: center; }
+
+.import-result { margin-top: 16px; padding: 16px; background: #1c2033; border: 1px solid #2d3348; border-radius: 8px; }
+.import-stat { display: inline-block; margin-right: 16px; font-size: 14px; }
+.import-stat .num { font-weight: 700; }
+.import-stat .num.green { color: #3fb950; }
+.import-stat .num.yellow { color: #d29922; }
+.import-stat .num.red { color: #f85149; }
+
+.mapping-form { display: flex; gap: 8px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
+
+.empty { text-align: center; color: #6e7681; padding: 40px; font-size: 14px; }
+.loading { text-align: center; color: #8b92a5; padding: 60px; }
+.loading::after { content: ''; display: inline-block; width: 20px; height: 20px; border: 2px solid #2d3348; border-top-color: #58a6ff; border-radius: 50%; animation: spin 0.8s linear infinite; margin-left: 8px; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.bar-container { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.bar-label { width: 140px; text-align: right; font-size: 12px; color: #c9d1d9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-track { flex: 1; height: 24px; background: #161822; border-radius: 4px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; padding: 0 8px; font-size: 11px; color: #fff; font-weight: 600; min-width: fit-content; }
+.bar-value { width: 120px; text-align: right; font-size: 13px; color: #e1e4e8; font-weight: 600; }
+
+.editable { cursor: pointer; border-bottom: 1px dashed #444c5e; }
+.editable:hover { color: #58a6ff; }
+
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; display: flex; justify-content: center; align-items: center; }
+.modal-box { background: #1c2033; border: 1px solid #2d3348; border-radius: 8px; padding: 24px; min-width: 320px; max-width: 480px; }
+.modal-box h3 { color: #e1e4e8; margin-bottom: 16px; font-size: 16px; }
+.modal-box label { font-size: 12px; color: #8b92a5; display: block; margin-bottom: 4px; }
+.modal-box input, .modal-box select { width: 100%; background: #252a40; border: 1px solid #2d3348; border-radius: 4px; color: #e1e4e8; padding: 8px; font-size: 13px; margin-bottom: 12px; }
+.modal-btns { display: flex; gap: 8px; justify-content: flex-end; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1 data-i18n="title">财务追踪</h1>
+    <div class="subtitle"><span data-i18n="db_label">数据库</span>: {{ db_name }}</div>
+  </div>
+  <div class="header-right">
+    <a href="/" class="nav-link" data-i18n="nav_profile">用户画像</a>
+    <!-- <a href="/health" class="nav-link" data-i18n="nav_health">健康追踪</a> -->
+    <div class="lang-switch">
+      <button class="lang-btn active" onclick="setLang('zh')">中文</button>
+      <button class="lang-btn" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" onclick="setLang('ja')">日本語</button>
+    </div>
+  </div>
+</div>
+
+<div class="stats-bar" id="stats-bar">
+  <div class="stat-item"><div class="stat-value" id="s-total-amount">-</div><div class="stat-label" data-i18n="stat_total">总支出 (JPY)</div></div>
+  <div class="stat-item"><div class="stat-value green" id="s-total-count">-</div><div class="stat-label" data-i18n="stat_count">交易笔数</div></div>
+  <div class="stat-item"><div class="stat-value purple" id="s-merchants">-</div><div class="stat-label" data-i18n="stat_merchants">商家数</div></div>
+  <div class="stat-item"><div class="stat-value yellow" id="s-date-range">-</div><div class="stat-label" data-i18n="stat_range">时间范围</div></div>
+</div>
+
+<div class="container">
+  <div class="tabs">
+    <div class="tab active" data-tab="transactions" onclick="switchTab(this)" data-i18n="tab_transactions">交易记录</div>
+    <div class="tab" data-tab="monthly" onclick="switchTab(this)" data-i18n="tab_monthly">月度汇总</div>
+    <div class="tab" data-tab="merchants" onclick="switchTab(this)" data-i18n="tab_merchants">商家排行</div>
+    <div class="tab" data-tab="categories" onclick="switchTab(this)" data-i18n="tab_categories">分类统计</div>
+    <div class="tab" data-tab="import" onclick="switchTab(this)" data-i18n="tab_import">导入</div>
+    <div class="tab" data-tab="mappings" onclick="switchTab(this)" data-i18n="tab_mappings">映射管理</div>
+  </div>
+
+  <!-- Transactions -->
+  <div class="panel active" id="panel-transactions">
+    <div class="filters">
+      <label class="filter-label" data-i18n="filter_year">年:</label>
+      <select class="filter-select" id="f-year" onchange="loadTransactions()"><option value="" data-i18n="filter_all">全部</option></select>
+      <label class="filter-label" data-i18n="filter_month">月:</label>
+      <select class="filter-select" id="f-month" onchange="loadTransactions()">
+        <option value="" data-i18n="filter_all">全部</option>
+        <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+        <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+        <option value="7">7</option><option value="8">8</option><option value="9">9</option>
+        <option value="10">10</option><option value="11">11</option><option value="12">12</option>
+      </select>
+      <label class="filter-label" data-i18n="filter_category">分类:</label>
+      <select class="filter-select" id="f-category" onchange="loadTransactions()"><option value="" data-i18n="filter_all">全部</option></select>
+      <label class="filter-label" data-i18n="filter_merchant">商家:</label>
+      <input class="filter-input" id="f-merchant" data-i18n-placeholder="filter_search" placeholder="搜索..." oninput="debounceLoad()">
+    </div>
+    <div id="transactions-content"><div class="loading" data-i18n="loading">加载中</div></div>
+    <div class="pagination" id="transactions-pagination"></div>
+  </div>
+
+  <!-- Monthly -->
+  <div class="panel" id="panel-monthly">
+    <div class="filters">
+      <label class="filter-label" data-i18n="filter_year">年:</label>
+      <select class="filter-select" id="f-summary-year" onchange="loadSummary()"><option value="" data-i18n="filter_all">全部</option></select>
+    </div>
+    <div id="monthly-content"><div class="loading" data-i18n="loading">加载中</div></div>
+  </div>
+
+  <!-- Merchants -->
+  <div class="panel" id="panel-merchants">
+    <div class="filters">
+      <label class="filter-label" data-i18n="filter_year">年:</label>
+      <select class="filter-select" id="f-merchant-year" onchange="loadMerchants()"><option value="" data-i18n="filter_all">全部</option></select>
+      <label class="filter-label" data-i18n="filter_month">月:</label>
+      <select class="filter-select" id="f-merchant-month" onchange="loadMerchants()">
+        <option value="" data-i18n="filter_all">全部</option>
+        <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+        <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+        <option value="7">7</option><option value="8">8</option><option value="9">9</option>
+        <option value="10">10</option><option value="11">11</option><option value="12">12</option>
+      </select>
+    </div>
+    <div id="merchants-content"><div class="loading" data-i18n="loading">加载中</div></div>
+  </div>
+
+  <!-- Categories -->
+  <div class="panel" id="panel-categories">
+    <div class="filters">
+      <label class="filter-label" data-i18n="filter_year">年:</label>
+      <select class="filter-select" id="f-cat-year" onchange="loadCategories()"><option value="" data-i18n="filter_all">全部</option></select>
+      <label class="filter-label" data-i18n="filter_month">月:</label>
+      <select class="filter-select" id="f-cat-month" onchange="loadCategories()">
+        <option value="" data-i18n="filter_all">全部</option>
+        <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+        <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+        <option value="7">7</option><option value="8">8</option><option value="9">9</option>
+        <option value="10">10</option><option value="11">11</option><option value="12">12</option>
+      </select>
+    </div>
+    <div id="categories-content"><div class="loading" data-i18n="loading">加载中</div></div>
+  </div>
+
+  <!-- Import -->
+  <div class="panel" id="panel-import">
+    <div style="margin-bottom: 16px">
+      <p style="color:#8b92a5; font-size:13px; margin-bottom:12px" data-i18n="import_desc">
+        从 Gmail 导入消费通知邮件。
+      </p>
+      <div class="filters">
+        <label class="filter-label" data-i18n="import_after">起始日期:</label>
+        <input class="filter-input" id="import-after" value="2025/01/01" placeholder="YYYY/MM/DD">
+        <button class="btn green" id="btn-import" onclick="doImport()" data-i18n="import_btn">从 Gmail 导入</button>
+        <button class="btn" onclick="doImportAll()" data-i18n="import_all_btn">导入全部</button>
+      </div>
+    </div>
+    <div id="import-result"></div>
+  </div>
+
+  <!-- Mappings -->
+  <div class="panel" id="panel-mappings">
+    <div class="mapping-form">
+      <input class="filter-input" id="map-pattern" data-i18n-placeholder="map_pattern" placeholder="商家关键词">
+      <input class="filter-input" id="map-category" data-i18n-placeholder="map_category" placeholder="分类">
+      <button class="btn" onclick="addMapping()" data-i18n="map_add">添加</button>
+    </div>
+    <div id="mappings-content"><div class="loading" data-i18n="loading">加载中</div></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+// 多语言
+// ══════════════════════════════════════
+const I18N = {
+  zh: {
+    title: '财务追踪', db_label: '数据库', nav_profile: '用户画像', nav_health: '健康追踪',
+    stat_total: '总支出 (JPY)', stat_count: '交易笔数', stat_merchants: '商家数', stat_range: '时间范围',
+    tab_transactions: '交易记录', tab_monthly: '月度汇总', tab_merchants: '商家排行',
+    tab_categories: '分类统计', tab_import: '导入', tab_mappings: '映射管理',
+    filter_year: '年:', filter_month: '月:', filter_category: '分类:', filter_merchant: '商家:',
+    filter_all: '全部', filter_search: '搜索...',
+    loading: '加载中',
+    col_date: '日期', col_merchant: '商家', col_amount: '金额', col_currency: '币种',
+    col_category: '分类', col_note: '备注',
+    col_period: '周期', col_count: '笔数', col_total: '合计 (JPY)', col_breakdown: '分类明细',
+    col_pattern: '匹配模式', col_created: '创建时间',
+    edit: '编辑', edit_title: '编辑交易', edit_category: '分类', edit_note: '备注',
+    btn_cancel: '取消', btn_save: '保存', btn_prev: '上一页', btn_next: '下一页',
+    page: '第 {n} 页',
+    empty_txn: '暂无交易记录', empty_data: '暂无数据', empty_mapping: '暂无映射',
+    total_label: '合计',
+    import_desc: '从 Gmail 导入消费通知邮件。增量导入只拉取最近交易日期之后的新邮件。',
+    import_after: '起始日期:', import_btn: '增量导入', import_all_btn: '全量导入',
+    import_ing: '正在连接 Gmail 并导入...', import_imported: '已导入', import_dup: '跳过(已有)', import_failed: '失败',
+    import_searched: '搜索到', import_skipped: '直接跳过', import_from: '起始日期',
+    col_subject: '邮件主题', col_status: '状态',
+    status_imported: '已导入', status_dup: '重复',
+    map_pattern: '商家关键词', map_category: '分类', map_add: '添加',
+  },
+  en: {
+    title: 'Finance Tracker', db_label: 'Database', nav_profile: 'Profile', nav_health: 'Health',
+    stat_total: 'Total (JPY)', stat_count: 'Transactions', stat_merchants: 'Merchants', stat_range: 'Date Range',
+    tab_transactions: 'Transactions', tab_monthly: 'Monthly', tab_merchants: 'Merchants',
+    tab_categories: 'Categories', tab_import: 'Import', tab_mappings: 'Mappings',
+    filter_year: 'Year:', filter_month: 'Month:', filter_category: 'Category:', filter_merchant: 'Merchant:',
+    filter_all: 'All', filter_search: 'Search...',
+    loading: 'Loading',
+    col_date: 'Date', col_merchant: 'Merchant', col_amount: 'Amount', col_currency: 'Currency',
+    col_category: 'Category', col_note: 'Note',
+    col_period: 'Period', col_count: 'Count', col_total: 'Total (JPY)', col_breakdown: 'Category Breakdown',
+    col_pattern: 'Pattern', col_created: 'Created',
+    edit: 'edit', edit_title: 'Edit Transaction', edit_category: 'Category', edit_note: 'Note',
+    btn_cancel: 'Cancel', btn_save: 'Save', btn_prev: 'Prev', btn_next: 'Next',
+    page: 'Page {n}',
+    empty_txn: 'No transactions found', empty_data: 'No data', empty_mapping: 'No mappings',
+    total_label: 'Total',
+    import_desc: 'Import transaction notifications from Gmail. Incremental import only fetches emails after the latest transaction date.',
+    import_after: 'After:', import_btn: 'Incremental Import', import_all_btn: 'Full Import',
+    import_ing: 'Connecting to Gmail MCP and importing...', import_imported: 'Imported', import_dup: 'Skipped (existing)', import_failed: 'Failed',
+    import_searched: 'Searched', import_skipped: 'Skipped', import_from: 'After date',
+    col_subject: 'Subject', col_status: 'Status',
+    status_imported: 'Imported', status_dup: 'Duplicate',
+    map_pattern: 'Merchant pattern', map_category: 'Category', map_add: 'Add',
+  },
+  ja: {
+    title: '家計管理', db_label: 'データベース', nav_profile: 'プロフィール', nav_health: '健康',
+    stat_total: '総支出 (JPY)', stat_count: '取引件数', stat_merchants: '加盟店数', stat_range: '期間',
+    tab_transactions: '取引一覧', tab_monthly: '月別集計', tab_merchants: '加盟店ランキング',
+    tab_categories: 'カテゴリ統計', tab_import: 'インポート', tab_mappings: 'マッピング管理',
+    filter_year: '年:', filter_month: '月:', filter_category: 'カテゴリ:', filter_merchant: '加盟店:',
+    filter_all: 'すべて', filter_search: '検索...',
+    loading: '読み込み中',
+    col_date: '日付', col_merchant: '加盟店', col_amount: '金額', col_currency: '通貨',
+    col_category: 'カテゴリ', col_note: 'メモ',
+    col_period: '期間', col_count: '件数', col_total: '合計 (JPY)', col_breakdown: 'カテゴリ内訳',
+    col_pattern: 'パターン', col_created: '作成日',
+    edit: '編集', edit_title: '取引を編集', edit_category: 'カテゴリ', edit_note: 'メモ',
+    btn_cancel: 'キャンセル', btn_save: '保存', btn_prev: '前へ', btn_next: '次へ',
+    page: '{n} ページ',
+    empty_txn: '取引がありません', empty_data: 'データなし', empty_mapping: 'マッピングなし',
+    total_label: '合計',
+    import_desc: 'Gmail からカード利用通知をインポート。増分インポートは最新取引日以降のメールのみ取得します。',
+    import_after: '開始日:', import_btn: '増分インポート', import_all_btn: 'フルインポート',
+    import_ing: 'Gmail に接続してインポート中...', import_imported: 'インポート済', import_dup: 'スキップ(既存)', import_failed: '失敗',
+    import_searched: '検索結果', import_skipped: 'スキップ', import_from: '開始日',
+    col_subject: '件名', col_status: 'ステータス',
+    status_imported: 'インポート済', status_dup: '重複',
+    map_pattern: '加盟店パターン', map_category: 'カテゴリ', map_add: '追加',
+  }
+};
+
+function detectLang() {
+  const lang = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
+  if (lang.startsWith('zh')) return 'zh';
+  if (lang.startsWith('ja')) return 'ja';
+  return 'en';
+}
+
+let currentLang = detectLang();
+
+function t(key, params) {
+  let s = (I18N[currentLang] || I18N.en)[key] || key;
+  if (params) { for (const [k, v] of Object.entries(params)) s = s.replace(`{${k}}`, v); }
+  return s;
+}
+
+function setLang(lang) {
+  currentLang = lang;
+  document.querySelectorAll('.lang-btn').forEach(b =>
+    b.classList.toggle('active', b.textContent.trim() === {zh:'中文',en:'EN',ja:'日本語'}[lang]));
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    if (I18N[lang][key]) el.textContent = I18N[lang][key];
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.dataset.i18nPlaceholder;
+    if (I18N[lang][key]) el.placeholder = I18N[lang][key];
+  });
+  renderCurrent();
+}
+
+// ══════════════════════════════════════
+// 状态
+// ══════════════════════════════════════
+let currentTab = 'transactions';
+let txnPage = 0;
+const PAGE_SIZE = 50;
+let debounceTimer = null;
+
+function switchTab(el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  currentTab = el.dataset.tab;
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + currentTab).classList.add('active');
+  renderCurrent();
+}
+
+function renderCurrent() {
+  if (currentTab === 'transactions') loadTransactions();
+  else if (currentTab === 'monthly') loadSummary();
+  else if (currentTab === 'merchants') loadMerchants();
+  else if (currentTab === 'categories') loadCategories();
+  else if (currentTab === 'mappings') loadMappings();
+}
+
+function formatAmount(n) {
+  if (n == null) return '-';
+  return Number(n).toLocaleString('ja-JP');
+}
+
+function formatDate(s) {
+  if (!s) return '-';
+  return s.substring(0, 10);
+}
+
+function catClass(cat) {
+  if (!cat) return 'cat-default';
+  const cls = 'cat-' + cat;
+  return ['cat-食品','cat-网购','cat-订阅','cat-交通','cat-餐饮','cat-衣服','cat-日用品'].includes(cls) ? cls : 'cat-default';
+}
+
+function debounceLoad() {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => loadTransactions(), 300);
+}
+
+// ── Overview ──
+async function loadOverview() {
+  const data = await fetch('/api/finance/overview').then(r => r.json());
+  document.getElementById('s-total-amount').textContent = data.total_amount ? '¥' + formatAmount(data.total_amount) : '-';
+  document.getElementById('s-total-count').textContent = data.total_count || 0;
+  document.getElementById('s-merchants').textContent = data.merchant_count || 0;
+  if (data.date_from && data.date_to) {
+    document.getElementById('s-date-range').textContent = formatDate(data.date_from) + ' ~ ' + formatDate(data.date_to);
+    document.getElementById('s-date-range').style.fontSize = '14px';
+  }
+
+  if (data.date_from) {
+    const startYear = parseInt(data.date_from.substring(0, 4));
+    const endYear = data.date_to ? parseInt(data.date_to.substring(0, 4)) : new Date().getFullYear();
+    const yearSelects = ['f-year', 'f-summary-year', 'f-merchant-year', 'f-cat-year'];
+    yearSelects.forEach(id => {
+      const el = document.getElementById(id);
+      // 只保留第一个 option (全部)
+      while (el.options.length > 1) el.remove(1);
+      for (let y = endYear; y >= startYear; y--) {
+        const opt = document.createElement('option');
+        opt.value = y; opt.textContent = y;
+        el.appendChild(opt);
+      }
+    });
+  }
+
+  const cats = await fetch('/api/finance/categories').then(r => r.json());
+  const catSelect = document.getElementById('f-category');
+  while (catSelect.options.length > 1) catSelect.remove(1);
+  cats.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.category; opt.textContent = c.category + ' (' + c.count + ')';
+    catSelect.appendChild(opt);
+  });
+}
+
+// ── Transactions ──
+async function loadTransactions() {
+  const year = document.getElementById('f-year').value;
+  const month = document.getElementById('f-month').value;
+  const category = document.getElementById('f-category').value;
+  const merchant = document.getElementById('f-merchant').value;
+
+  let url = `/api/finance/transactions?limit=${PAGE_SIZE}&offset=${txnPage * PAGE_SIZE}`;
+  if (year) url += `&year=${year}`;
+  if (month) url += `&month=${month}`;
+  if (category) url += `&category=${encodeURIComponent(category)}`;
+  if (merchant) url += `&merchant=${encodeURIComponent(merchant)}`;
+
+  const data = await fetch(url).then(r => r.json());
+  const el = document.getElementById('transactions-content');
+
+  if (data.length === 0) {
+    el.innerHTML = `<div class="empty">${t('empty_txn')}</div>`;
+    document.getElementById('transactions-pagination').innerHTML = '';
+    return;
+  }
+
+  let html = `<table><thead><tr>
+    <th>${t('col_date')}</th><th>${t('col_merchant')}</th><th style="text-align:right">${t('col_amount')}</th>
+    <th>${t('col_currency')}</th><th>${t('col_category')}</th><th>${t('col_note')}</th>
+  </tr></thead><tbody>`;
+  data.forEach(r => {
+    const cc = catClass(r.category);
+    const safeCategory = (r.category||'').replace(/'/g, "\\'");
+    const safeNote = (r.note||'').replace(/'/g, "\\'");
+    html += `<tr>
+      <td>${formatDate(r.transaction_date)}</td>
+      <td>${r.merchant}</td>
+      <td class="amount">${formatAmount(r.amount)}</td>
+      <td>${r.currency}</td>
+      <td>${r.category ? `<span class="cat-tag ${cc}">${r.category}</span>` : '<span style="color:#6e7681">-</span>'}</td>
+      <td><span class="editable" onclick="editTransaction(${r.id}, '${safeCategory}', '${safeNote}')">${r.note || t('edit')}</span></td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+
+  const pg = document.getElementById('transactions-pagination');
+  let pgHtml = '';
+  if (txnPage > 0) pgHtml += `<button class="btn" onclick="txnPage--;loadTransactions()">${t('btn_prev')}</button>`;
+  pgHtml += `<span style="color:#8b92a5;font-size:13px">${t('page', {n: txnPage + 1})}</span>`;
+  if (data.length === PAGE_SIZE) pgHtml += `<button class="btn" onclick="txnPage++;loadTransactions()">${t('btn_next')}</button>`;
+  pg.innerHTML = pgHtml;
+}
+
+function editTransaction(id, currentCat, currentNote) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `<div class="modal-box">
+    <h3>${t('edit_title')} #${id}</h3>
+    <label>${t('edit_category')}</label>
+    <input id="edit-cat" value="${currentCat}">
+    <label>${t('edit_note')}</label>
+    <input id="edit-note" value="${currentNote}">
+    <div class="modal-btns">
+      <button class="btn" onclick="this.closest('.modal-overlay').remove()">${t('btn_cancel')}</button>
+      <button class="btn green" onclick="submitEdit(${id})">${t('btn_save')}</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+async function submitEdit(id) {
+  const category = document.getElementById('edit-cat').value.trim();
+  const note = document.getElementById('edit-note').value.trim();
+  document.querySelector('.modal-overlay').remove();
+  await fetch(`/api/finance/transaction/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ category: category || null, note: note || null }),
+  });
+  loadTransactions();
+  loadOverview();
+}
+
+// ── Monthly Summary ──
+async function loadSummary() {
+  const year = document.getElementById('f-summary-year').value;
+  let url = '/api/finance/summary?group_by=month';
+  if (year) url += `&year=${year}`;
+
+  const data = await fetch(url).then(r => r.json());
+  const el = document.getElementById('monthly-content');
+
+  if (data.length === 0) { el.innerHTML = `<div class="empty">${t('empty_data')}</div>`; return; }
+
+  let html = `<table><thead><tr>
+    <th>${t('col_period')}</th><th>${t('col_count')}</th>
+    <th style="text-align:right">${t('col_total')}</th><th>${t('col_breakdown')}</th>
+  </tr></thead><tbody>`;
+  data.forEach(s => {
+    const catBreakdown = (s.categories || []).map(c =>
+      `<span class="cat-tag ${catClass(c.category)}" style="margin:2px">${c.category}: ¥${formatAmount(c.total_jpy)} (${c.count})</span>`
+    ).join(' ');
+    html += `<tr>
+      <td style="font-weight:600">${s.period}</td>
+      <td>${s.count}</td>
+      <td class="amount">¥${formatAmount(s.total_jpy)}</td>
+      <td>${catBreakdown}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+// ── Merchants ──
+async function loadMerchants() {
+  const year = document.getElementById('f-merchant-year').value;
+  const month = document.getElementById('f-merchant-month').value;
+  let url = '/api/finance/merchants?limit=30';
+  if (year) url += `&year=${year}`;
+  if (month) url += `&month=${month}`;
+
+  const data = await fetch(url).then(r => r.json());
+  const el = document.getElementById('merchants-content');
+
+  if (data.length === 0) { el.innerHTML = `<div class="empty">${t('empty_data')}</div>`; return; }
+
+  const maxAmount = Math.max(...data.map(d => d.total_jpy || 0));
+  const colors = ['#58a6ff','#3fb950','#d29922','#f85149','#bc8cff','#f778ba','#79c0ff','#7ee787'];
+
+  let html = '';
+  data.forEach((d, i) => {
+    const pct = maxAmount > 0 ? ((d.total_jpy || 0) / maxAmount * 100) : 0;
+    const color = colors[i % colors.length];
+    html += `<div class="bar-container">
+      <div class="bar-label" title="${d.merchant}">${d.merchant}</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${Math.max(pct, 5)}%;background:${color}">${d.count}x</div>
+      </div>
+      <div class="bar-value">¥${formatAmount(d.total_jpy)}</div>
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+// ── Categories ──
+async function loadCategories() {
+  const year = document.getElementById('f-cat-year').value;
+  const month = document.getElementById('f-cat-month').value;
+  let url = '/api/finance/categories?';
+  if (year) url += `year=${year}&`;
+  if (month) url += `month=${month}&`;
+
+  const data = await fetch(url).then(r => r.json());
+  const el = document.getElementById('categories-content');
+
+  if (data.length === 0) { el.innerHTML = `<div class="empty">${t('empty_data')}</div>`; return; }
+
+  const total = data.reduce((s, d) => s + (d.total_jpy || 0), 0);
+  const colors = ['#58a6ff','#3fb950','#d29922','#f85149','#bc8cff','#f778ba','#79c0ff','#7ee787'];
+
+  let html = `<div style="margin-bottom:16px;color:#8b92a5;font-size:13px">${t('total_label')}: ¥${formatAmount(total)}</div>`;
+  data.forEach((d, i) => {
+    const pct = total > 0 ? ((d.total_jpy || 0) / total * 100) : 0;
+    const color = colors[i % colors.length];
+    html += `<div class="bar-container">
+      <div class="bar-label">${d.category}</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${Math.max(pct, 3)}%;background:${color}">${pct.toFixed(1)}%</div>
+      </div>
+      <div class="bar-value">¥${formatAmount(d.total_jpy)} (${d.count})</div>
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+// ── Import ──
+async function doImport() {
+  const afterInput = document.getElementById('import-after').value.trim();
+  const btn = document.getElementById('btn-import');
+  btn.disabled = true;
+  btn.textContent = '...';
+  document.getElementById('import-result').innerHTML = `<div class="loading">${t('import_ing')}</div>`;
+
+  try {
+    // 增量：不传 after → 服务端自动用最近交易日期-3天
+    const body = { action: 'import' };
+    if (afterInput) body.after = afterInput;
+    const res = await fetch('/api/finance/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    showImportResult(data);
+  } catch (e) {
+    document.getElementById('import-result').innerHTML = `<div class="import-result" style="color:#f85149">Error: ${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = t('import_btn');
+    loadOverview();
+  }
+}
+
+async function doImportAll() {
+  const btn = document.getElementById('btn-import');
+  btn.disabled = true;
+  document.getElementById('import-result').innerHTML = `<div class="loading">${t('import_ing')}</div>`;
+
+  try {
+    const res = await fetch('/api/finance/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'import_all', after: '2020/01/01' }),
+    });
+    const data = await res.json();
+    showImportResult(data);
+  } catch (e) {
+    document.getElementById('import-result').innerHTML = `<div class="import-result" style="color:#f85149">Error: ${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    loadOverview();
+  }
+}
+
+function showImportResult(data) {
+  if (data.error) {
+    document.getElementById('import-result').innerHTML = `<div class="import-result" style="color:#f85149">Error: ${data.error}</div>`;
+    return;
+  }
+  let html = `<div class="import-result">
+    <div style="margin-bottom:8px;font-size:12px;color:#8b92a5">
+      ${t('import_from')}: ${data.after || '?'} | ${t('import_searched')}: ${data.searched || '?'} | ${t('import_skipped')}: ${data.skipped || 0}
+    </div>
+    <div style="margin-bottom:12px">
+      <span class="import-stat">${t('import_imported')}: <span class="num green">${data.imported}</span></span>
+      <span class="import-stat">${t('import_dup')}: <span class="num yellow">${data.duplicates}</span></span>
+      <span class="import-stat">${t('import_failed')}: <span class="num red">${data.failed}</span></span>
+    </div>`;
+
+  if (data.details && data.details.length > 0) {
+    html += `<table><thead><tr><th>${t('col_subject')}</th><th>${t('col_status')}</th></tr></thead><tbody>`;
+    data.details.forEach(d => {
+      const status = d.success ? `<span style="color:#3fb950">${t('status_imported')}</span>` :
+                     d.duplicate ? `<span style="color:#d29922">${t('status_dup')}</span>` :
+                     `<span style="color:#f85149">${d.error || t('import_failed')}</span>`;
+      html += `<tr><td>${d.subject || d.email_id}</td><td>${status}</td></tr>`;
+    });
+    html += '</tbody></table>';
+  }
+  html += '</div>';
+  document.getElementById('import-result').innerHTML = html;
+}
+
+// ── Mappings ──
+async function loadMappings() {
+  const data = await fetch('/api/finance/merchant-categories').then(r => r.json());
+  const el = document.getElementById('mappings-content');
+
+  if (data.length === 0) { el.innerHTML = `<div class="empty">${t('empty_mapping')}</div>`; return; }
+
+  let html = `<table><thead><tr><th>${t('col_pattern')}</th><th>${t('col_category')}</th><th>${t('col_created')}</th></tr></thead><tbody>`;
+  data.forEach(m => {
+    const cc = catClass(m.category);
+    html += `<tr>
+      <td style="font-weight:600">${m.merchant_pattern}</td>
+      <td><span class="cat-tag ${cc}">${m.category}</span></td>
+      <td style="color:#6e7681">${formatDate(m.created_at)}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+async function addMapping() {
+  const pattern = document.getElementById('map-pattern').value.trim();
+  const category = document.getElementById('map-category').value.trim();
+  if (!pattern || !category) return;
+
+  await fetch('/api/finance/merchant-categories', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ merchant_pattern: pattern, category }),
+  });
+  document.getElementById('map-pattern').value = '';
+  document.getElementById('map-category').value = '';
+  loadMappings();
+}
+
+// ── Init ──
+async function init() {
+  setLang(currentLang);
+  await loadOverview();
+  loadTransactions();
+}
+
+init();
+</script>
+</body>
+</html>

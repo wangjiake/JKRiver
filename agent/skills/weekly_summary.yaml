@@ -1,0 +1,39 @@
+name: weekly_summary
+description: Send a friendly weekend greeting every Sunday evening
+trigger:
+  type: schedule
+  cron: "0 20 * * 0"   # Every Sunday at 20:00
+steps:
+  - respond: |
+      As the user's AI friend, write a short and warm weekend greeting.
+      Ask how their week went and if they have any plans for next week.
+      Keep it casual, like a friend chatting — 2-3 sentences is enough.
+enabled: true
+
+# ── Examples ──
+#
+# 中文:
+#   name: weekly_summary
+#   description: 每周日晚上发送温馨周末问候
+#   trigger:
+#     type: schedule
+#     cron: "0 20 * * 0"
+#   steps:
+#     - respond: |
+#         作为用户的AI朋友，写一条简短温馨的周末问候。
+#         问问用户这周过得怎么样，下周有什么计划。
+#         语气像朋友随口聊天，2-3句话即可。
+#   enabled: true
+#
+# 日本語:
+#   name: weekly_summary
+#   description: 毎週日曜の夜に温かい週末の挨拶を送る
+#   trigger:
+#     type: schedule
+#     cron: "0 20 * * 0"   # 毎週日曜 20:00
+#   steps:
+#     - respond: |
+#         ユーザーのAI友達として、短くて温かい週末の挨拶を書いてください。
+#         今週はどうだったか、来週の予定はあるか聞いてみてください。
+#         友達が気軽に話しかけるようなトーンで、2〜3文で十分です。
+#   enabled: true

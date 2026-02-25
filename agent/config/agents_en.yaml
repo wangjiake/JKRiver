@@ -1,0 +1,234 @@
+# ═══════════════════════════════════════════════════════════════
+# Agent Configuration — Pluggable External Capabilities
+# ═══════════════════════════════════════════════════════════════
+#
+# Declare external agents (HTTP services or local commands) here.
+# The LLM automatically decides when to invoke them.
+# Set enabled: true to activate, enabled: false to disable (default: true).
+# Restart the service for changes to take effect.
+#
+# ── Field Reference ──
+#
+#   name         — Unique identifier (must not collide with built-in tools: web_search / image_describe / voice_transcribe)
+#   type         — http or command
+#   description  — One-line description of the capability (fed to the LLM for decision-making)
+#   parameters   — { param_name: "param description" }
+#   examples     — 2-3 example user utterances (help the LLM decide when to trigger)
+#   enabled      — true / false
+#
+# ── HTTP Type ──
+#
+#   http.url            — Request URL, supports {param} path interpolation
+#   http.method         — GET / POST / PUT / DELETE
+#   http.headers        — Request headers (e.g. Authorization)
+#   http.query_template — GET query parameter template
+#   http.body_template  — POST/PUT body template (dict or string)
+#   http.timeout        — Timeout in seconds
+#   http.result_path    — Dot-separated path to extract result from JSON response (e.g. data.message)
+#
+# ── Command Type ──
+#
+#   command.template       — Command template with {param} placeholders
+#   command.timeout        — Timeout in seconds
+#   command.shell          — Whether to execute via shell
+#   command.allowed_params — Parameter whitelist (injection prevention)
+#
+# ═══════════════════════════════════════════════════════════════
+
+agents:
+
+  # ┌─────────────────────────────────────────┐
+  # │  Ready to use — Free out-of-the-box     │
+  # └─────────────────────────────────────────┘
+
+  - name: "weather_query"
+    type: http
+    description: "Query real-time weather for any city (temperature, humidity, wind, conditions)"
+    parameters:
+      city: "City name (e.g. Tokyo / Beijing / London)"
+    examples:
+      - "What's the weather in Tokyo"
+      - "Temperature in Beijing today"
+      - "Is it raining in London"
+    enabled: true
+    http:
+      url: "https://wttr.in/{city}"
+      method: GET
+      headers:
+        Accept: "application/json"
+      query_template:
+        format: "j1"
+      timeout: 15
+      result_path: "current_condition"
+
+  # ┌─────────────────────────────────────────┐
+  # │  Templates — Just change the URL        │
+  # │  (enabled: false)                        │
+  # └─────────────────────────────────────────┘
+
+  # ── Smart Home: Home Assistant ──
+  # Setup guide: https://www.home-assistant.io/installation/
+  # Get token: HA UI → Profile → Long-Lived Access Tokens
+  - name: "home_lights"
+    type: http
+    description: "Control home lights (on/off, brightness, color)"
+    parameters:
+      entity_id: "Light entity ID, e.g. light.living_room"
+      action: "Action: turn_on / turn_off / toggle"
+    examples:
+      - "Turn on the living room light"
+      - "Turn off the bedroom light"
+      - "Set brightness to 50%"
+    enabled: false
+    http:
+      url: "http://homeassistant.local:8123/api/services/light/{action}"
+      method: POST
+      headers:
+        Authorization: "Bearer YOUR_HA_LONG_LIVED_TOKEN"
+        Content-Type: "application/json"
+      body_template:
+        entity_id: "{entity_id}"
+      timeout: 10
+
+  - name: "home_status"
+    type: http
+    description: "Query home device status (temperature sensors, doors, lights, etc.)"
+    parameters:
+      entity_id: "Device entity ID, e.g. sensor.living_room_temperature"
+    examples:
+      - "What's the living room temperature"
+      - "Is the front door closed"
+      - "Is the AC on"
+    enabled: false
+    http:
+      url: "http://homeassistant.local:8123/api/states/{entity_id}"
+      method: GET
+      headers:
+        Authorization: "Bearer YOUR_HA_LONG_LIVED_TOKEN"
+      timeout: 10
+
+  # ── Workflow Automation: n8n ──
+  # Deploy: docker run -p 5678:5678 n8nio/n8n
+  # Create a Webhook workflow, then paste the URL below
+  - name: "n8n_email"
+    type: http
+    description: "Send email via n8n workflow"
+    parameters:
+      to: "Recipient email address"
+      subject: "Email subject"
+      body: "Email body"
+    examples:
+      - "Send an email to John"
+      - "Help me send a notification email"
+    enabled: false
+    http:
+      url: "http://localhost:5678/webhook/YOUR_WEBHOOK_ID"
+      method: POST
+      headers:
+        Content-Type: "application/json"
+      body_template:
+        to: "{to}"
+        subject: "{subject}"
+        body: "{body}"
+      timeout: 15
+
+  - name: "n8n_workflow"
+    type: http
+    description: "Trigger a custom n8n workflow"
+    parameters:
+      action: "Action description"
+      data: "Additional data"
+    examples:
+      - "Run the data backup workflow"
+      - "Generate the daily report"
+    enabled: false
+    http:
+      url: "http://localhost:5678/webhook/YOUR_WEBHOOK_ID"
+      method: POST
+      headers:
+        Content-Type: "application/json"
+      body_template:
+        action: "{action}"
+        data: "{data}"
+      timeout: 30
+
+  # ── Sub-Agent Platform: Dify ──
+  # Deploy: https://github.com/langgenius/dify → docker compose up -d
+  # After creating an App, get api_key from the API page
+  - name: "dify_agent"
+    type: http
+    description: "Call a Dify sub-agent for complex tasks (research, analysis, writing, etc.)"
+    parameters:
+      query: "Task description"
+    examples:
+      - "Help me research this topic"
+      - "Analyze this data"
+    enabled: false
+    http:
+      url: "http://localhost/v1/chat-messages"
+      method: POST
+      headers:
+        Authorization: "Bearer app-YOUR_DIFY_API_KEY"
+        Content-Type: "application/json"
+      body_template:
+        inputs: {}
+        query: "{query}"
+        response_mode: "blocking"
+        user: "agent-user"
+      timeout: 60
+      result_path: "answer"
+
+  # ── Local Command Templates ──
+
+  - name: "backup_notes"
+    type: command
+    description: "Backup note files to a specified directory"
+    parameters:
+      scope: "Backup scope: all / today / recent"
+    examples:
+      - "Backup all my notes"
+      - "Backup today's notes"
+    enabled: false
+    command:
+      template: "python scripts/backup_notes.py --scope {scope}"
+      timeout: 30
+      shell: true
+      allowed_params:
+        scope: ["all", "today", "recent"]
+
+  - name: "system_info"
+    type: command
+    description: "View system information (CPU, memory, disk usage)"
+    parameters:
+      target: "Query target: cpu / memory / disk / all"
+    examples:
+      - "How much memory is left"
+      - "Is there enough disk space"
+      - "What's the CPU usage"
+    enabled: false
+    command:
+      template: "python scripts/system_info.py --target {target}"
+      timeout: 10
+      shell: true
+      allowed_params:
+        target: ["cpu", "memory", "disk", "all"]
+
+  # ── Debug ──
+
+  - name: "httpbin_echo"
+    type: http
+    description: "HTTP echo test tool, returns params as-is (for debugging agent pipeline)"
+    parameters:
+      message: "Test message to send"
+    examples:
+      - "Test agent connectivity"
+      - "echo hello"
+    enabled: false
+    http:
+      url: "https://httpbin.org/get"
+      method: GET
+      headers: {}
+      query_template:
+        message: "{message}"
+      timeout: 10
+      result_path: "args"

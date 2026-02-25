@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+*.log
+.claude/
+tmp/
+batch_test*.py
+.venv/
+.DS_Store

@@ -144,7 +144,8 @@ CREATE TABLE IF NOT EXISTS observations (
     source_turn_id INTEGER,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     rejected BOOLEAN DEFAULT FALSE,
-    note TEXT
+    note TEXT,
+    classification VARCHAR(32)
 );
 
 CREATE INDEX IF NOT EXISTS idx_obs_session ON observations(session_id);

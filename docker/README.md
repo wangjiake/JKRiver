@@ -161,6 +161,23 @@ docker compose up -d               # Start (background)
 docker compose down                # Stop (data preserved)
 docker compose down -v             # Stop and DELETE all data
 
+# Chat (command line)
+docker compose exec jkriver bash -c "cd /app_work && python -m agent.main"
+
+# Process data: run.py <source> <count>
+#   source: demo / chatgpt / claude / gemini / all (all = chatgpt+claude+gemini, excludes demo)
+#   count:  max = process all, or a number like 50 = process oldest 50 first (good for testing cost)
+#   Safe to interrupt — next run automatically skips already processed conversations
+docker compose exec riverhistory bash -c "cd /app_work && python run.py demo max"
+docker compose exec riverhistory bash -c "cd /app_work && python run.py all max"
+docker compose exec riverhistory bash -c "cd /app_work && python run.py chatgpt 50"
+
+# Manually trigger Sleep (organizes and consolidates memories from conversations)
+curl -X POST http://localhost:8400/sleep
+
+# Clear all extracted profiles and memories, keep original conversations (including demo)
+docker compose exec riverhistory bash -c "cd /app_work && python reset_db.py"
+
 # Logs
 docker compose logs -f             # All services
 docker compose logs -f jkriver     # One service
@@ -168,7 +185,7 @@ docker compose logs -f jkriver     # One service
 # Update to latest version
 docker compose pull && docker compose up -d
 
-# Full reset
+# Full reset (delete everything including database)
 docker compose down -v && docker compose up
 ```
 
@@ -343,6 +360,26 @@ docker compose up -d               # 启动（后台运行）
 docker compose down                # 停止（数据保留）
 docker compose down -v             # 停止并删除所有数据
 
+# 命令行聊天
+docker compose exec jkriver bash -c "cd /app_work && python -m agent.main"
+
+# 处理 Demo 数据
+docker compose exec riverhistory bash -c "cd /app_work && python run.py demo max"
+
+# 处理数据：run.py <来源> <数量>
+#   来源：demo / chatgpt / claude / gemini / all（all = chatgpt+claude+gemini，不含 demo）
+#   数量：max = 全部处理，或填数字如 50 = 从最早开始处理 50 条（适合先试水看费用）
+#   可以随时中断，下次运行会自动跳过已处理的对话
+docker compose exec riverhistory bash -c "cd /app_work && python run.py demo max"
+docker compose exec riverhistory bash -c "cd /app_work && python run.py all max"
+docker compose exec riverhistory bash -c "cd /app_work && python run.py chatgpt 50"
+
+# 手动触发 Sleep（整理对话中的记忆，沉淀为画像）
+curl -X POST http://localhost:8400/sleep
+
+# 清空所有画像和记忆，保留原始对话数据（含 demo）
+docker compose exec riverhistory bash -c "cd /app_work && python reset_db.py"
+
 # 查看日志
 docker compose logs -f             # 所有服务
 docker compose logs -f jkriver     # 单个服务
@@ -350,7 +387,7 @@ docker compose logs -f jkriver     # 单个服务
 # 更新到最新版本
 docker compose pull && docker compose up -d
 
-# 彻底重置
+# 彻底重置（删除所有数据包括数据库）
 docker compose down -v && docker compose up
 ```
 
@@ -525,6 +562,23 @@ docker compose up -d               # 起動（バックグラウンド）
 docker compose down                # 停止（データ保持）
 docker compose down -v             # 停止してすべてのデータを削除
 
+# コマンドラインチャット
+docker compose exec jkriver bash -c "cd /app_work && python -m agent.main"
+
+# データ処理：run.py <ソース> <件数>
+#   ソース：demo / chatgpt / claude / gemini / all（all = chatgpt+claude+gemini、デモ除外）
+#   件数：max = すべて処理、または数字（例: 50）= 最も古い 50 件から処理（コスト確認に最適）
+#   中断しても安全 — 次回実行時に処理済み会話は自動スキップ
+docker compose exec riverhistory bash -c "cd /app_work && python run.py demo max"
+docker compose exec riverhistory bash -c "cd /app_work && python run.py all max"
+docker compose exec riverhistory bash -c "cd /app_work && python run.py chatgpt 50"
+
+# Sleep を手動トリガー（会話から記憶を整理し、プロフィールに沈殿）
+curl -X POST http://localhost:8400/sleep
+
+# すべてのプロフィールと記憶をクリア、元の会話データは保持（デモ含む）
+docker compose exec riverhistory bash -c "cd /app_work && python reset_db.py"
+
 # ログ確認
 docker compose logs -f             # 全サービス
 docker compose logs -f jkriver     # 単一サービス
@@ -532,7 +586,7 @@ docker compose logs -f jkriver     # 単一サービス
 # 最新バージョンに更新
 docker compose pull && docker compose up -d
 
-# 完全リセット
+# 完全リセット（データベースを含むすべてを削除）
 docker compose down -v && docker compose up
 ```
 

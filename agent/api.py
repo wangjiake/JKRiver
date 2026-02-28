@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from agent.config import load_config
-from agent.core import SessionManager, run_cycle
+from agent.core import SessionManager, run_cycle, run_cycle_async
 from agent.storage import load_current_profile, load_full_current_profile
 
 _config = None
@@ -72,7 +72,7 @@ async def chat(req: ChatRequest):
                 "file_path": req.file_path or "",
             }
 
-        result = run_cycle(user_input, session)
+        result = await run_cycle_async(user_input, session)
         return ChatResponse(
             response=result["response"],
             session_id=session.id,
@@ -141,7 +141,7 @@ async def ws_chat(websocket: WebSocket):
                 continue
 
             try:
-                result = run_cycle(message, session)
+                result = await run_cycle_async(message, session)
                 await websocket.send_json({
                     "type": "response",
                     "response": result["response"],

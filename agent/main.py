@@ -2,7 +2,8 @@
 from datetime import datetime
 from agent.config import load_config
 from agent.config.prompts import get_labels
-from agent.core import SessionManager, run_cycle
+from agent.core import SessionManager, run_cycle, run_cycle_async
+import asyncio
 from agent.storage import load_current_profile
 
 def _print_log(level: str, msg: str):
@@ -13,7 +14,7 @@ def _print_cycle_details(result: dict, CL: dict):
     if reply:
         print(reply)
 
-def main():
+async def main_async():
     config = load_config()
     CL = get_labels("cli.labels", config.get("language", "zh"))
     manager = SessionManager(config)
@@ -28,13 +29,16 @@ def main():
                 break
             if not user_input.strip():
                 continue
-            result = run_cycle(user_input, session, log_fn=_print_log)
+            result = await run_cycle_async(user_input, session, log_fn=_print_log)
             _print_cycle_details(result, CL)
     except (KeyboardInterrupt, EOFError):
         pass
     finally:
         from agent.sleep import run as sleep_run
         sleep_run()
+
+def main():
+    asyncio.run(main_async())
 
 if __name__ == "__main__":
     main()

@@ -16,7 +16,7 @@ from datetime import time as dt_time
 
 from agent.config import load_config
 from agent.config.prompts import get_labels
-from agent.core import SessionManager, run_cycle
+from agent.core import SessionManager, run_cycle_async
 from agent.channel_utils import split_message, safe_remove
 from agent.proactive import ProactiveScanner
 from agent.skills import SkillRegistry
@@ -155,7 +155,7 @@ async def _process_and_reply(
     typing_task = asyncio.ensure_future(_keep_typing())
 
     try:
-        result = await asyncio.to_thread(run_cycle, user_input, session)
+        result = await run_cycle_async(user_input, session)
         response_text = result["response"]
     except Exception:
         logger.exception(_log("run_cycle_error"))

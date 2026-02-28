@@ -10,6 +10,7 @@
 
 [![X (Twitter)](https://img.shields.io/badge/X-@JKRiverse-000000?logo=x&logoColor=white)](https://x.com/JKRiverse)
 [![Discord](https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white)](https://discord.gg/PnAt4Xkt)
+[![Docs](https://img.shields.io/badge/文档-wangjiake.github.io-06b6d4?logo=readthedocs&logoColor=white)](https://wangjiake.github.io/riverse-docs/zh/)
 
 ## Docker 快速体验
 
@@ -87,7 +88,7 @@ Sleep 是 Riverse 消化对话、更新画像的过程。支持自动触发和�
 | 层 | 技术 |
 |---|---|
 | 运行时 | Python 3.10+, PostgreSQL 16+ |
-| 本地 LLM | Ollama + Qwen 2.5 14B |
+| 本地 LLM | Ollama（任意兼容模型） |
 | 云端 LLM | OpenAI GPT-4o / DeepSeek（兜底） |
 | 向量嵌入 | Ollama + BGE-M3 |
 | REST API | FastAPI + Uvicorn |
@@ -211,7 +212,7 @@ language: "zh"                  # zh / en / ja
 
 ```bash
 # 安装 Ollama: https://ollama.ai
-ollama pull qwen2.5:14b         # 主对话模型
+ollama pull <your-model>         # 例如 qwen2.5:14b, llama3, mistral
 ollama pull bge-m3              # 向量嵌入模型（可选）
 ```
 
@@ -221,7 +222,7 @@ ollama pull bge-m3              # 向量嵌入模型（可选）
 llm_provider: "local"
 
 local:
-  model: "qwen2.5:14b"
+  model: "your-model"            # 例如 qwen2.5:14b, llama3, mistral
   api_base: "http://localhost:11434"
 ```
 
@@ -476,7 +477,7 @@ pg_isready -h localhost
 
 ```bash
 ollama list                     # 查看已安装模型
-ollama pull qwen2.5:14b         # 安装对话模型
+ollama pull <your-model>         # 例如 qwen2.5:14b, llama3, mistral
 ollama pull bge-m3              # 安装嵌入模型
 ```
 

@@ -10,6 +10,7 @@
 
 [![X (Twitter)](https://img.shields.io/badge/X-@JKRiverse-000000?logo=x&logoColor=white)](https://x.com/JKRiverse)
 [![Discord](https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white)](https://discord.gg/PnAt4Xkt)
+[![Docs](https://img.shields.io/badge/Docs-wangjiake.github.io-06b6d4?logo=readthedocs&logoColor=white)](https://wangjiake.github.io/riverse-docs/)
 
 ## Quick Try with Docker
 
@@ -54,12 +55,13 @@ How this differs from existing AI memory: ChatGPT Memory, Claude Memory and the 
 - **Multi-Modal Input** — Text, voice, images, files — all understood natively
 - **Pluggable Tools** — Finance tracking, health sync (Withings), web search, vision, TTS, and more
 - **YAML Skills** — Create custom behaviors with simple YAML — trigger by keyword or schedule
-- **External Agents** — Connect Home Assistant, n8n, Dify and more via `agents.yaml`
+- **External Agents** — Connect Home Assistant, n8n, Dify and more via `agents_*.yaml`
 - **MCP Protocol** — Model Context Protocol support for Gmail and other MCP servers
 - **Multi-Channel** — Telegram, Discord, REST API, WebSocket, CLI, Web Dashboard
 - **Local-First** — Ollama by default, auto-escalates to OpenAI / DeepSeek when needed
 - **Proactive Outreach** — Follows up on events, checks in when idle, respects quiet hours
 - **Semantic Search** — BGE-M3 embeddings, retrieves relevant memories by meaning
+- **Multi-language Prompts** — Built-in prompts for English, Chinese, and Japanese — switch with one setting
 
 > **On accuracy:** No LLM today is specifically trained for personal profile extraction, so results may occasionally be off. When you spot something inaccurate, you can **reject** incorrect memories or **close** outdated ones in the Web Dashboard. Riverse intentionally does not allow manual editing of memory content — wrong memories are like sediment in a river, meant to be washed away by the current, not sculpted by hand. As conversations accumulate, the River Algorithm continuously self-corrects through multi-turn verification and contradiction detection — profiles become more accurate over time.
 
@@ -86,7 +88,7 @@ Sleep is the process where Riverse digests conversations and updates your profil
 | Layer | Technology |
 |---|---|
 | Runtime | Python 3.10+, PostgreSQL 16+ |
-| Local LLM | Ollama + Qwen 2.5 14B |
+| Local LLM | Ollama (any compatible model) |
 | Cloud LLM | OpenAI GPT-4o / DeepSeek (fallback) |
 | Embeddings | Ollama + BGE-M3 |
 | REST API | FastAPI + Uvicorn |
@@ -160,28 +162,73 @@ psql -h localhost -U your_username -d Riverse -f agent/schema.sql
 
 Edit `settings.yaml` in the project root. All settings are in one file — database, LLM, bot tokens, etc.
 
-**Local LLM (Ollama):**
+#### 4.1 Database
+
+```yaml
+database:
+    name: "Riverse"
+    user: "your_username"     # ← your PostgreSQL username
+    host: "localhost"
+```
+
+> On macOS with Homebrew PostgreSQL, the username is usually your system username (run `whoami` to check). On Linux/Windows, it's usually `postgres`.
+
+#### 4.2 Language
+
+```yaml
+language: "en"                  # en / zh / ja
+```
+
+#### 4.3 LLM
+
+**Option A: Local Ollama (recommended)**
 
 ```bash
-ollama pull qwen2.5:14b         # Chat model
+ollama pull <your-model>         # e.g. qwen2.5:14b, llama3, mistral
 ollama pull bge-m3              # Embedding model (optional)
 ```
 
 ```yaml
 llm_provider: "local"
+
+local:
+  model: "your-model"            # e.g. qwen2.5:14b, llama3, mistral
+  api_base: "http://localhost:11434"
 ```
 
-**Cloud-only (no Ollama needed):**
+**Option B: Cloud-only (no Ollama needed)**
 
 ```yaml
 llm_provider: "openai"
 
 openai:
   model: "gpt-4o-mini"
-  api_key: "sk-your-key"
+  api_base: "https://api.openai.com"
+  api_key: "sk-your-openai-api-key"
 ```
 
-### 5. Telegram Bot (optional)
+#### 4.4 Cloud LLM (fallback + web search)
+
+Auto-escalates to cloud when local model quality is insufficient. Recommended even when using local:
+
+```yaml
+cloud_llm:
+  enabled: true
+  providers:
+    - name: "openai"
+      model: "gpt-4o"
+      api_base: "https://api.openai.com"
+      api_key: "sk-your-openai-api-key"
+      search: true              # Enable web search
+      priority: 1
+    - name: "deepseek"
+      model: "deepseek-chat"
+      api_base: "https://api.deepseek.com"
+      api_key: "sk-your-deepseek-key"
+      priority: 2
+```
+
+#### 4.5 Telegram Bot
 
 1. Find [@BotFather](https://t.me/BotFather) on Telegram, send `/newbot` to create a bot and get the token
 2. Get your user ID (pick one):
@@ -192,10 +239,23 @@ openai:
 ```yaml
 telegram:
   bot_token: "123456:ABC-DEF..."
-  allowed_user_ids: [your_user_id]
+  temp_dir: "tmp/telegram"
+  allowed_user_ids: [your_user_id]  # Only allow yourself
 ```
 
-### 6. Embedding / Semantic Search (optional, off by default)
+#### 4.6 Discord Bot (optional)
+
+1. Go to [Discord Developer Portal](https://discord.com/developers/applications) and create an application
+2. On the Bot page, get the token and enable Message Content Intent
+3. Use the OAuth2 URL to invite the bot to your server
+
+```yaml
+discord:
+  bot_token: "your-discord-bot-token"
+  allowed_user_ids: []           # Empty = allow everyone; add IDs to restrict
+```
+
+#### 4.7 Embedding / Semantic Search (optional, off by default)
 
 Enables searching memories by meaning instead of keywords. Requires Ollama with bge-m3:
 
@@ -212,7 +272,33 @@ embedding:
   api_base: "http://localhost:11434"
 ```
 
-### 7. Run
+#### 4.8 Other Optional Settings
+
+```yaml
+# Tools
+tools:
+  enabled: true
+  shell_exec:
+    enabled: false               # Disabled by default for security
+
+# TTS (Text-to-Speech)
+tts:
+  enabled: false
+
+# MCP Protocol
+mcp:
+  enabled: false
+  servers: []
+
+# Proactive Outreach
+proactive:
+  enabled: true
+  quiet_hours:
+    start: "23:00"
+    end: "08:00"
+```
+
+### 5. Run
 
 ```bash
 python -m agent.main                                    # CLI
@@ -306,7 +392,7 @@ If your username is not `postgres`, update `database.user` in `settings.yaml`.
 
 ```bash
 ollama list
-ollama pull qwen2.5:14b
+ollama pull <your-model>        # e.g. qwen2.5:14b, llama3, mistral
 ollama pull bge-m3
 ```
 

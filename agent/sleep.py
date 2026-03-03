@@ -46,12 +46,20 @@ def _format_trajectory_block(trajectory: dict | None, language: str = "zh") -> s
         f"  {L['summary']}: {trajectory.get('full_summary', '?')}\n"
     )
 
-def _format_profile_for_llm(profile: list[dict], timeline: list[dict] | None = None, language: str = "zh") -> str:
+def _format_profile_for_llm(profile: list[dict], timeline: list[dict] | None = None, language: str = "zh", max_items: int = 80) -> str:
     L = get_labels("context.labels", language)
     if not profile:
         return L["no_profile"] + "\n"
+
+    # 排序：confirmed 优先，mention_count 高优先；截断到 max_items
+    sorted_profile = sorted(profile,
+                            key=lambda p: (0 if p.get("layer") == "confirmed" else 1,
+                                           -(p.get("mention_count") or 1)))
+    if max_items and len(sorted_profile) > max_items:
+        sorted_profile = sorted_profile[:max_items]
+
     text = ""
-    for p in profile:
+    for p in sorted_profile:
         ev = p.get("evidence", [])
         layer = p.get("layer", "suspected")
         mention_count = p.get("mention_count", 1) or 1
@@ -548,12 +556,30 @@ def cross_verify_suspected_facts(suspected_facts: list[dict], config: dict,
     if not suspected_facts:
         return []
 
+    # ── 规则预处理：source_type=stated + mention_count>=2 → 直接确认 ──
+    rule_results = []
+    llm_candidates = []
+    for f in suspected_facts:
+        mc = f.get("mention_count") or 1
+        if f.get("source_type") == "stated" and mc >= 2:
+            rule_results.append({"fact_id": f["id"], "action": "confirm",
+                                 "reason": "规则：stated+mention>=2直接确认"})
+        else:
+            llm_candidates.append(f)
+
+    if not llm_candidates:
+        return rule_results
+
+    # 按 mention_count 降序，限制最多 80 条发给 LLM
+    llm_candidates.sort(key=lambda f: -(f.get("mention_count") or 1))
+    llm_candidates = llm_candidates[:80]
+
     all_current = load_full_current_profile()
     all_facts_map = {p["id"]: p for p in all_current}
 
     items_text = ""
     seen_subjects = set()
-    for f in suspected_facts:
+    for f in llm_candidates:
         ev = f.get("evidence", [])
         mention_count = f.get("mention_count", 1) or 1
         start = f["start_time"].strftime("%Y-%m-%d") if f.get("start_time") else "?"
@@ -601,12 +627,16 @@ def cross_verify_suspected_facts(suspected_facts: list[dict], config: dict,
                         tag = L["layer_disputed"] if t.get("superseded_by") else f"[{layer}]"
                         timeline_context += f"  {t['value']} ({t_start} ~ {L['until_now']}) {tag}\n"
 
+    # 按 subject 分类加载相关对话摘要（限最近 3 个月）
     obs_context = ""
+    three_months_ago = datetime.now() - timedelta(days=90)
     for cat, subj in seen_subjects:
         if not subj:
             continue
         subj_summaries = load_summaries_by_observation_subject(subject=subj)
         all_subj = subj_summaries.get("before", [])
+        all_subj = [s for s in all_subj
+                     if s.get('user_input_at') and s['user_input_at'].replace(tzinfo=None) >= three_months_ago]
         if all_subj:
             obs_context += f"\n[{cat}] {subj} {L['related_summaries']}：\n"
             for s in all_subj[-30:]:
@@ -634,13 +664,10 @@ def cross_verify_suspected_facts(suspected_facts: list[dict], config: dict,
         {"role": "system", "content": get_prompt("sleep.cross_verify_suspected", language)},
         {"role": "user", "content": user_content},
     ]
-    if timeline_context:
-        pass
-    if obs_context:
-        pass
     raw = call_llm(messages, llm_config)
-    results = _parse_json_array(raw)
-    return [r for r in results if isinstance(r, dict) and r.get("fact_id") and r.get("action")]
+    llm_results = _parse_json_array(raw)
+    llm_results = [r for r in llm_results if isinstance(r, dict) and r.get("fact_id") and r.get("action")]
+    return rule_results + llm_results
 
 def resolve_disputes_with_llm(disputed_pairs: list[dict], config: dict,
                               trajectory: dict | None = None) -> list[dict]:
@@ -650,6 +677,49 @@ def resolve_disputes_with_llm(disputed_pairs: list[dict], config: dict,
     if not disputed_pairs:
         return []
 
+    # ── 规则预处理 ──
+    rule_results = []
+    llm_candidates = []
+    now = get_now()
+    for pair in disputed_pairs:
+        old = pair["old"]
+        new = pair["new"]
+        new_mc = new.get("mention_count") or 1
+        old_mc = old.get("mention_count") or 1
+        new_start = new.get("start_time")
+        old_start = old.get("start_time")
+
+        # 规则1：新值 mention_count>=2 且时间更新 → accept_new
+        if new_mc >= 2 and new_start and old_start and new_start > old_start:
+            rule_results.append({
+                "old_fact_id": old["id"], "new_fact_id": new["id"],
+                "action": "accept_new",
+                "reason": "规则：新值mention>=2且时间更新"
+            })
+            continue
+
+        # 规则2：争议超过 90 天无新证据 → mention_count 高的胜出
+        dispute_age = (now - new_start.replace(tzinfo=None)).days if new_start else 0
+        if dispute_age > 90:
+            if new_mc > old_mc:
+                rule_results.append({
+                    "old_fact_id": old["id"], "new_fact_id": new["id"],
+                    "action": "accept_new",
+                    "reason": f"规则：争议{dispute_age}天，新值mention更高"
+                })
+            else:
+                rule_results.append({
+                    "old_fact_id": old["id"], "new_fact_id": new["id"],
+                    "action": "reject_new",
+                    "reason": f"规则：争议{dispute_age}天，旧值mention更高"
+                })
+            continue
+
+        llm_candidates.append(pair)
+
+    if not llm_candidates:
+        return rule_results
+
     traj_context = ""
     if trajectory and trajectory.get("life_phase"):
         traj_context = (
@@ -658,10 +728,9 @@ def resolve_disputes_with_llm(disputed_pairs: list[dict], config: dict,
             f"  {L['volatile_areas']}: {json.dumps(trajectory.get('volatile_areas', []), ensure_ascii=False)}\n"
         )
 
-    now = get_now()
     all_results = []
 
-    for i, pair in enumerate(disputed_pairs):
+    for i, pair in enumerate(llm_candidates):
         old = pair["old"]
         new = pair["new"]
 
@@ -774,7 +843,7 @@ def resolve_disputes_with_llm(disputed_pairs: list[dict], config: dict,
         else:
             pass
 
-    return all_results
+    return rule_results + all_results
 
 def generate_trajectory_summary(current_profile: list[dict],
                                 config: dict,
@@ -1307,12 +1376,30 @@ async def cross_verify_suspected_facts_async(suspected_facts: list[dict], config
     if not suspected_facts:
         return []
 
+    # ── 规则预处理：source_type=stated + mention_count>=2 → 直接确认 ──
+    rule_results = []
+    llm_candidates = []
+    for f in suspected_facts:
+        mc = f.get("mention_count") or 1
+        if f.get("source_type") == "stated" and mc >= 2:
+            rule_results.append({"fact_id": f["id"], "action": "confirm",
+                                 "reason": "规则：stated+mention>=2直接确认"})
+        else:
+            llm_candidates.append(f)
+
+    if not llm_candidates:
+        return rule_results
+
+    # 按 mention_count 降序，限制最多 80 条发给 LLM
+    llm_candidates.sort(key=lambda f: -(f.get("mention_count") or 1))
+    llm_candidates = llm_candidates[:80]
+
     all_current = load_full_current_profile()
     all_facts_map = {p["id"]: p for p in all_current}
 
     items_text = ""
     seen_subjects = set()
-    for f in suspected_facts:
+    for f in llm_candidates:
         ev = f.get("evidence", [])
         mention_count = f.get("mention_count", 1) or 1
         start = f["start_time"].strftime("%Y-%m-%d") if f.get("start_time") else "?"
@@ -1360,12 +1447,16 @@ async def cross_verify_suspected_facts_async(suspected_facts: list[dict], config
                         tag = L["layer_disputed"] if t.get("superseded_by") else f"[{layer}]"
                         timeline_context += f"  {t['value']} ({t_start} ~ {L['until_now']}) {tag}\n"
 
+    # 按 subject 分类加载相关对话摘要（限最近 3 个月）
     obs_context = ""
+    three_months_ago = datetime.now() - timedelta(days=90)
     for cat, subj in seen_subjects:
         if not subj:
             continue
         subj_summaries = load_summaries_by_observation_subject(subject=subj)
         all_subj = subj_summaries.get("before", [])
+        all_subj = [s for s in all_subj
+                     if s.get('user_input_at') and s['user_input_at'].replace(tzinfo=None) >= three_months_ago]
         if all_subj:
             obs_context += f"\n[{cat}] {subj} {L['related_summaries']}：\n"
             for s in all_subj[-30:]:
@@ -1394,8 +1485,9 @@ async def cross_verify_suspected_facts_async(suspected_facts: list[dict], config
         {"role": "user", "content": user_content},
     ]
     raw = await call_llm_async(messages, llm_config)
-    results = _parse_json_array(raw)
-    return [r for r in results if isinstance(r, dict) and r.get("fact_id") and r.get("action")]
+    llm_results = _parse_json_array(raw)
+    llm_results = [r for r in llm_results if isinstance(r, dict) and r.get("fact_id") and r.get("action")]
+    return rule_results + llm_results
 
 
 async def resolve_disputes_with_llm_async(disputed_pairs: list[dict], config: dict,
@@ -1406,6 +1498,49 @@ async def resolve_disputes_with_llm_async(disputed_pairs: list[dict], config: di
     if not disputed_pairs:
         return []
 
+    # ── 规则预处理 ──
+    rule_results = []
+    llm_candidates = []
+    now = get_now()
+    for pair in disputed_pairs:
+        old = pair["old"]
+        new = pair["new"]
+        new_mc = new.get("mention_count") or 1
+        old_mc = old.get("mention_count") or 1
+        new_start = new.get("start_time")
+        old_start = old.get("start_time")
+
+        # 规则1：新值 mention_count>=2 且时间更新 → accept_new
+        if new_mc >= 2 and new_start and old_start and new_start > old_start:
+            rule_results.append({
+                "old_fact_id": old["id"], "new_fact_id": new["id"],
+                "action": "accept_new",
+                "reason": "规则：新值mention>=2且时间更新"
+            })
+            continue
+
+        # 规则2：争议超过 90 天无新证据 → mention_count 高的胜出
+        dispute_age = (now - new_start.replace(tzinfo=None)).days if new_start else 0
+        if dispute_age > 90:
+            if new_mc > old_mc:
+                rule_results.append({
+                    "old_fact_id": old["id"], "new_fact_id": new["id"],
+                    "action": "accept_new",
+                    "reason": f"规则：争议{dispute_age}天，新值mention更高"
+                })
+            else:
+                rule_results.append({
+                    "old_fact_id": old["id"], "new_fact_id": new["id"],
+                    "action": "reject_new",
+                    "reason": f"规则：争议{dispute_age}天，旧值mention更高"
+                })
+            continue
+
+        llm_candidates.append(pair)
+
+    if not llm_candidates:
+        return rule_results
+
     traj_context = ""
     if trajectory and trajectory.get("life_phase"):
         traj_context = (
@@ -1413,8 +1548,6 @@ async def resolve_disputes_with_llm_async(disputed_pairs: list[dict], config: di
             f"  {L['anchors_stable']}: {json.dumps(trajectory.get('key_anchors', []), ensure_ascii=False)}\n"
             f"  {L['volatile_areas']}: {json.dumps(trajectory.get('volatile_areas', []), ensure_ascii=False)}\n"
         )
-
-    now = get_now()
 
     # Dispatch all disputes in parallel
     async def _resolve_one(i: int, pair: dict) -> dict | None:
@@ -1525,9 +1658,9 @@ async def resolve_disputes_with_llm_async(disputed_pairs: list[dict], config: di
                 return result
         return None
 
-    tasks = [_resolve_one(i, pair) for i, pair in enumerate(disputed_pairs)]
+    tasks = [_resolve_one(i, pair) for i, pair in enumerate(llm_candidates)]
     results = await asyncio.gather(*tasks)
-    return [r for r in results if r is not None]
+    return rule_results + [r for r in results if r is not None]
 
 
 async def generate_trajectory_summary_async(current_profile: list[dict],
@@ -1617,7 +1750,7 @@ def run():
     all_convs = []
     all_observations = []
 
-    existing_profile = load_full_current_profile()
+    existing_profile = load_full_current_profile(exclude_superseded=True)
 
     trajectory = load_trajectory_summary()
     if trajectory and trajectory.get("life_phase"):
@@ -1706,7 +1839,7 @@ def run():
 
     behavioral_signals = []
     if all_observations and len(all_observations) >= 1:
-        current_profile = load_full_current_profile()
+        current_profile = load_full_current_profile(exclude_superseded=True)
         behavioral_profile, _ = prepare_profile(
             current_profile, query_text=obs_query, max_entries=20, language=language,
         )
@@ -1754,7 +1887,7 @@ def run():
         else:
             pass
 
-    current_profile = load_full_current_profile()
+    current_profile = load_full_current_profile(exclude_superseded=True)
     timeline = load_timeline()
 
     def _find_fact(fid) -> dict | None:
@@ -1772,6 +1905,7 @@ def run():
 
     changed_items = []
     new_fact_count = 0
+    affected_fact_ids = set()  # 增量 cross_verify / resolve_disputes 用
 
     if all_observations:
         # Dynamic range for classify_observations
@@ -1817,6 +1951,20 @@ def run():
         evidence_against_list = [c for c in classifications if c.get("action") == "evidence_against"]
         new_obs_cls = [c for c in classifications if c.get("action") == "new"]
         irrelevant_cls = [c for c in classifications if c.get("action") == "irrelevant"]
+
+        # 收集本轮受影响的 fact_id（供增量 cross_verify / resolve_disputes）
+        for s in supports:
+            fid = s.get("fact_id")
+            if fid:
+                affected_fact_ids.add(fid)
+        for c in contradictions:
+            fid = c.get("fact_id")
+            if fid:
+                affected_fact_ids.add(fid)
+        for ea in evidence_against_list:
+            fid = ea.get("fact_id")
+            if fid:
+                affected_fact_ids.add(fid)
 
         for s in supports:
             fact = _find_fact(s.get("fact_id"))
@@ -1885,6 +2033,8 @@ def run():
                         start_time=_new_batch_time,
                     )
                     new_fact_count += 1
+                    if fact_id:
+                        affected_fact_ids.add(fact_id)
                     decay_str = f", 过期:{decay}天" if decay else ""
                     changed_items.append({
                         "change_type": "new",
@@ -1924,6 +2074,8 @@ def run():
                     start_time=_obs_time,
                 )
                 contradict_count += 1
+                if new_id:
+                    affected_fact_ids.add(new_id)
                 changed_items.append({
                     "change_type": "contradict",
                     "category": fact["category"],
@@ -1966,7 +2118,12 @@ def run():
     else:
         pass
 
-    suspected_facts = load_suspected_profile()
+    # 增量：只验证本轮受影响的 facts
+    all_suspected = load_suspected_profile()
+    if affected_fact_ids:
+        suspected_facts = [f for f in all_suspected if f["id"] in affected_fact_ids]
+    else:
+        suspected_facts = all_suspected
     confirmed_count = 0
 
     if suspected_facts:
@@ -1987,7 +2144,14 @@ def run():
             else:
                 pass
 
-    disputed_pairs = load_disputed_facts()
+    # 增量：只处理本轮受影响的 disputes
+    all_disputed = load_disputed_facts()
+    if affected_fact_ids:
+        disputed_pairs = [p for p in all_disputed
+                          if p["old"]["id"] in affected_fact_ids
+                          or p["new"]["id"] in affected_fact_ids]
+    else:
+        disputed_pairs = all_disputed
     dispute_resolved = 0
     if disputed_pairs:
         judgments = resolve_disputes_with_llm(disputed_pairs, config, trajectory=trajectory)
@@ -2066,7 +2230,7 @@ def run():
             anchor_tag = " [锚点加速]" if in_anchors else ""
 
     if all_convs:
-        current_profile_for_model = load_full_current_profile()
+        current_profile_for_model = load_full_current_profile(exclude_superseded=True)
         model_profile, _ = prepare_profile(
             current_profile_for_model, query_text=obs_query, max_entries=20,
             language=language,
@@ -2113,12 +2277,12 @@ def run():
         should_update_trajectory = True
 
     if not trajectory:
-        current_profile = load_full_current_profile()
+        current_profile = load_full_current_profile(exclude_superseded=True)
         if current_profile:
             should_update_trajectory = True
 
     if should_update_trajectory:
-        current_profile = load_full_current_profile()
+        current_profile = load_full_current_profile(exclude_superseded=True)
         if current_profile:
             trajectory_result = generate_trajectory_summary(
                 current_profile, config, new_observations=all_observations
@@ -2141,7 +2305,7 @@ def run():
 
     # Generate memory snapshot
     try:
-        final_profile = load_full_current_profile()
+        final_profile = load_full_current_profile(exclude_superseded=True)
         snapshot_text = format_profile_text(
             final_profile, max_entries=40, detail="full", language=language,
         )
@@ -2188,7 +2352,7 @@ async def run_async():
     all_convs = []
     all_observations = []
 
-    existing_profile = await asyncio.to_thread(load_full_current_profile)
+    existing_profile = await asyncio.to_thread(load_full_current_profile, True)
 
     trajectory = await asyncio.to_thread(load_trajectory_summary)
     if trajectory and trajectory.get("life_phase"):
@@ -2280,7 +2444,7 @@ async def run_async():
 
     suspected_facts = await asyncio.to_thread(load_suspected_profile)
     disputed_pairs = await asyncio.to_thread(load_disputed_facts)
-    current_profile = await asyncio.to_thread(load_full_current_profile)
+    current_profile = await asyncio.to_thread(load_full_current_profile, True)
     timeline = await asyncio.to_thread(load_timeline)
 
     async def _do_behavioral():
@@ -2294,21 +2458,8 @@ async def run_async():
             )
         return []
 
-    async def _do_cross_verify():
-        if suspected_facts:
-            return await cross_verify_suspected_facts_async(suspected_facts, config, trajectory=trajectory)
-        return []
-
-    async def _do_resolve_disputes():
-        if disputed_pairs:
-            return await resolve_disputes_with_llm_async(disputed_pairs, config, trajectory=trajectory)
-        return []
-
-    behavioral_signals, verify_judgments, dispute_judgments = await asyncio.gather(
-        _do_behavioral(),
-        _do_cross_verify(),
-        _do_resolve_disputes(),
-    )
+    behavioral_signals = await _do_behavioral()
+    # cross_verify / resolve_disputes 延后到 classify 之后，增量过滤
 
     # Process behavioral signals (save to DB)
     if behavioral_signals:
@@ -2346,16 +2497,40 @@ async def run_async():
                 except Exception:
                     pass
 
-    # Process cross-verify results
+    # 增量 cross_verify / resolve_disputes（classify 之后，用 affected_fact_ids 过滤）
     _all_conv_times = [o["_conv_time"] for o in all_observations if o.get("_conv_time")]
     if not _all_conv_times:
         _all_conv_times = [c["user_input_at"] for c in all_convs if c.get("user_input_at")]
     latest_conv_time = max(_all_conv_times) if _all_conv_times else None
 
+    if affected_fact_ids:
+        inc_suspected = [f for f in suspected_facts if f["id"] in affected_fact_ids]
+        inc_disputed = [p for p in disputed_pairs
+                        if p["old"]["id"] in affected_fact_ids
+                        or p["new"]["id"] in affected_fact_ids]
+    else:
+        inc_suspected = suspected_facts
+        inc_disputed = disputed_pairs
+
+    async def _do_cross_verify():
+        if inc_suspected:
+            return await cross_verify_suspected_facts_async(inc_suspected, config, trajectory=trajectory)
+        return []
+
+    async def _do_resolve_disputes():
+        if inc_disputed:
+            return await resolve_disputes_with_llm_async(inc_disputed, config, trajectory=trajectory)
+        return []
+
+    verify_judgments, dispute_judgments = await asyncio.gather(
+        _do_cross_verify(),
+        _do_resolve_disputes(),
+    )
+
     confirmed_count = 0
     if verify_judgments:
         judgment_map = {j["fact_id"]: j for j in verify_judgments}
-        for f in suspected_facts:
+        for f in inc_suspected:
             j = judgment_map.get(f["id"])
             if not j:
                 continue
@@ -2363,7 +2538,6 @@ async def run_async():
                 confirm_profile_fact(f["id"], reference_time=latest_conv_time)
                 confirmed_count += 1
 
-    # Process dispute results
     dispute_resolved = 0
     for j in dispute_judgments:
         old_fid = j["old_fact_id"]
@@ -2424,7 +2598,7 @@ async def run_async():
                 pass
 
     # ── Round 2: classify_observations (needs observations + profile) ──
-    current_profile = await asyncio.to_thread(load_full_current_profile)
+    current_profile = await asyncio.to_thread(load_full_current_profile, True)
 
     def _find_fact(fid) -> dict | None:
         if not fid:
@@ -2436,6 +2610,7 @@ async def run_async():
 
     changed_items = []
     new_fact_count = 0
+    affected_fact_ids = set()  # 增量 cross_verify / resolve_disputes 用
 
     if all_observations:
         # Dynamic range for classify_observations
@@ -2478,6 +2653,20 @@ async def run_async():
         contradictions = [c for c in classifications if c.get("action") == "contradict"]
         evidence_against_list = [c for c in classifications if c.get("action") == "evidence_against"]
         new_obs_cls = [c for c in classifications if c.get("action") == "new"]
+
+        # 收集本轮受影响的 fact_id（供增量 cross_verify / resolve_disputes）
+        for s in supports:
+            fid = s.get("fact_id")
+            if fid:
+                affected_fact_ids.add(fid)
+        for c in contradictions:
+            fid = c.get("fact_id")
+            if fid:
+                affected_fact_ids.add(fid)
+        for ea in evidence_against_list:
+            fid = ea.get("fact_id")
+            if fid:
+                affected_fact_ids.add(fid)
 
         for s in supports:
             fact = _find_fact(s.get("fact_id"))
@@ -2536,7 +2725,7 @@ async def run_async():
                             _src_obs = _cnt
                             break
                     _evidence = [{"observation": _src_obs}] if _src_obs else None
-                    save_profile_fact(
+                    fact_id = save_profile_fact(
                         category=nf["category"],
                         subject=nf["subject"],
                         value=value,
@@ -2546,6 +2735,8 @@ async def run_async():
                         start_time=_new_batch_time,
                     )
                     new_fact_count += 1
+                    if fact_id:
+                        affected_fact_ids.add(fact_id)
                     changed_items.append({
                         "change_type": "new",
                         "category": nf["category"],
@@ -2575,7 +2766,7 @@ async def run_async():
                 _evidence_entry = {"reason": c.get("reason", "")}
                 if _obs.get("content"):
                     _evidence_entry["observation"] = _obs["content"]
-                save_profile_fact(
+                new_id = save_profile_fact(
                     category=fact["category"],
                     subject=fact["subject"],
                     value=new_val,
@@ -2585,6 +2776,8 @@ async def run_async():
                     start_time=_obs_time,
                 )
                 contradict_count += 1
+                if new_id:
+                    affected_fact_ids.add(new_id)
                 changed_items.append({
                     "change_type": "contradict",
                     "category": fact["category"],
@@ -2626,7 +2819,7 @@ async def run_async():
     # ── Round 5: user_model + trajectory in PARALLEL ──
     async def _do_user_model():
         if all_convs:
-            profile_for_model = await asyncio.to_thread(load_full_current_profile)
+            profile_for_model = await asyncio.to_thread(load_full_current_profile, True)
             model_profile, _ = prepare_profile(
                 profile_for_model, query_text=obs_query, max_entries=20,
                 language=language,
@@ -2666,12 +2859,12 @@ async def run_async():
         elif sessions_since_update >= 10:
             should_update = True
         if not trajectory:
-            cp = await asyncio.to_thread(load_full_current_profile)
+            cp = await asyncio.to_thread(load_full_current_profile, True)
             if cp:
                 should_update = True
 
         if should_update:
-            cp = await asyncio.to_thread(load_full_current_profile)
+            cp = await asyncio.to_thread(load_full_current_profile, True)
             if cp:
                 result = await generate_trajectory_summary_async(
                     cp, config, new_observations=all_observations
@@ -2705,7 +2898,7 @@ async def run_async():
 
     # Generate memory snapshot
     try:
-        final_profile = await asyncio.to_thread(load_full_current_profile)
+        final_profile = await asyncio.to_thread(load_full_current_profile, True)
         snapshot_text = format_profile_text(
             final_profile, max_entries=40, detail="full", language=language,
         )

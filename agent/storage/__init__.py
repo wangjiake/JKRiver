@@ -1334,18 +1334,21 @@ def load_confirmed_profile() -> list[dict]:
     finally:
         conn.close()
 
-def load_full_current_profile() -> list[dict]:
+def load_full_current_profile(exclude_superseded: bool = False) -> list[dict]:
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            where = "WHERE end_time IS NULL AND rejected = false AND human_end_time IS NULL"
+            if exclude_superseded:
+                where += " AND superseded_by IS NULL"
             cur.execute(
-                "SELECT id, category, subject, value, layer, source_type, "
-                "start_time, decay_days, expires_at, evidence, mention_count, "
-                "created_at, updated_at, confirmed_at, superseded_by, supersedes "
-                "FROM user_profile "
-                "WHERE end_time IS NULL AND rejected = false AND human_end_time IS NULL "
-                "ORDER BY CASE layer WHEN 'confirmed' THEN 1 WHEN 'suspected' THEN 2 END, "
-                "category, subject"
+                f"SELECT id, category, subject, value, layer, source_type, "
+                f"start_time, decay_days, expires_at, evidence, mention_count, "
+                f"created_at, updated_at, confirmed_at, superseded_by, supersedes "
+                f"FROM user_profile "
+                f"{where} "
+                f"ORDER BY CASE layer WHEN 'confirmed' THEN 1 WHEN 'suspected' THEN 2 END, "
+                f"category, subject"
             )
             return list(cur.fetchall())
     finally:

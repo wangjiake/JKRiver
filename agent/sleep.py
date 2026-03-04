@@ -27,6 +27,7 @@ from agent.storage import (
     load_active_events,
     save_or_update_relationship, load_relationships,
     save_memory_snapshot,
+    save_fact_edge, load_fact_edges, delete_fact_edges_for,
 )
 from agent.utils.profile_filter import prepare_profile, format_profile_text
 
@@ -128,6 +129,7 @@ def _consolidate_profile():
             if old_evidence and isinstance(old_evidence, list):
                 add_evidence(keeper["id"], {"merged_from": old["id"]})
             close_time_period(old["id"])
+            delete_fact_edges_for(old["id"])
 
 
 _MATURITY_TIERS = [
@@ -1663,6 +1665,83 @@ async def resolve_disputes_with_llm_async(disputed_pairs: list[dict], config: di
     return rule_results + [r for r in results if r is not None]
 
 
+def extract_fact_edges(affected_fact_ids: set[int], current_profile: list[dict],
+                       config: dict) -> list[dict]:
+    if not affected_fact_ids:
+        return []
+    llm_config = config.get("llm", {})
+    language = config.get("language", "zh")
+    L = get_labels("context.labels", language)
+    prompt_text = get_prompt("sleep.extract_fact_edges", language)
+
+    profile_map = {p["id"]: p for p in current_profile if p.get("id")}
+    valid_ids = set(profile_map.keys())
+
+    affected_facts = [profile_map[fid] for fid in affected_fact_ids if fid in profile_map]
+    if not affected_facts:
+        return []
+
+    affected_text = "\n".join(
+        f"  id={p['id']} [{p['category']}] {p['subject']}: {p['value']}"
+        for p in affected_facts
+    )
+
+    context_profile = sorted(current_profile, key=lambda p: p.get("updated_at") or "", reverse=True)[:60]
+    profile_text = "\n".join(
+        f"  id={p['id']} [{p['category']}] {p['subject']}: {p['value']}"
+        for p in context_profile if p.get("id")
+    )
+
+    existing_edges = load_fact_edges(list(affected_fact_ids))
+    edges_text = ""
+    if existing_edges:
+        edges_text = "\n".join(
+            f"  {e['source_fact_id']}({e.get('src_category','')}/{e.get('src_subject','')}) "
+            f"--[{e['edge_type']}]--> "
+            f"{e['target_fact_id']}({e.get('tgt_category','')}/{e.get('tgt_subject','')}): "
+            f"{e.get('description', '')}"
+            for e in existing_edges[:20]
+        )
+
+    user_content = (
+        f"{L['new_changed_facts']}:\n{affected_text}\n\n"
+        f"{L['existing_profile_facts']}:\n{profile_text}\n\n"
+        f"{L['existing_edges']}:\n{edges_text or '(none)'}\n"
+    )
+
+    messages = [
+        {"role": "system", "content": prompt_text},
+        {"role": "user", "content": user_content},
+    ]
+
+    raw = call_llm(messages, llm_config)
+    edges = _parse_json_array(raw)
+
+    saved = []
+    for e in edges:
+        if not isinstance(e, dict):
+            continue
+        src = e.get("source_id")
+        tgt = e.get("target_id")
+        etype = e.get("edge_type", "")
+        if not src or not tgt or not etype or src == tgt:
+            continue
+        if src not in valid_ids or tgt not in valid_ids:
+            continue
+        if etype not in ("causes", "related_to", "contradicts", "temporal_sequence", "supports", "part_of"):
+            continue
+        desc = e.get("description", "")
+        conf = min(1.0, max(0.0, float(e.get("confidence", 0.8))))
+        save_fact_edge(src, tgt, etype, desc, conf)
+        saved.append(e)
+    return saved
+
+
+async def extract_fact_edges_async(affected_fact_ids: set[int], current_profile: list[dict],
+                                    config: dict) -> list[dict]:
+    return await asyncio.to_thread(extract_fact_edges, affected_fact_ids, current_profile, config)
+
+
 async def generate_trajectory_summary_async(current_profile: list[dict],
                                              config: dict,
                                              new_observations: list[dict] | None = None) -> dict:
@@ -1740,9 +1819,12 @@ def run():
     language = config.get("language", "zh")
     L = get_labels("context.labels", language)
 
+    MAX_SESSIONS_PER_RUN = 20
     session_convs = get_unprocessed_conversations()
     if not session_convs:
         return
+    if len(session_convs) > MAX_SESSIONS_PER_RUN:
+        session_convs = dict(list(session_convs.items())[:MAX_SESSIONS_PER_RUN])
 
     total_msgs = sum(len(msgs) for msgs in session_convs.values())
 
@@ -2118,12 +2200,8 @@ def run():
     else:
         pass
 
-    # 增量：只验证本轮受影响的 facts
-    all_suspected = load_suspected_profile()
-    if affected_fact_ids:
-        suspected_facts = [f for f in all_suspected if f["id"] in affected_fact_ids]
-    else:
-        suspected_facts = all_suspected
+    # cross-verify suspected facts
+    suspected_facts = load_suspected_profile()
     confirmed_count = 0
 
     if suspected_facts:
@@ -2140,18 +2218,13 @@ def run():
 
             if action == "confirm":
                 confirm_profile_fact(f["id"], reference_time=latest_conv_time)
+                affected_fact_ids.add(f["id"])
                 confirmed_count += 1
             else:
                 pass
 
-    # 增量：只处理本轮受影响的 disputes
-    all_disputed = load_disputed_facts()
-    if affected_fact_ids:
-        disputed_pairs = [p for p in all_disputed
-                          if p["old"]["id"] in affected_fact_ids
-                          or p["new"]["id"] in affected_fact_ids]
-    else:
-        disputed_pairs = all_disputed
+    # resolve disputes
+    disputed_pairs = load_disputed_facts()
     dispute_resolved = 0
     if disputed_pairs:
         judgments = resolve_disputes_with_llm(disputed_pairs, config, trajectory=trajectory)
@@ -2163,15 +2236,27 @@ def run():
 
             if action == "accept_new":
                 resolve_dispute(old_fid, new_fid, accept_new=True, resolution_time=latest_conv_time)
+                delete_fact_edges_for(old_fid)
+                affected_fact_ids.add(new_fid)
                 dispute_resolved += 1
             elif action == "reject_new":
                 resolve_dispute(old_fid, new_fid, accept_new=False, resolution_time=latest_conv_time)
+                delete_fact_edges_for(new_fid)
+                affected_fact_ids.add(old_fid)
                 dispute_resolved += 1
             else:
                 pass
 
     else:
         pass
+
+    # Extract fact edges (knowledge network)
+    if affected_fact_ids:
+        try:
+            edge_profile = load_full_current_profile()
+            extract_fact_edges(affected_fact_ids, edge_profile, config)
+        except Exception:
+            pass
 
     expired_facts = get_expired_facts(reference_time=latest_conv_time)
     stale_count = 0
@@ -2182,6 +2267,7 @@ def run():
             subj = f["subject"]
 
             close_time_period(fact_id, end_time=latest_conv_time)
+            delete_fact_edges_for(fact_id)
             try:
                 save_strategy(
                     hypothesis_category=cat,
@@ -2235,7 +2321,8 @@ def run():
             current_profile_for_model, query_text=obs_query, max_entries=20,
             language=language,
         )
-        model_results = analyze_user_model(all_convs, config,
+        model_convs = all_convs[-50:] if len(all_convs) > 50 else all_convs
+        model_results = analyze_user_model(model_convs, config,
                                            current_profile=model_profile)
         for m in model_results:
             upsert_user_model(
@@ -2325,6 +2412,19 @@ def run():
             rel_lines = [f"  {r['relation']}: {r.get('name', '?')}" for r in snapshot_relationships[:10]]
             snapshot_text += f"\n\n{L['section_relationships']}\n" + "\n".join(rel_lines)
 
+        snapshot_edges = load_fact_edges(
+            [p["id"] for p in final_profile if p.get("id")]
+        ) if final_profile else []
+        if snapshot_edges:
+            edge_lines = [
+                f"  [{e.get('src_category','')}/{e.get('src_subject','')}] "
+                f"--[{e['edge_type']}]--> "
+                f"[{e.get('tgt_category','')}/{e.get('tgt_subject','')}]: "
+                f"{e.get('description', '')}"
+                for e in snapshot_edges[:15]
+            ]
+            snapshot_text += f"\n\n{L['section_knowledge_network']}\n" + "\n".join(edge_lines)
+
         save_memory_snapshot(snapshot_text, profile_count=len(final_profile))
     except Exception:
         pass
@@ -2337,14 +2437,23 @@ def run():
     except Exception as e:
         pass
 
+    try:
+        from agent.utils.clustering import cluster_memories
+        cluster_memories(config)
+    except Exception:
+        pass
+
 async def run_async():
     config = load_config()
     language = config.get("language", "zh")
     L = get_labels("context.labels", language)
 
+    MAX_SESSIONS_PER_RUN = 20
     session_convs = await asyncio.to_thread(get_unprocessed_conversations)
     if not session_convs:
         return
+    if len(session_convs) > MAX_SESSIONS_PER_RUN:
+        session_convs = dict(list(session_convs.items())[:MAX_SESSIONS_PER_RUN])
 
     total_msgs = sum(len(msgs) for msgs in session_convs.values())
 
@@ -2497,29 +2606,20 @@ async def run_async():
                 except Exception:
                     pass
 
-    # 增量 cross_verify / resolve_disputes（classify 之后，用 affected_fact_ids 过滤）
+    # cross_verify / resolve_disputes
     _all_conv_times = [o["_conv_time"] for o in all_observations if o.get("_conv_time")]
     if not _all_conv_times:
         _all_conv_times = [c["user_input_at"] for c in all_convs if c.get("user_input_at")]
     latest_conv_time = max(_all_conv_times) if _all_conv_times else None
 
-    if affected_fact_ids:
-        inc_suspected = [f for f in suspected_facts if f["id"] in affected_fact_ids]
-        inc_disputed = [p for p in disputed_pairs
-                        if p["old"]["id"] in affected_fact_ids
-                        or p["new"]["id"] in affected_fact_ids]
-    else:
-        inc_suspected = suspected_facts
-        inc_disputed = disputed_pairs
-
     async def _do_cross_verify():
-        if inc_suspected:
-            return await cross_verify_suspected_facts_async(inc_suspected, config, trajectory=trajectory)
+        if suspected_facts:
+            return await cross_verify_suspected_facts_async(suspected_facts, config, trajectory=trajectory)
         return []
 
     async def _do_resolve_disputes():
-        if inc_disputed:
-            return await resolve_disputes_with_llm_async(inc_disputed, config, trajectory=trajectory)
+        if disputed_pairs:
+            return await resolve_disputes_with_llm_async(disputed_pairs, config, trajectory=trajectory)
         return []
 
     verify_judgments, dispute_judgments = await asyncio.gather(
@@ -2528,26 +2628,33 @@ async def run_async():
     )
 
     confirmed_count = 0
+    confirm_affected_ids = set()
     if verify_judgments:
         judgment_map = {j["fact_id"]: j for j in verify_judgments}
-        for f in inc_suspected:
+        for f in suspected_facts:
             j = judgment_map.get(f["id"])
             if not j:
                 continue
             if j["action"] == "confirm":
                 confirm_profile_fact(f["id"], reference_time=latest_conv_time)
+                confirm_affected_ids.add(f["id"])
                 confirmed_count += 1
 
     dispute_resolved = 0
+    dispute_affected_ids = set()
     for j in dispute_judgments:
         old_fid = j["old_fact_id"]
         new_fid = j["new_fact_id"]
         action = j["action"]
         if action == "accept_new":
             resolve_dispute(old_fid, new_fid, accept_new=True, resolution_time=latest_conv_time)
+            delete_fact_edges_for(old_fid)
+            dispute_affected_ids.add(new_fid)
             dispute_resolved += 1
         elif action == "reject_new":
             resolve_dispute(old_fid, new_fid, accept_new=False, resolution_time=latest_conv_time)
+            delete_fact_edges_for(new_fid)
+            dispute_affected_ids.add(old_fid)
             dispute_resolved += 1
 
     # Maturity decay (pure math, no LLM)
@@ -2584,6 +2691,7 @@ async def run_async():
     if expired_facts:
         for f in expired_facts:
             close_time_period(f["id"], end_time=latest_conv_time)
+            delete_fact_edges_for(f["id"])
             try:
                 save_strategy(
                     hypothesis_category=f["category"],
@@ -2611,6 +2719,8 @@ async def run_async():
     changed_items = []
     new_fact_count = 0
     affected_fact_ids = set()  # 增量 cross_verify / resolve_disputes 用
+    affected_fact_ids.update(dispute_affected_ids)
+    affected_fact_ids.update(confirm_affected_ids)
 
     if all_observations:
         # Dynamic range for classify_observations
@@ -2824,7 +2934,8 @@ async def run_async():
                 profile_for_model, query_text=obs_query, max_entries=20,
                 language=language,
             )
-            return await analyze_user_model_async(all_convs, config,
+            model_convs = all_convs[-50:] if len(all_convs) > 50 else all_convs
+            return await analyze_user_model_async(model_convs, config,
                                                   current_profile=model_profile)
         return []
 
@@ -2892,6 +3003,14 @@ async def run_async():
         except Exception:
             pass
 
+    # Extract fact edges (knowledge network)
+    if affected_fact_ids:
+        try:
+            edge_profile = await asyncio.to_thread(load_full_current_profile)
+            await extract_fact_edges_async(affected_fact_ids, edge_profile, config)
+        except Exception:
+            pass
+
     # Profile dedup consolidation (only when new facts created or disputes resolved)
     if new_fact_count > 0 or dispute_resolved > 0:
         await asyncio.to_thread(_consolidate_profile)
@@ -2918,6 +3037,20 @@ async def run_async():
             rel_lines = [f"  {r['relation']}: {r.get('name', '?')}" for r in snapshot_relationships[:10]]
             snapshot_text += f"\n\n{L['section_relationships']}\n" + "\n".join(rel_lines)
 
+        snapshot_edges = await asyncio.to_thread(
+            load_fact_edges,
+            [p["id"] for p in final_profile if p.get("id")]
+        ) if final_profile else []
+        if snapshot_edges:
+            edge_lines = [
+                f"  [{e.get('src_category','')}/{e.get('src_subject','')}] "
+                f"--[{e['edge_type']}]--> "
+                f"[{e.get('tgt_category','')}/{e.get('tgt_subject','')}]: "
+                f"{e.get('description', '')}"
+                for e in snapshot_edges[:15]
+            ]
+            snapshot_text += f"\n\n{L['section_knowledge_network']}\n" + "\n".join(edge_lines)
+
         await asyncio.to_thread(save_memory_snapshot, snapshot_text, len(final_profile))
     except Exception:
         pass
@@ -2929,6 +3062,12 @@ async def run_async():
     try:
         from agent.utils.embedding import embed_all_memories
         await asyncio.to_thread(embed_all_memories, config)
+    except Exception:
+        pass
+
+    try:
+        from agent.utils.clustering import cluster_memories
+        await asyncio.to_thread(cluster_memories, config)
     except Exception:
         pass
 

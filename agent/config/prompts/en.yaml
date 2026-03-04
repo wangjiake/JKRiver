@@ -367,6 +367,13 @@ sleep.classify_observations: |
   - category="residence city" ("moved to XX", "renting in XX", "started working at XX") → if profile has category="residence city" then contradict; if not, classify as new — never contradict birthplace
   - "job title" should only store the position name (e.g., "assistant architect", "design manager"), not the city name
 
+  Semantic matching (important! Don't just match literally — understand the attribute implied by a behavior):
+  - "cleaning glasses" "wiping lenses" → support existing vision/glasses-related fact
+  - "eating in Ueno" "went to Akihabara" → support existing "city: Tokyo" fact
+  - "counting calories" "weighing food" → support existing diet/weight-loss fact
+  - "discussing Japanese vocabulary" → support existing Japanese language fact
+  - When a behavior implies an attribute that semantically relates to an existing fact, classify as support, not new
+
   Pay attention to chronological order: observations are sorted by session time — newer ones represent the current state.
 
   Important: Every observation must have a classification result (including irrelevant) — do not skip any.
@@ -403,6 +410,14 @@ sleep.create_hypotheses: |
   - Temporary instructions ("translate this" "format this JSON")
   - Others' information, plans/wishes, unconfirmed opinions
   - value starting with "asking about" "learning about" "what is" → describes behavior, not an attribute
+  - Daily metric fluctuations (today's weight XX, today's body fat XX) → don't create new facts each time, should be support in classify stage
+
+  ═══ Behavior → Attribute inference (important!) ═══
+  When an observation describes a behavior, extract the lasting attribute implied, not the behavior itself:
+  - "user cleaned their glasses" → category="physical" subject="vision" value="wears glasses"
+  - "user spoke Japanese at convenience store" → category="language" subject="Japanese" value="daily conversation level"
+  - "user discussed gym equipment" → category="fitness" subject="exercise" value="gym strength training"
+  - "user calculated calories" → don't create (should support existing diet/weight-loss fact in classify)
 
   ═══ Format rules ═══
   - category must be a broad top-level classification (e.g. health, career, diet, residence). Put specific aspects in subject, not category.
@@ -599,6 +614,45 @@ sleep.behavioral_pattern: |
   Output:
   [{"pattern_type": "geographic concentration", "category": "location", "subject": "residence", "inferred_value": "Shenzhen", "evidence_count": 3, "evidence_summary": "Mentioned Shenzhen's Xichong, Nanshan, and Dameisha in the last 3 sessions"}]
   If no patterns are found, return []
+
+sleep.extract_fact_edges: |
+  You will receive:
+  1. Newly added/changed facts (affected facts from this round)
+  2. Current user profile (up to 60 entries)
+  3. Existing knowledge edges (fact_edges)
+
+  Task: Discover relationships between facts and output new edges.
+
+  ═══ Edge Types ═══
+  - causes: A led to B (e.g., "moved to Tokyo" causes "learning Japanese")
+  - related_to: A and B are related but no causation (e.g., "likes fishing" related_to "likes outdoors")
+  - contradicts: A and B conflict (e.g., "lives in Tokyo" contradicts "lives in Osaka")
+  - temporal_sequence: A happened before B (e.g., "graduated" temporal_sequence "started job")
+  - supports: A supports the credibility of B (e.g., "mentioned Beijing subway" supports "lives in Beijing")
+  - part_of: A is part of B (e.g., "learning Python" part_of "learning programming")
+
+  Rules:
+  - Only output edges involving new/changed facts; don't create edges between existing-only facts
+  - Don't repeat existing edges
+  - Each edge must have a reasonable explanation (description)
+  - confidence: 0.5~1.0, higher means more certain
+  - Maximum 15 edges
+
+  Output:
+  [{"source_id": 123, "target_id": 456, "edge_type": "causes", "description": "Started learning Japanese after moving to Tokyo", "confidence": 0.9}]
+  If no relationships found, return []
+
+sleep.cluster_themes: |
+  You will receive several memory clusters, each containing representative text snippets.
+  Task: Generate a short theme label for each cluster.
+
+  Rules:
+  - Theme labels should be 5-15 words summarizing the cluster's core content
+  - Output in the user's language
+  - Don't fabricate content; base only on given text
+
+  Output:
+  [{"cluster_index": 0, "theme": "Tokyo life and commuting"}]
 
 # ── tools ──────────────────────────────────────────────────────
 
@@ -842,6 +896,11 @@ context.labels:
   section_trajectory: "[Trajectory (internal reference, do not mention directly)]"
   section_trajectory_divergence: "[Trajectory Divergence Analysis (internal reference, absolutely do not mention, follow the user completely)]"
   section_vector_search: "[Semantic Memory Matches]"
+  section_knowledge_network: "[Knowledge Network (fact relationships, internal reference)]"
+  section_cluster_themes: "[Memory Cluster Themes]"
+  new_changed_facts: "New/Changed Facts"
+  existing_profile_facts: "Existing Profile Facts"
+  existing_edges: "Existing Edges"
   ended: "ended"
   until_now: "to present"
   current_tag: "current"

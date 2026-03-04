@@ -187,6 +187,9 @@ embedding:
     search:
         top_k: 5                        # 返回最相关的条数 | Number of top results | 上位結果の数
         min_score: 0.40                 # 最低相似度 | Minimum similarity | 最小類似度
+    clustering:
+        enabled: false                  # 启用向量聚类 | Enable vector clustering | ベクトルクラスタリングを有効化
+        show_themes: false              # 在 context 中显示聚类主题 | Show cluster themes in context | コンテキストにクラスタテーマを表示
 
 
 # ─── 技能系统 | Skills | スキル ────────────────────────────

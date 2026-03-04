@@ -1236,8 +1236,11 @@ def add_evidence(fact_id: int, evidence_entry: dict, reference_time=None):
             row = cur.fetchone()
             if not row:
                 return
+            MAX_EVIDENCE = 10
             cur_evidence = row[0] if row[0] else []
             cur_evidence.append(evidence_entry)
+            if len(cur_evidence) > MAX_EVIDENCE:
+                cur_evidence = cur_evidence[-MAX_EVIDENCE:]
             cur.execute(
                 "UPDATE user_profile SET evidence = %s, updated_at = %s "
                 "WHERE id = %s",
@@ -1355,12 +1358,15 @@ def load_full_current_profile(exclude_superseded: bool = False) -> list[dict]:
         conn.close()
 
 def load_timeline(category: str | None = None,
-                  subject: str | None = None) -> list[dict]:
+                  subject: str | None = None,
+                  include_rejected: bool = False) -> list[dict]:
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             conditions = []
             params: list = []
+            if not include_rejected:
+                conditions.append("rejected = FALSE")
             if category:
                 conditions.append("category = %s")
                 params.append(category)
@@ -2576,5 +2582,88 @@ def load_memory_snapshot() -> dict | None:
                 return None
             row = cur.fetchone()
             return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def save_fact_edge(source_fact_id: int, target_fact_id: int,
+                   edge_type: str, description: str = "",
+                   confidence: float = 0.8) -> int:
+    now = get_now()
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO fact_edges "
+                "(source_fact_id, target_fact_id, edge_type, description, confidence, created_at, updated_at) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s) "
+                "ON CONFLICT (source_fact_id, target_fact_id, edge_type) DO UPDATE "
+                "SET description = EXCLUDED.description, confidence = EXCLUDED.confidence, "
+                "updated_at = EXCLUDED.updated_at "
+                "RETURNING id",
+                (source_fact_id, target_fact_id, edge_type, description, confidence, now, now),
+            )
+            row = cur.fetchone()
+            edge_id = row[0] if row else -1
+        conn.commit()
+        return edge_id
+    except Exception:
+        conn.rollback()
+        return -1
+    finally:
+        conn.close()
+
+
+def load_fact_edges(fact_ids: list[int] | None = None) -> list[dict]:
+    conn = get_db_connection()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            try:
+                if fact_ids:
+                    cur.execute(
+                        "SELECT fe.id, fe.source_fact_id, fe.target_fact_id, "
+                        "fe.edge_type, fe.description, fe.confidence, "
+                        "src.category AS src_category, src.subject AS src_subject, "
+                        "tgt.category AS tgt_category, tgt.subject AS tgt_subject "
+                        "FROM fact_edges fe "
+                        "JOIN user_profile src ON fe.source_fact_id = src.id "
+                        "JOIN user_profile tgt ON fe.target_fact_id = tgt.id "
+                        "WHERE fe.source_fact_id = ANY(%s) OR fe.target_fact_id = ANY(%s) "
+                        "ORDER BY fe.confidence DESC, fe.updated_at DESC",
+                        (fact_ids, fact_ids),
+                    )
+                else:
+                    cur.execute(
+                        "SELECT fe.id, fe.source_fact_id, fe.target_fact_id, "
+                        "fe.edge_type, fe.description, fe.confidence, "
+                        "src.category AS src_category, src.subject AS src_subject, "
+                        "tgt.category AS tgt_category, tgt.subject AS tgt_subject "
+                        "FROM fact_edges fe "
+                        "JOIN user_profile src ON fe.source_fact_id = src.id "
+                        "JOIN user_profile tgt ON fe.target_fact_id = tgt.id "
+                        "ORDER BY fe.confidence DESC, fe.updated_at DESC "
+                        "LIMIT 50"
+                    )
+                return [dict(r) for r in cur.fetchall()]
+            except Exception:
+                conn.rollback()
+                return []
+    finally:
+        conn.close()
+
+
+def delete_fact_edges_for(fact_id: int):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            try:
+                cur.execute(
+                    "DELETE FROM fact_edges WHERE source_fact_id = %s OR target_fact_id = %s",
+                    (fact_id, fact_id),
+                )
+            except Exception:
+                conn.rollback()
+                return
+        conn.commit()
     finally:
         conn.close()

@@ -15,6 +15,7 @@ from agent.storage import (
     load_trajectory_summary,
     load_relationships,
     load_memory_snapshot,
+    load_fact_edges,
 )
 from agent.utils.profile_filter import format_profile_text
 from agent.tools import ToolRegistry
@@ -211,6 +212,22 @@ def build_memory_context(perception: dict,
             traj_lines.append(f"  {L['momentum']}: {trajectory_data['recent_momentum']}")
         memory_parts.append(L["section_trajectory"] + "\n" + "\n".join(traj_lines))
 
+    if full_profile:
+        try:
+            profile_ids = [p["id"] for p in full_profile if p.get("id")]
+            fact_edges = load_fact_edges(profile_ids)
+            if fact_edges:
+                edge_lines = [
+                    f"  [{e.get('src_category','')}/{e.get('src_subject','')}] "
+                    f"--[{e['edge_type']}]--> "
+                    f"[{e.get('tgt_category','')}/{e.get('tgt_subject','')}]: "
+                    f"{e.get('description', '')}"
+                    for e in fact_edges[:15]
+                ]
+                memory_parts.append(L["section_knowledge_network"] + "\n" + "\n".join(edge_lines))
+        except Exception:
+            pass
+
     if config and config.get("embedding", {}).get("enabled"):
         try:
             from agent.utils.embedding import vector_search
@@ -242,6 +259,19 @@ def build_memory_context(perception: dict,
                             for r in unique_results
                         ]
                         memory_parts.append(L["section_vector_search"] + "\n" + "\n".join(vs_lines))
+        except Exception:
+            pass
+
+    if config and config.get("embedding", {}).get("clustering", {}).get("show_themes"):
+        try:
+            from agent.utils.clustering import load_cluster_themes
+            cluster_themes = load_cluster_themes()
+            if cluster_themes:
+                theme_lines = [
+                    f"  [{t['member_count']} memories] {t['theme']}"
+                    for t in cluster_themes
+                ]
+                memory_parts.append(L["section_cluster_themes"] + "\n" + "\n".join(theme_lines))
         except Exception:
             pass
 

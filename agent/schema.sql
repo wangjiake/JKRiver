@@ -425,4 +425,31 @@ CREATE TABLE IF NOT EXISTS memory_snapshot (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS fact_edges (
+    id SERIAL PRIMARY KEY,
+    source_fact_id INTEGER NOT NULL REFERENCES user_profile(id) ON DELETE CASCADE,
+    target_fact_id INTEGER NOT NULL REFERENCES user_profile(id) ON DELETE CASCADE,
+    edge_type VARCHAR(32) NOT NULL,
+    description TEXT,
+    confidence FLOAT DEFAULT 0.8,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(source_fact_id, target_fact_id, edge_type)
+);
+CREATE INDEX IF NOT EXISTS idx_fe_source ON fact_edges(source_fact_id);
+CREATE INDEX IF NOT EXISTS idx_fe_target ON fact_edges(target_fact_id);
+
+CREATE TABLE IF NOT EXISTS memory_clusters (
+    id SERIAL PRIMARY KEY,
+    cluster_index INTEGER NOT NULL,
+    theme TEXT,
+    centroid JSONB NOT NULL,
+    member_ids JSONB NOT NULL DEFAULT '[]',
+    member_count INTEGER DEFAULT 0,
+    representative_text TEXT,
+    embeddings_hash VARCHAR(64),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 COMMIT;

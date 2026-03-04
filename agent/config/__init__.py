@@ -42,6 +42,9 @@ def load_config(path: str = None) -> dict:
     emb.setdefault("search", {})
     emb["search"].setdefault("top_k", 5)
     emb["search"].setdefault("min_score", 0.40)
+    emb.setdefault("clustering", {})
+    emb["clustering"].setdefault("enabled", False)
+    emb["clustering"].setdefault("show_themes", False)
 
     if "skills" not in raw:
         raw["skills"] = {"enabled": True}

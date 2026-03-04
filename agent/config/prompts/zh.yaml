@@ -368,6 +368,13 @@ sleep.classify_observations: |
   - category="居住城市"（"搬到XX""在XX租房""到XX入职"）→ 如果画像有 category="居住城市" 则 contradict；如果没有则归为 new，绝不 contradict 出生地
   - "职位"只存岗位名称（如"助理建筑师""设计管理"），不要存城市名
 
+  语义匹配（重要！不要只做字面匹配，要理解行为背后暗示的属性）：
+  - "清洗眼镜""擦眼镜" → support 已有的视力/近视/眼镜相关 fact
+  - "在上野吃饭""去秋叶原" → support 已有的"居住城市: 东京"
+  - "计算卡路里""称体重" → support 已有的减脂/饮食管理 fact
+  - "讨论日语词汇" → support 已有的日语学习/语言 fact
+  - 行为暗示的属性与已有 fact 语义相关时，优先判定为 support，而非 new
+
   注意时间顺序：观察按会话时间排序，越新越代表当前状态。
 
   重要：每条观察都必须输出分类结果（包括 irrelevant），不允许跳过任何一条。
@@ -404,6 +411,14 @@ sleep.create_hypotheses: |
   - 对话中的临时指令（"帮我翻译这段""格式化这个JSON"）
   - 他人信息、计划/愿望、未确认的观点/立场
   - value 以"询问""了解""什么是"开头 → 这描述的是行为，不是属性
+  - 每日数值波动（今天体重XX、今天体脂XX）→ 不要每次创建新 fact，应在 classify 阶段 support 已有记录
+
+  ═══ 行为→属性推断（重要！）═══
+  观察描述的是行为时，提取行为背后暗示的持久属性，不要记录行为本身：
+  - "用户清洗眼镜" → category="身体特征" subject="视力" value="戴眼镜"
+  - "用户在便利店用日语交流" → category="语言" subject="日语水平" value="具备日常会话能力"
+  - "用户讨论健身房器械" → category="健身" subject="运动方式" value="健身房力量训练"
+  - "用户计算卡路里" → 不创建（应在 classify 中 support 已有的饮食/减脂 fact）
 
   ═══ 格式规则 ═══
   - category 用最宽泛的人物画像一级分类（如：健康、职业、饮食、居住），细分领域写在 subject 里。不要把二级分类写进 category。
@@ -600,6 +615,45 @@ sleep.behavioral_pattern: |
   输出：
   [{"pattern_type": "地理集中", "category": "位置", "subject": "居住地", "inferred_value": "深圳", "evidence_count": 3, "evidence_summary": "近3个会话提到深圳的西涌、南山、大梅沙"}]
   没有发现模式返回 []
+
+sleep.extract_fact_edges: |
+  你会收到：
+  1. 新增/变更的事实列表（本轮受影响的事实）
+  2. 用户当前画像（最多60条）
+  3. 已有的知识边（fact_edges）
+
+  任务：发现事实之间的关联，输出新的边。
+
+  ═══ 边类型 ═══
+  - causes: A 导致 B（如"搬到东京" causes "学日语"）
+  - related_to: A 和 B 相关但无因果（如"喜欢钓鱼" related_to "喜欢户外"）
+  - contradicts: A 和 B 矛盾（如"住东京" contradicts "住大阪"）
+  - temporal_sequence: A 在 B 之前发生（如"毕业" temporal_sequence "入职"）
+  - supports: A 支持 B 的可信度（如"提到北京地铁" supports "住北京"）
+  - part_of: A 是 B 的一部分（如"学Python" part_of "学编程"）
+
+  规则：
+  - 只输出涉及新增/变更事实的边，不要给已有事实之间建新边
+  - 已有边不要重复输出
+  - 每条边必须有合理解释（description）
+  - confidence: 0.5~1.0，越确定越高
+  - 最多输出15条边
+
+  输出：
+  [{"source_id": 123, "target_id": 456, "edge_type": "causes", "description": "搬到东京后开始学日语", "confidence": 0.9}]
+  没有发现关联返回 []
+
+sleep.cluster_themes: |
+  你会收到若干记忆聚类，每个聚类包含代表性文本片段。
+  任务：为每个聚类生成简短的主题标签。
+
+  规则：
+  - 主题标签5-15个字，概括该聚类的核心内容
+  - 用中文输出
+  - 不要编造内容，只基于给定文本
+
+  输出：
+  [{"cluster_index": 0, "theme": "东京生活与通勤"}]
 
 # ── tools ──────────────────────────────────────────────────────
 
@@ -843,6 +897,11 @@ context.labels:
   section_trajectory: "【人物轨迹（内部参考，不要直接提及）】"
   section_trajectory_divergence: "【轨迹偏离分析（内部参考，当场绝对不提，完全顺着用户）】"
   section_vector_search: "【语义关联记忆】"
+  section_knowledge_network: "【知识网络（事实间关联，内部参考）】"
+  section_cluster_themes: "【记忆主题聚类】"
+  new_changed_facts: "新增/变更的事实"
+  existing_profile_facts: "现有画像事实"
+  existing_edges: "已有知识边"
   ended: "已结束"
   until_now: "至今"
   current_tag: "当前"

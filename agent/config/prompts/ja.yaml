@@ -367,6 +367,13 @@ sleep.classify_observations: |
   - category="居住都市"（「XXに引っ越した」「XXで賃貸」「XXに入社した」）→ プロフィールに category="居住都市" があれば contradict、なければ new に分類し、出身地を contradict にしない
   - 「職位」には役職名のみ保存（例：「アシスタントアーキテクト」「デザインマネージャー」）、都市名は保存しない
 
+  意味的マッチング（重要！字面だけでなく、行動が暗示する属性を理解すること）：
+  - 「メガネを拭いている」→ 既存の視力/メガネ関連 fact を support
+  - 「上野で食事した」「秋葉原に行った」→ 既存の「居住都市: 東京」を support
+  - 「カロリーを計算」→ 既存のダイエット/食事管理 fact を support
+  - 「日本語の語彙を議論」→ 既存の日本語学習 fact を support
+  - 行動が暗示する属性が既存 fact と意味的に関連する場合、new ではなく support を優先
+
   時間順に注意：観察はセッションの時間順に並んでおり、新しいほど現在の状態を表す。
 
   重要：すべての観察に分類結果を出力すること（irrelevant を含む）。どの観察もスキップしないこと。
@@ -403,6 +410,14 @@ sleep.create_hypotheses: |
   - 会話中の一時的な指示（「これを翻訳して」「このJSONを整形して」）
   - 他人の情報、計画/願望、未確認の意見
   - valueが「質問」「調べ」「とは何か」で始まる → 行動の記述であり、属性ではない
+  - 毎日の数値変動（今日の体重XX、今日の体脂率XX）→ 毎回新しい fact を作成しない、classify 段階で既存記録を support
+
+  ═══ 行動→属性の推論（重要！）═══
+  観察が行動を記述している場合、行動そのものではなく、その行動が暗示する持続的な属性を抽出する：
+  - 「ユーザーがメガネを洗った」→ category="身体特徴" subject="視力" value="メガネ着用"
+  - 「ユーザーがコンビニで日本語で話した」→ category="言語" subject="日本語レベル" value="日常会話可能"
+  - 「ユーザーがジムの器具について話した」→ category="フィットネス" subject="運動方法" value="ジムで筋トレ"
+  - 「ユーザーがカロリーを計算した」→ 作成しない（classify で既存のダイエット fact を support）
 
   ═══ フォーマットルール ═══
   - category は最も広い一次分類を使う（例：健康、職業、食事、居住）。細分はsubjectに書く。二次分類をcategoryに入れない。
@@ -599,6 +614,45 @@ sleep.behavioral_pattern: |
   出力：
   [{"pattern_type": "地理的集中", "category": "位置", "subject": "居住地", "inferred_value": "大阪", "evidence_count": 3, "evidence_summary": "直近3セッションで大阪の難波、梅田、天王寺に言及"}]
   パターンが見つからなければ [] を返す
+
+sleep.extract_fact_edges: |
+  以下を受け取ります：
+  1. 新規/変更された事実リスト（今回影響を受けた事実）
+  2. ユーザーの現在のプロフィール（最大60件）
+  3. 既存のナレッジエッジ（fact_edges）
+
+  タスク：事実間の関連を発見し、新しいエッジを出力する。
+
+  ═══ エッジタイプ ═══
+  - causes: AがBを引き起こした（例：「東京に引っ越し」causes「日本語学習」）
+  - related_to: AとBは関連するが因果なし（例：「釣り好き」related_to「アウトドア好き」）
+  - contradicts: AとBが矛盾（例：「東京在住」contradicts「大阪在住」）
+  - temporal_sequence: AがBの前に発生（例：「卒業」temporal_sequence「就職」）
+  - supports: AがBの信頼性を支持（例：「北京の地下鉄に言及」supports「北京在住」）
+  - part_of: AはBの一部（例：「Python学習」part_of「プログラミング学習」）
+
+  ルール：
+  - 新規/変更事実に関わるエッジのみ出力、既存事実同士の新しいエッジは不要
+  - 既存エッジの重複出力禁止
+  - 各エッジには合理的な説明（description）が必要
+  - confidence: 0.5~1.0、確実なほど高く
+  - 最大15件
+
+  出力：
+  [{"source_id": 123, "target_id": 456, "edge_type": "causes", "description": "東京に引っ越してから日本語を学び始めた", "confidence": 0.9}]
+  関連が見つからなければ [] を返す
+
+sleep.cluster_themes: |
+  いくつかの記憶クラスタを受け取ります。各クラスタには代表的なテキスト片が含まれています。
+  タスク：各クラスタに短いテーマラベルを生成する。
+
+  ルール：
+  - テーマラベルは5〜15文字でクラスタの核心内容を概括
+  - ユーザーの言語で出力
+  - 内容を捏造せず、与えられたテキストのみに基づく
+
+  出力：
+  [{"cluster_index": 0, "theme": "東京の生活と通勤"}]
 
 # ── tools ──────────────────────────────────────────────────────
 
@@ -842,6 +896,11 @@ context.labels:
   section_trajectory: "【人物軌跡（内部参考、直接言及しないこと）】"
   section_trajectory_divergence: "【軌跡偏離分析（内部参考、その場では絶対に触れず、完全にユーザーに従う）】"
   section_vector_search: "【意味関連記憶】"
+  section_knowledge_network: "【ナレッジネットワーク（事実間の関連、内部参考）】"
+  section_cluster_themes: "【記憶クラスタテーマ】"
+  new_changed_facts: "新規/変更された事実"
+  existing_profile_facts: "既存プロフィール事実"
+  existing_edges: "既存エッジ"
   ended: "終了"
   until_now: "現在まで"
   current_tag: "現在"

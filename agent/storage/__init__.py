@@ -13,12 +13,17 @@ from agent.config.prompts import get_labels
 
 def _load_db_config():
     db = load_config().get("database", {})
-    return {
+    cfg = {
         "dbname": db.get("name", "Riverse"),
         "user": db.get("user", "postgres"),
         "host": db.get("host", "localhost"),
         "options": "-c client_encoding=UTF8",
     }
+    if db.get("password"):
+        cfg["password"] = db["password"]
+    if db.get("port"):
+        cfg["port"] = db["port"]
+    return cfg
 
 DB_CONFIG = _load_db_config()
 

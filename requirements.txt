@@ -1,7 +1,7 @@
 psycopg2-binary~=2.9
 flask~=3.1
 fastapi~=0.115
-uvicorn~=0.34
+uvicorn~=0.41
 pydantic~=2.10
 pyyaml~=6.0
 requests~=2.32

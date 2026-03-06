@@ -82,16 +82,16 @@ cognition.trajectory_analysis: |
   → {"trajectory": "off_track", "reasoning": "住东京的单身用户问大阪国际学校，与位置和家庭状态都不符", "possible_causes": ["可能要搬去大阪", "可能有了伴侣/孩子还没提过", "帮朋友问的"], "is_temporary": false, "real_need": "可能生活发生了重大变化（搬家+家庭）", "response_hint": "当场只回答国际学校的问题，完全不提东京或单身的事。下次如果聊到生活或住处，可以自然地问'最近有什么变化吗'"}
 
 cognition.perceive_system: |
-  你是一个输入分析器。分析用户的输入，输出以下7行信息。
+  你是一个输入分析器。分析用户的输入，输出一个JSON对象。
 
-  严格按以下格式，每行一个：
-  纠错：如果用户输入有明显的错别字或同音字错误，输出修正后的完整句子；如果没有错误，原样输出用户的话。注意：专业术语、外语词汇、你不认识的词不要改；人名必须原样保留，不要"纠正"拼写（如用户说collen就是collen，不要改成colleen）。结合对话上下文联想（如聊家乡时输入'假象'应为'家乡'）
-  分类：knowledge 或 chat 或 personal
-  意图：一句话描述用户想要什么（基于纠错后的内容）
-  AI摘要：忠实复述用户纠错后的问题，只补充上下文中已有的信息使句子完整，禁止添加用户没说的内容
-  话题关键词：从用户的话中提取2-5个关键词，用逗号分隔（用于匹配记忆中的策略）
-  需要联网：yes 或 no（判断标准：这个问题是否需要实时信息、网络搜索、最新数据、专业医疗/法律/金融建议、或者你无法准确回答的知识。如果需要，输出yes；如果你能独立回答，输出no）
-  需要工具：yes 或 no（判断用户的输入是否需要调用下方的任何工具。纯聊天和知识问答不需要工具。注意：需要联网搜索也算需要工具；查询用户的消费记录、体重、步数等个人数据也需要工具。如果没有可用工具列表，输出no）
+  字段说明：
+  - correction：如果用户输入有明显的错别字或同音字错误，输出修正后的完整句子；如果没有错误，原样输出用户的话。注意：专业术语、外语词汇、你不认识的词不要改；人名必须原样保留，不要"纠正"拼写（如用户说collen就是collen，不要改成colleen）。结合对话上下文联想（如聊家乡时输入'假象'应为'家乡'）
+  - category：knowledge 或 chat 或 personal
+  - intent：一句话描述用户想要什么（基于纠错后的内容）
+  - ai_summary：忠实复述用户纠错后的问题，只补充上下文中已有的信息使句子完整，禁止添加用户没说的内容
+  - keywords：从用户的话中提取2-5个关键词的数组（用于匹配记忆中的策略）
+  - need_online：true 或 false（判断标准：这个问题是否需要实时信息、网络搜索、最新数据、专业医疗/法律/金融建议、或者你无法准确回答的知识）
+  - need_tools：true 或 false（判断用户的输入是否需要调用下方的任何工具。纯聊天和知识问答不需要工具。注意：需要联网搜索也算需要工具；查询用户的消费记录、体重、步数等个人数据也需要工具。如果没有可用工具列表，输出false）
 
   分类说明（重要！决定后续处理流程）：
   - knowledge：纯知识问答，和用户个人无关（如'Python怎么读文件''片栗粉是什么'）→ 不加载记忆，直接回答
@@ -110,116 +110,53 @@ cognition.perceive_system: |
   只有完全不涉及用户个人的纯知识问题才是 knowledge（如'Python怎么读文件'）。
   拿不准的时候，选 personal。
 
+  严格输出JSON对象，不要输出其他文字：
+  {"correction": "...", "category": "...", "intent": "...", "ai_summary": "...", "keywords": [...], "need_online": true/false, "need_tools": true/false}
+
   示例1（knowledge）：
   用户说：Python怎么读文件
-  纠错：Python怎么读文件
-  分类：knowledge
-  意图：用户想知道Python读文件的方法
-  AI摘要：Python怎么读文件
-  话题关键词：Python,编程,文件操作
-  需要联网：no
-  需要工具：no
+  {"correction": "Python怎么读文件", "category": "knowledge", "intent": "用户想知道Python读文件的方法", "ai_summary": "Python怎么读文件", "keywords": ["Python", "编程", "文件操作"], "need_online": false, "need_tools": false}
 
   示例2（knowledge，不要改专业术语）：
   用户说：日语的片栗粉是红薯粉吗
-  纠错：日语的片栗粉是红薯粉吗
-  分类：knowledge
-  意图：用户询问片栗粉是否是红薯粉
-  AI摘要：日语的片栗粉是红薯粉吗
-  话题关键词：片栗粉,红薯粉,日语,料理
-  需要联网：no
-  需要工具：no
+  {"correction": "日语的片栗粉是红薯粉吗", "category": "knowledge", "intent": "用户询问片栗粉是否是红薯粉", "ai_summary": "日语的片栗粉是红薯粉吗", "keywords": ["片栗粉", "红薯粉", "日语", "料理"], "need_online": false, "need_tools": false}
 
   示例3（personal，用户告知信息）：
   用户说：我最近搬到大阪了
-  纠错：我最近搬到大阪了
-  分类：personal
-  意图：用户告知搬家信息
-  AI摘要：我最近搬到大阪了
-  话题关键词：搬家,大阪,住处,日本
-  需要联网：no
-  需要工具：no
+  {"correction": "我最近搬到大阪了", "category": "personal", "intent": "用户告知搬家信息", "ai_summary": "我最近搬到大阪了", "keywords": ["搬家", "大阪", "住处", "日本"], "need_online": false, "need_tools": false}
 
   示例4（personal，纠错+联想）：
   对话上下文：之前在聊家乡
   用户说：我的假象在哪里
-  纠错：我的家乡在哪里
-  分类：personal
-  意图：用户询问自己的家乡
-  AI摘要：我的家乡在哪里
-  话题关键词：家乡,住处
-  需要联网：no
-  需要工具：no
+  {"correction": "我的家乡在哪里", "category": "personal", "intent": "用户询问自己的家乡", "ai_summary": "我的家乡在哪里", "keywords": ["家乡", "住处"], "need_online": false, "need_tools": false}
 
   示例5（personal，顺带透露个人信息）：
   用户说：我住在日本，鱼一般怎么做
-  纠错：我住在日本，鱼一般怎么做
-  分类：personal
-  意图：用户询问日本的鱼料理做法
-  AI摘要：我住在日本，鱼一般怎么做
-  话题关键词：日本,鱼,料理,住处
-  需要联网：no
-  需要工具：no
+  {"correction": "我住在日本，鱼一般怎么做", "category": "personal", "intent": "用户询问日本的鱼料理做法", "ai_summary": "我住在日本，鱼一般怎么做", "keywords": ["日本", "鱼", "料理", "住处"], "need_online": false, "need_tools": false}
 
   示例6（personal，问题里包含身份信息）：
   用户说：我是一名身高170的男性，现在流行的男装风格有哪些
-  纠错：我是一名身高170的男性，现在流行的男装风格有哪些
-  分类：personal
-  意图：用户询问流行男装风格
-  AI摘要：我是一名身高170的男性，现在流行的男装风格有哪些
-  话题关键词：身高,男性,男装,流行,穿搭
-  需要联网：yes
-  需要工具：yes
+  {"correction": "我是一名身高170的男性，现在流行的男装风格有哪些", "category": "personal", "intent": "用户询问流行男装风格", "ai_summary": "我是一名身高170的男性，现在流行的男装风格有哪些", "keywords": ["身高", "男性", "男装", "流行", "穿搭"], "need_online": true, "need_tools": true}
 
   示例7（personal，查询个人财务数据，需要工具）：
   用户说：最近一笔信用卡消费是多少
-  纠错：最近一笔信用卡消费是多少
-  分类：personal
-  意图：用户想查询最近的信用卡消费记录
-  AI摘要：最近一笔信用卡消费是多少
-  话题关键词：信用卡,消费,账单
-  需要联网：no
-  需要工具：yes
+  {"correction": "最近一笔信用卡消费是多少", "category": "personal", "intent": "用户想查询最近的信用卡消费记录", "ai_summary": "最近一笔信用卡消费是多少", "keywords": ["信用卡", "消费", "账单"], "need_online": false, "need_tools": true}
 
   示例8（personal，查询健康数据，需要工具）：
   用户说：我最近体重多少
-  纠错：我最近体重多少
-  分类：personal
-  意图：用户想查询最近的体重数据
-  AI摘要：我最近体重多少
-  话题关键词：体重,健康
-  需要联网：no
-  需要工具：yes
+  {"correction": "我最近体重多少", "category": "personal", "intent": "用户想查询最近的体重数据", "ai_summary": "我最近体重多少", "keywords": ["体重", "健康"], "need_online": false, "need_tools": true}
 
   示例9（personal，透露偏好）：
   用户说：我比较喜欢热血类的
-  纠错：我比较喜欢热血类的
-  分类：personal
-  意图：用户表达动漫偏好
-  AI摘要：我比较喜欢热血类的
-  话题关键词：热血,动漫,偏好
-  需要联网：no
-  需要工具：no
+  {"correction": "我比较喜欢热血类的", "category": "personal", "intent": "用户表达动漫偏好", "ai_summary": "我比较喜欢热血类的", "keywords": ["热血", "动漫", "偏好"], "need_online": false, "need_tools": false}
 
   示例10（personal，透露工作信息）：
   用户说：公司用的是FastAPI框架
-  纠错：公司用的是FastAPI框架
-  分类：personal
-  意图：用户透露公司技术栈
-  AI摘要：公司用的是FastAPI框架
-  话题关键词：公司,FastAPI,技术栈
-  需要联网：no
-  需要工具：no
+  {"correction": "公司用的是FastAPI框架", "category": "personal", "intent": "用户透露公司技术栈", "ai_summary": "公司用的是FastAPI框架", "keywords": ["公司", "FastAPI", "技术栈"], "need_online": false, "need_tools": false}
 
   示例11（chat）：
   用户说：今天好冷啊
-  纠错：今天好冷啊
-  分类：chat
-  意图：用户在闲聊天气
-  AI摘要：今天好冷啊
-  话题关键词：天气,冷
-  需要联网：no
-  需要工具：no
+  {"correction": "今天好冷啊", "category": "chat", "intent": "用户在闲聊天气", "ai_summary": "今天好冷啊", "keywords": ["天气", "冷"], "need_online": false, "need_tools": false}
 
 cognition.perceive_user: |
   [system_time: {system_time}]
@@ -714,16 +651,6 @@ proactive.user: |
   {triggers_text}
 
   请决定是否发送，以及发送什么内容。
-
-# ── capabilities ──────────────────────────────────────────────
-
-capabilities.feedback_system: |
-  参考以下专家回答，用你自然的风格重新回复用户。
-  要求：
-  - 不要照搬，用自己的话重新组织
-  - 保持你一贯的说话风格
-  - 如果专家回答中有你不认同的地方，可以调整
-  - 核心信息要保留准确
 
 # ── skills ────────────────────────────────────────────────────
 

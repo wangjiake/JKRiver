@@ -82,16 +82,16 @@ cognition.trajectory_analysis: |
   → {"trajectory": "off_track", "reasoning": "A single user living in Tokyo asking about international schools in Osaka doesn't match their location or family status", "possible_causes": ["Might be moving to Osaka", "Might have a partner/child they haven't mentioned", "Asking for a friend"], "is_temporary": false, "real_need": "Might be undergoing a major life change (relocation + family)", "response_hint": "Only answer the international school question in the moment, don't mention Tokyo or being single at all. Next time if the conversation turns to lifestyle or living situation, you can naturally ask 'Any changes in your life lately?'"}
 
 cognition.perceive_system: |
-  You are an input analyzer. Analyze the user's input and output the following 7 lines of information.
+  You are an input analyzer. Analyze the user's input and output a JSON object.
 
-  Strictly follow this format, one per line:
-  Correction: If the user's input has obvious typos or homophone errors, output the corrected full sentence; if there are no errors, output the user's words as-is. Note: Do not change technical terms, foreign words, or words you don't recognize. Use conversation context for inference (e.g., when discussing hometowns, "I love my home torn" should be "I love my hometown")
-  Category: knowledge or chat or personal
-  Intent: One sentence describing what the user wants (based on the corrected content)
-  AI Summary: Faithfully restate the user's corrected question, only adding information already present in context to make the sentence complete — do not add content the user didn't say
-  Topic Keywords: Extract 2-5 keywords from the user's words, separated by commas (used to match strategies in memory)
-  Need Online: yes or no (criteria: does this question require real-time information, web search, latest data, professional medical/legal/financial advice, or knowledge you cannot accurately answer? If so, output yes; if you can answer independently, output no)
-  Need Tools: yes or no (determine whether the user's input requires calling any of the tools below. Pure chat and knowledge Q&A don't need tools. Note: needing a web search also counts as needing tools; querying the user's spending records, weight, steps, and other personal data also requires tools. If there is no available tool list, output no)
+  Field descriptions:
+  - correction: If the user's input has obvious typos or homophone errors, output the corrected full sentence; if there are no errors, output the user's words as-is. Note: Do not change technical terms, foreign words, or words you don't recognize. Use conversation context for inference (e.g., when discussing hometowns, "I love my home torn" should be "I love my hometown")
+  - category: knowledge or chat or personal
+  - intent: One sentence describing what the user wants (based on the corrected content)
+  - ai_summary: Faithfully restate the user's corrected question, only adding information already present in context to make the sentence complete — do not add content the user didn't say
+  - keywords: An array of 2-5 keywords extracted from the user's words (used to match strategies in memory)
+  - need_online: true or false (criteria: does this question require real-time information, web search, latest data, professional medical/legal/financial advice, or knowledge you cannot accurately answer?)
+  - need_tools: true or false (determine whether the user's input requires calling any of the tools below. Pure chat and knowledge Q&A don't need tools. Note: needing a web search also counts as needing tools; querying the user's spending records, weight, steps, and other personal data also requires tools. If there is no available tool list, output false)
 
   Category guidelines (important! determines the subsequent processing flow):
   - knowledge: Pure knowledge Q&A, unrelated to the user personally (e.g., 'How to read a file in Python', 'What is cornstarch') → No memory loaded, answer directly
@@ -110,116 +110,53 @@ cognition.perceive_system: |
   Only questions that are completely unrelated to the user personally are knowledge (e.g., 'How to read a file in Python').
   When in doubt, choose personal.
 
+  Output strictly a JSON object with no other text:
+  {"correction": "...", "category": "...", "intent": "...", "ai_summary": "...", "keywords": [...], "need_online": true/false, "need_tools": true/false}
+
   Example 1 (knowledge):
   User says: How to read a file in Python
-  Correction: How to read a file in Python
-  Category: knowledge
-  Intent: User wants to know how to read files in Python
-  AI Summary: How to read a file in Python
-  Topic Keywords: Python, programming, file operations
-  Need Online: no
-  Need Tools: no
+  {"correction": "How to read a file in Python", "category": "knowledge", "intent": "User wants to know how to read files in Python", "ai_summary": "How to read a file in Python", "keywords": ["Python", "programming", "file operations"], "need_online": false, "need_tools": false}
 
   Example 2 (knowledge, don't change technical terms):
   User says: Is Japanese katakuriko the same as sweet potato starch
-  Correction: Is Japanese katakuriko the same as sweet potato starch
-  Category: knowledge
-  Intent: User is asking whether katakuriko is sweet potato starch
-  AI Summary: Is Japanese katakuriko the same as sweet potato starch
-  Topic Keywords: katakuriko, sweet potato starch, Japanese, cooking
-  Need Online: no
-  Need Tools: no
+  {"correction": "Is Japanese katakuriko the same as sweet potato starch", "category": "knowledge", "intent": "User is asking whether katakuriko is sweet potato starch", "ai_summary": "Is Japanese katakuriko the same as sweet potato starch", "keywords": ["katakuriko", "sweet potato starch", "Japanese", "cooking"], "need_online": false, "need_tools": false}
 
   Example 3 (personal, user sharing information):
   User says: I recently moved to Osaka
-  Correction: I recently moved to Osaka
-  Category: personal
-  Intent: User is sharing that they moved
-  AI Summary: I recently moved to Osaka
-  Topic Keywords: moving, Osaka, residence, Japan
-  Need Online: no
-  Need Tools: no
+  {"correction": "I recently moved to Osaka", "category": "personal", "intent": "User is sharing that they moved", "ai_summary": "I recently moved to Osaka", "keywords": ["moving", "Osaka", "residence", "Japan"], "need_online": false, "need_tools": false}
 
   Example 4 (personal, correction + inference):
   Conversation context: previously discussing hometowns
   User says: Where is my home torn
-  Correction: Where is my hometown
-  Category: personal
-  Intent: User is asking about their hometown
-  AI Summary: Where is my hometown
-  Topic Keywords: hometown, residence
-  Need Online: no
-  Need Tools: no
+  {"correction": "Where is my hometown", "category": "personal", "intent": "User is asking about their hometown", "ai_summary": "Where is my hometown", "keywords": ["hometown", "residence"], "need_online": false, "need_tools": false}
 
   Example 5 (personal, casually revealing personal information):
   User says: I live in Japan, how do you usually cook fish
-  Correction: I live in Japan, how do you usually cook fish
-  Category: personal
-  Intent: User is asking about Japanese fish cooking methods
-  AI Summary: I live in Japan, how do you usually cook fish
-  Topic Keywords: Japan, fish, cooking, residence
-  Need Online: no
-  Need Tools: no
+  {"correction": "I live in Japan, how do you usually cook fish", "category": "personal", "intent": "User is asking about Japanese fish cooking methods", "ai_summary": "I live in Japan, how do you usually cook fish", "keywords": ["Japan", "fish", "cooking", "residence"], "need_online": false, "need_tools": false}
 
   Example 6 (personal, question contains identity information):
   User says: I'm a 170cm tall male, what are the current popular men's fashion styles
-  Correction: I'm a 170cm tall male, what are the current popular men's fashion styles
-  Category: personal
-  Intent: User is asking about popular men's fashion styles
-  AI Summary: I'm a 170cm tall male, what are the current popular men's fashion styles
-  Topic Keywords: height, male, men's fashion, trends, styling
-  Need Online: yes
-  Need Tools: yes
+  {"correction": "I'm a 170cm tall male, what are the current popular men's fashion styles", "category": "personal", "intent": "User is asking about popular men's fashion styles", "ai_summary": "I'm a 170cm tall male, what are the current popular men's fashion styles", "keywords": ["height", "male", "men's fashion", "trends", "styling"], "need_online": true, "need_tools": true}
 
   Example 7 (personal, querying personal financial data, needs tools):
   User says: What was my last credit card charge
-  Correction: What was my last credit card charge
-  Category: personal
-  Intent: User wants to check their latest credit card transaction
-  AI Summary: What was my last credit card charge
-  Topic Keywords: credit card, spending, billing
-  Need Online: no
-  Need Tools: yes
+  {"correction": "What was my last credit card charge", "category": "personal", "intent": "User wants to check their latest credit card transaction", "ai_summary": "What was my last credit card charge", "keywords": ["credit card", "spending", "billing"], "need_online": false, "need_tools": true}
 
   Example 8 (personal, querying health data, needs tools):
   User says: What's my recent weight
-  Correction: What's my recent weight
-  Category: personal
-  Intent: User wants to check their recent weight data
-  AI Summary: What's my recent weight
-  Topic Keywords: weight, health
-  Need Online: no
-  Need Tools: yes
+  {"correction": "What's my recent weight", "category": "personal", "intent": "User wants to check their recent weight data", "ai_summary": "What's my recent weight", "keywords": ["weight", "health"], "need_online": false, "need_tools": true}
 
   Example 9 (personal, revealing preferences):
   User says: I prefer the action-packed type
-  Correction: I prefer the action-packed type
-  Category: personal
-  Intent: User is expressing their anime preference
-  AI Summary: I prefer the action-packed type
-  Topic Keywords: action, anime, preference
-  Need Online: no
-  Need Tools: no
+  {"correction": "I prefer the action-packed type", "category": "personal", "intent": "User is expressing their anime preference", "ai_summary": "I prefer the action-packed type", "keywords": ["action", "anime", "preference"], "need_online": false, "need_tools": false}
 
   Example 10 (personal, revealing work information):
   User says: Our company uses the FastAPI framework
-  Correction: Our company uses the FastAPI framework
-  Category: personal
-  Intent: User is revealing their company's tech stack
-  AI Summary: Our company uses the FastAPI framework
-  Topic Keywords: company, FastAPI, tech stack
-  Need Online: no
-  Need Tools: no
+  {"correction": "Our company uses the FastAPI framework", "category": "personal", "intent": "User is revealing their company's tech stack", "ai_summary": "Our company uses the FastAPI framework", "keywords": ["company", "FastAPI", "tech stack"], "need_online": false, "need_tools": false}
 
   Example 11 (chat):
   User says: It's so cold today
-  Correction: It's so cold today
-  Category: chat
-  Intent: User is making small talk about the weather
-  AI Summary: It's so cold today
-  Topic Keywords: weather, cold
-  Need Online: no
-  Need Tools: no
+  {"correction": "It's so cold today", "category": "chat", "intent": "User is making small talk about the weather", "ai_summary": "It's so cold today", "keywords": ["weather", "cold"], "need_online": false, "need_tools": false}
 
 cognition.perceive_user: |
   [system_time: {system_time}]
@@ -713,16 +650,6 @@ proactive.user: |
   {triggers_text}
 
   Please decide whether to send a message, and what content to send.
-
-# ── capabilities ──────────────────────────────────────────────
-
-capabilities.feedback_system: |
-  Refer to the following expert answer and re-respond to the user in your natural style.
-  Requirements:
-  - Don't copy verbatim — reorganize in your own words
-  - Maintain your usual speaking style
-  - If there are parts of the expert answer you disagree with, you can adjust
-  - Keep core information accurate
 
 # ── skills ────────────────────────────────────────────────────
 

@@ -188,6 +188,42 @@ class TestSynonyms:
     def test_english_location_synonym(self):
         assert _get_category_synonyms("location") == _get_category_synonyms("居住")
 
+    def test_japanese_category_synonym(self):
+        assert _get_category_synonyms("仕事") == _get_category_synonyms("职业")
+
+    def test_japanese_location_synonym(self):
+        assert _get_category_synonyms("場所") == _get_category_synonyms("location")
+
+    def test_english_subject_synonym(self):
+        syns = _get_subject_synonyms("current city")
+        assert "居住城市" in syns
+        assert "居住都市" in syns
+
+    def test_japanese_subject_synonym(self):
+        syns = _get_subject_synonyms("卒業校")
+        assert "学校" in syns
+        assert "university" in syns
+
+    def test_girlfriend_multilingual(self):
+        syns = _get_subject_synonyms("girlfriend")
+        assert "女朋友" in syns
+        assert "彼女" in syns
+
+    def test_boyfriend_multilingual(self):
+        syns = _get_subject_synonyms("boyfriend")
+        assert "男朋友" in syns
+        assert "彼氏" in syns
+
+    def test_sports_multilingual(self):
+        syns = _get_subject_synonyms("sports")
+        assert "运动" in syns
+        assert "スポーツ" in syns
+
+    def test_games_multilingual(self):
+        syns = _get_subject_synonyms("games")
+        assert "游戏" in syns
+        assert "ゲーム" in syns
+
 
 class TestSignificantCategory:
     def test_chinese_career(self):
@@ -214,6 +250,15 @@ class TestSignificantCategory:
     def test_synonym_expansion(self):
         # "住址" is a synonym of "居住" which is a significant anchor
         assert is_significant_category("住址") is True
+
+    def test_japanese_significant_career(self):
+        assert is_significant_category("仕事") is True
+
+    def test_japanese_significant_family(self):
+        assert is_significant_category("家族") is True
+
+    def test_japanese_significant_health(self):
+        assert is_significant_category("健康") is True
 
     def test_non_significant(self):
         assert is_significant_category("兴趣") is False
@@ -323,7 +368,98 @@ class TestFormatProfileText:
 #  cognition._perceive: parse_perceive_output
 # ═══════════════════════════════════════════════════════════
 
-from agent.cognition._perceive import parse_perceive_output
+from agent.cognition._perceive import parse_perceive_output, _parse_perceive_json
+
+
+class TestParsePerceiveJson:
+    """Tests for _parse_perceive_json (JSON structured output parser)."""
+
+    def test_full_json_zh(self):
+        raw = '{"correction": "你好世界", "category": "personal", "intent": "用户想打招呼", "ai_summary": "打招呼", "keywords": ["问候", "社交"], "need_online": false, "need_tools": false}'
+        r = _parse_perceive_json(raw, "你好", "zh")
+        assert r is not None
+        assert r["corrected_input"] == "你好世界"
+        assert r["category"] == "personal"
+        assert r["intent"] == "用户想打招呼"
+        assert r["ai_summary"] == "打招呼"
+        assert r["topic_keywords"] == ["问候", "社交"]
+        assert r["need_online"] is False
+        assert r["need_tools"] is False
+        assert r["need_memory"] is True
+        assert r["memory_type"] == "personal"
+
+    def test_full_json_en(self):
+        raw = '{"correction": "How to read a file", "category": "knowledge", "intent": "User wants file reading info", "ai_summary": "How to read a file", "keywords": ["Python", "file"], "need_online": false, "need_tools": false}'
+        r = _parse_perceive_json(raw, "how to read file", "en")
+        assert r is not None
+        assert r["category"] == "knowledge"
+        assert r["need_memory"] is False
+        assert r["topic_keywords"] == ["Python", "file"]
+
+    def test_markdown_fenced_json(self):
+        raw = '```json\n{"correction": "test", "category": "chat", "intent": "greet", "ai_summary": "test", "keywords": ["hi"], "need_online": false, "need_tools": false}\n```'
+        r = _parse_perceive_json(raw, "test", "en")
+        assert r is not None
+        assert r["category"] == "chat"
+
+    def test_string_booleans(self):
+        raw = '{"correction": "hi", "category": "personal", "intent": "greet", "ai_summary": "hi", "keywords": ["hi"], "need_online": "yes", "need_tools": "true"}'
+        r = _parse_perceive_json(raw, "hi", "en")
+        assert r is not None
+        assert r["need_online"] is True
+        assert r["need_tools"] is True
+
+    def test_string_booleans_zh(self):
+        raw = '{"correction": "你好", "category": "personal", "intent": "问候", "ai_summary": "你好", "keywords": ["你好"], "need_online": "是", "need_tools": "no"}'
+        r = _parse_perceive_json(raw, "你好", "zh")
+        assert r is not None
+        assert r["need_online"] is True
+        assert r["need_tools"] is False
+
+    def test_keywords_as_string(self):
+        raw = '{"correction": "hi", "category": "chat", "intent": "greet", "ai_summary": "hi", "keywords": "weather, cold", "need_online": false, "need_tools": false}'
+        r = _parse_perceive_json(raw, "hi", "en")
+        assert r is not None
+        assert r["topic_keywords"] == ["weather", "cold"]
+
+    def test_fallback_on_garbage(self):
+        r = _parse_perceive_json("not json at all", "hi", "en")
+        assert r is None
+
+    def test_fallback_on_no_category(self):
+        raw = '{"correction": "hi", "intent": "greet"}'
+        r = _parse_perceive_json(raw, "hi", "en")
+        assert r is None
+
+    def test_fallback_on_invalid_category(self):
+        raw = '{"correction": "hi", "category": "invalid", "intent": "x", "ai_summary": "x", "keywords": [], "need_online": false, "need_tools": false}'
+        r = _parse_perceive_json(raw, "hi", "en")
+        assert r is None
+
+
+class TestParsePerceiveOutputFallback:
+    """Verify parse_perceive_output tries JSON first, then falls back to string."""
+
+    def test_json_takes_priority(self):
+        raw = '{"correction": "hello world", "category": "knowledge", "intent": "test", "ai_summary": "hello", "keywords": ["test"], "need_online": false, "need_tools": false}'
+        r = parse_perceive_output(raw, "hello", language="en")
+        assert r["category"] == "knowledge"
+        assert r["corrected_input"] == "hello world"
+
+    def test_string_fallback(self):
+        labels = {
+            "correction": "Correction",
+            "category": "Category",
+            "intent": "Intent",
+            "summary": "AI Summary",
+            "keywords": "Topic Keywords",
+            "need_online": "Need Online",
+            "need_tools": "Need Tools",
+        }
+        raw = "Correction：fixed\nCategory：personal\nIntent：wants info"
+        r = parse_perceive_output(raw, "test", labels, "en")
+        assert r["category"] == "personal"
+        assert r["corrected_input"] == "fixed"
 
 
 class TestParsePerceiveOutput:

@@ -2,6 +2,7 @@
 
 from agent.utils.time_context import get_now
 from agent.config.prompts import get_prompt, get_labels
+from agent.sleep._parsing import _parse_json_object
 
 
 def build_perceive_messages(
@@ -57,13 +58,65 @@ def process_perceive_raw(raw: str, user_input: str, language: str) -> dict:
     return result
 
 
-def parse_perceive_output(
+def _parse_perceive_json(raw: str, user_input: str, language: str) -> dict | None:
+    """Try to parse perceive output as JSON. Returns None on failure."""
+    CL = get_labels("context.labels", language)
+    obj = _parse_json_object(raw)
+    if not obj or "category" not in obj:
+        return None
+
+    category = obj.get("category", "chat").lower()
+    if category not in ("knowledge", "chat", "personal"):
+        return None
+
+    # Handle bool vs string for need_online / need_tools
+    truthy_values = tuple(CL.get("truthy_values", ["yes", "是", "true"]))
+
+    def _to_bool(val) -> bool:
+        if isinstance(val, bool):
+            return val
+        return str(val).lower() in truthy_values
+
+    # Handle keywords: string vs list
+    kw_raw = obj.get("keywords", [])
+    if isinstance(kw_raw, str):
+        keywords = [k.strip() for k in kw_raw.split(",") if k.strip()]
+    elif isinstance(kw_raw, list):
+        keywords = [str(k).strip() for k in kw_raw if str(k).strip()]
+    else:
+        keywords = []
+
+    need_online = _to_bool(obj.get("need_online", False))
+    need_tools = _to_bool(obj.get("need_tools", False))
+    need_memory = category in ("chat", "personal")
+    memory_type = "personal" if category == "personal" else CL.get("memory_type_none", "无")
+
+    result = {
+        "intent": obj.get("intent", user_input),
+        "category": category,
+        "need_memory": need_memory,
+        "memory_type": memory_type,
+        "need_online": need_online,
+        "need_tools": need_tools,
+        "ai_summary": obj.get("ai_summary", user_input),
+        "topic_keywords": keywords,
+        "raw": raw,
+    }
+
+    correction = obj.get("correction", "")
+    if correction:
+        result["corrected_input"] = correction
+
+    return result
+
+
+def _parse_perceive_string(
     raw: str,
     user_input: str,
     labels: dict | None = None,
     language: str = "en",
 ) -> dict:
-    """Line-by-line parsing of perceive LLM output."""
+    """Line-by-line parsing of perceive LLM output (legacy string format)."""
     if labels is None:
         labels = get_labels("cognition.perceive_labels", language)
     CL = get_labels("context.labels", language)
@@ -119,3 +172,16 @@ def parse_perceive_output(
     result["need_memory"] = result["category"] in ("chat", "personal")
     result["memory_type"] = "personal" if result["category"] == "personal" else CL.get("memory_type_none", "无")
     return result
+
+
+def parse_perceive_output(
+    raw: str,
+    user_input: str,
+    labels: dict | None = None,
+    language: str = "en",
+) -> dict:
+    """Parse perceive output: try JSON first, fall back to string parser."""
+    json_result = _parse_perceive_json(raw, user_input, language)
+    if json_result is not None:
+        return json_result
+    return _parse_perceive_string(raw, user_input, labels, language)

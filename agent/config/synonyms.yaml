@@ -1,0 +1,117 @@
+# Multilingual synonym groups for category/subject normalization.
+# Each group merges zh + en + ja into a single equivalence set.
+
+category_groups:
+  - zh: [位置, 居住地, 居住城市, 地点, 住址, 居住, 所在地]
+    en: [location, residence]
+    ja: [場所, 居住地, 住所, 所在地]
+
+  - zh: [职业, 职位, 工作, 岗位]
+    en: [career, work, job, occupation, profession]
+    ja: [仕事, 職業, 職位, キャリア]
+
+  - zh: [教育, 教育背景, 学历]
+    en: [education, academic background]
+    ja: [教育, 教育背景, 学歴]
+
+  - zh: [家乡, 籍贯, 出生地, 老家]
+    en: [hometown, birthplace, home town]
+    ja: [故郷, 出身地, 地元]
+
+  - zh: [兴趣, 爱好, 休闲活动, 休闲, 运动, 运动与锻炼]
+    en: [hobby, interest, sports, hobbies, interests]
+    ja: [趣味, 興味, スポーツ]
+
+  - zh: [感情, 恋爱, 情感, 婚恋]
+    en: [relationship, romance, love]
+    ja: [恋愛, 感情, 恋愛関係]
+
+  - zh: [出生年份, 年龄, 出生年]
+    en: [age, birth_year, birth year]
+    ja: [年齢, 生まれ年, 誕生年]
+
+  - zh: [专业, 学科, 主修]
+    en: [major, subject, field of study]
+    ja: [専攻, 学科, 専門]
+
+  - zh: [娱乐, 游戏]
+    en: [entertainment, gaming, games]
+    ja: [娯楽, ゲーム, エンタメ]
+
+  - zh: [宠物, 养宠]
+    en: [pet, pets]
+    ja: [ペット, 飼育]
+
+  - zh: [技能, 技术, 编程]
+    en: [skills, tech, programming, technology]
+    ja: [スキル, 技術, プログラミング]
+
+  - zh: [身份, 个人信息]
+    en: [identity, personal_info, personal info]
+    ja: [身元, 個人情報, アイデンティティ]
+
+  - zh: [饮食, 饮食与美食, 美食]
+    en: [diet, food, cuisine]
+    ja: [食事, 食べ物, グルメ, 料理]
+
+  - zh: [家庭, 家人]
+    en: [family]
+    ja: [家族, 家庭]
+
+  - zh: [健康]
+    en: [health]
+    ja: [健康, 健康状態]
+
+  - zh: [健身]
+    en: [fitness]
+    ja: [フィットネス, 筋トレ]
+
+  - zh: [旅行, 出行]
+    en: [travel, traveling]
+    ja: [旅行, 旅]
+
+subject_groups:
+  - zh: [居住地, 居住城市, 当前居住地, 所在城市]
+    en: [residence, current city, city of residence, living city]
+    ja: [居住地, 居住都市, 現在の居住地, 住んでいる都市]
+
+  - zh: [职业, 当前职位, 工作, 职位, 岗位]
+    en: [career, current position, job, occupation, work]
+    ja: [職業, 現在の職位, 仕事, 職位]
+
+  - zh: [学校, 大学, 毕业学校]
+    en: [school, university, college, alma mater]
+    ja: [学校, 大学, 卒業校]
+
+  - zh: [专业, 主修, 学科]
+    en: [major, field of study, subject]
+    ja: [専攻, 専門, 学科]
+
+  - zh: [家乡, 老家, 出生地]
+    en: [hometown, birthplace, home town]
+    ja: [故郷, 実家, 出身地]
+
+  - zh: [运动, 体育, 锻炼]
+    en: [sports, exercise, workout, athletics]
+    ja: [スポーツ, 運動, エクササイズ]
+
+  - zh: [游戏, 电子游戏]
+    en: [games, video games, gaming]
+    ja: [ゲーム, ビデオゲーム, テレビゲーム]
+
+  - zh: [出生年, 出生年份]
+    en: [birth year, year of birth, birth_year]
+    ja: [生まれ年, 誕生年]
+
+  - zh: [女朋友, 女友, 对象]
+    en: [girlfriend, partner, significant other]
+    ja: [彼女, 恋人, パートナー]
+
+  - zh: [男朋友, 男友]
+    en: [boyfriend]
+    ja: [彼氏]
+
+significant_anchors:
+  zh: [职业, 家庭, 居住, 教育, 健康]
+  en: [career, family, residence, education, health]
+  ja: [職業, 家庭, 居住地, 教育, 健康]

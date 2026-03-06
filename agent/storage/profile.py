@@ -237,7 +237,7 @@ def save_profile_fact(category: str, subject: str, value: str,
                          now, new_expires, existing["id"]),
                     )
                     result_id = existing["id"]
-                elif existing["category"] in (get_labels("context.labels", _lang()).get("interest_category", "interest"),):
+                elif existing["category"] in _get_category_synonyms("interest"):
                     cur.execute(
                         "SELECT id, evidence, mention_count FROM user_profile "
                         "WHERE category = %s AND subject = %s "

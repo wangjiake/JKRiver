@@ -36,10 +36,7 @@ class Session:
         self.cognition = CognitionEngine(config)
         self.executed_strategy_ids: set = set()
         tools_enabled = config.get("tools", {}).get("enabled", True)
-        self.tool_registry = ToolRegistry(config) if tools_enabled else ToolRegistry.__new__(ToolRegistry)
-        if not tools_enabled:
-            self.tool_registry.config = config
-            self.tool_registry._tools = {}
+        self.tool_registry = ToolRegistry(config, enabled=tools_enabled)
         self.skill_registry = SkillRegistry(config)
 
 class SessionManager:

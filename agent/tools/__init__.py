@@ -38,10 +38,11 @@ class BaseTool(ABC):
 
 class ToolRegistry:
 
-    def __init__(self, config: dict):
+    def __init__(self, config: dict, *, enabled: bool = True):
         self.config = config
         self._tools: dict[str, BaseTool] = {}
-        self._discover()
+        if enabled:
+            self._discover()
 
     def _discover(self):
         import agent.tools as tools_pkg

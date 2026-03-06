@@ -323,9 +323,6 @@ def get_finance_summary(
                     cat_cond = "TO_CHAR(DATE_TRUNC('month', transaction_date), 'YYYY-MM') = %s"
                     cat_params = [str(period_val)]
 
-                extra_conds = conditions.copy()
-                extra_params = params.copy()
-
                 _uncategorized = get_labels("context.labels", _lang()).get("uncategorized", "未分类")
                 cur.execute(
                     f"SELECT COALESCE(category, %s) AS category, "

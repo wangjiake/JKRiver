@@ -78,6 +78,11 @@ from agent.storage import (
     load_fact_edges,
     save_observation,
     load_observations,
+    save_hypothesis,
+    load_active_hypotheses,
+    get_hypothesis_by_subject,
+    resolve_suspicion,
+    set_hypothesis_status,
 )
 
 
@@ -270,6 +275,203 @@ class TestObservations(_DBTestBase):
         save_observation("sess-1", "behavior", "喜欢篮球", subject="运动")
         obs = load_observations(subject="技能")
         assert all(o["subject"] == "技能" for o in obs)
+
+
+# ═══════════════════════════════════════════════════════════
+#  Hypothesis state machine
+# ═══════════════════════════════════════════════════════════
+
+@_skip
+class TestHypothesisStateMachine(_DBTestBase):
+
+    def test_new_hypothesis_creates_active(self):
+        hid = save_hypothesis("位置", "居住地", "北京")
+        h = get_hypothesis_by_subject("位置", "居住地")
+        assert h is not None
+        assert h["status"] == "active"
+        assert h["claim"] == "北京"
+        assert h["mention_count"] == 1
+
+    def test_same_claim_increments_mention(self):
+        hid = save_hypothesis("位置", "居住地", "北京")
+        save_hypothesis("位置", "居住地", "北京")
+        h = get_hypothesis_by_subject("位置", "居住地")
+        assert h["mention_count"] == 2
+        assert h["status"] == "active"
+        assert h["id"] == hid
+
+    def test_different_claim_enters_suspected(self):
+        hid = save_hypothesis("位置", "居住地", "北京")
+        save_hypothesis("位置", "居住地", "上海")
+        h = get_hypothesis_by_subject("位置", "居住地")
+        assert h["status"] == "suspected"
+        assert h["suspected_value"] == "上海"
+        assert h["claim"] == "北京"  # original unchanged
+
+    def test_suspected_repeat_adds_evidence(self):
+        hid = save_hypothesis("位置", "居住地", "北京")
+        save_hypothesis("位置", "居住地", "上海")
+        save_hypothesis("位置", "居住地", "上海")  # third mention of new value
+        h = get_hypothesis_by_subject("位置", "居住地")
+        assert h["status"] == "suspected"
+        assert len(h["suspected_evidence"]) >= 1
+
+    def test_resolve_suspicion_accept(self):
+        hid = save_hypothesis("位置", "居住地", "北京")
+        save_hypothesis("位置", "居住地", "北京")
+        save_hypothesis("位置", "居住地", "北京")  # mention_count=3
+        save_hypothesis("位置", "居住地", "上海")  # enters suspected
+        resolve_suspicion(hid, accept=True)
+        h = get_hypothesis_by_subject("位置", "居住地")
+        assert h["claim"] == "上海"  # new value is now the claim
+        assert h["status"] == "active"
+        assert h["mention_count"] == 2  # reset for new claim
+        assert h["suspected_value"] is None
+        # old value archived in history
+        assert len(h["history"]) == 1
+        assert h["history"][0]["value"] == "北京"
+        assert h["history"][0]["mention_count"] == 3
+
+    def test_resolve_suspicion_reject(self):
+        hid = save_hypothesis("位置", "居住地", "北京")
+        save_hypothesis("位置", "居住地", "北京")  # mention_count=2
+        save_hypothesis("位置", "居住地", "上海")  # enters suspected
+        resolve_suspicion(hid, accept=False)
+        h = get_hypothesis_by_subject("位置", "居住地")
+        assert h["claim"] == "北京"  # original restored
+        assert h["status"] == "active"  # mention_count=2 → active
+        assert h["suspected_value"] is None
+        # rejected evidence merged into evidence_against
+        assert h["evidence_against"] is not None
+
+    def test_resolve_suspicion_reject_high_mention_restores_established(self):
+        hid = save_hypothesis("位置", "居住地", "北京")
+        for _ in range(4):  # total mention_count = 5
+            save_hypothesis("位置", "居住地", "北京")
+        save_hypothesis("位置", "居住地", "上海")  # enters suspected
+        resolve_suspicion(hid, accept=False)
+        h = get_hypothesis_by_subject("位置", "居住地")
+        assert h["status"] == "established"  # mention_count >= 4
+
+    def test_dormant_reactivation(self):
+        hid = save_hypothesis("位置", "居住地", "北京")
+        set_hypothesis_status(hid, "dormant")
+        # dormant is excluded from get_hypothesis_by_subject
+        h = get_hypothesis_by_subject("位置", "居住地")
+        assert h is None
+        # re-mentioning same claim reactivates
+        save_hypothesis("位置", "居住地", "北京")
+        h = get_hypothesis_by_subject("位置", "居住地")
+        assert h is not None
+        assert h["status"] == "active"
+        assert h["mention_count"] == 2
+
+
+# ═══════════════════════════════════════════════════════════
+#  _find_current_fact_cursor fuzzy match
+# ═══════════════════════════════════════════════════════════
+
+@_skip
+class TestFindCurrentFactFuzzy(_DBTestBase):
+
+    def test_exact_match(self):
+        save_profile_fact("位置", "居住地", "东京")
+        fact = find_current_fact("位置", "居住地")
+        assert fact is not None
+        assert fact["value"] == "东京"
+
+    def test_synonym_match(self):
+        save_profile_fact("位置", "居住地", "大阪")
+        fact = find_current_fact("位置", "居住城市")
+        assert fact is not None
+        assert fact["value"] == "大阪"
+
+    def test_ilike_match_substring(self):
+        """subject '居住地' should match query '居住地点' via ILIKE."""
+        save_profile_fact("位置", "居住地", "名古屋")
+        fact = find_current_fact("位置", "居住地点")
+        assert fact is not None
+        assert fact["value"] == "名古屋"
+
+    def test_no_cross_category_fuzzy(self):
+        """Fuzzy match should not cross unrelated categories."""
+        save_profile_fact("位置", "居住地", "北京")
+        # 完全不同的 category，subject 也不相关
+        fact = find_current_fact("职业", "公司")
+        assert fact is None
+
+    def test_no_false_positive_short_subject(self):
+        """Short subjects like '名' should not match '姓名' in different categories."""
+        save_profile_fact("基本信息", "姓名", "张三")
+        # '名' is substring of '姓名', but different category should prevent match
+        fact = find_current_fact("兴趣", "名")
+        assert fact is None
+
+    def test_closed_fact_not_returned(self):
+        """Facts with end_time should not be found."""
+        from agent.storage import close_time_period
+        fid = save_profile_fact("位置", "居住地", "深圳")
+        close_time_period(fid)
+        fact = find_current_fact("位置", "居住地")
+        assert fact is None
+
+    def test_superseded_fact_still_findable(self):
+        """Superseded facts (no end_time) should still be found."""
+        old_id = save_profile_fact("位置", "居住地", "深圳")
+        new_id = save_profile_fact("位置", "居住地", "北京")
+        fact = find_current_fact("位置", "居住地")
+        # Should return the one without superseded_by first
+        assert fact is not None
+        assert fact["id"] == new_id
+
+
+# ═══════════════════════════════════════════════════════════
+#  Interest category multi-value paths
+# ═══════════════════════════════════════════════════════════
+
+@_skip
+class TestInterestMultiValue(_DBTestBase):
+
+    def test_interest_same_value_increments_mention(self):
+        """Writing the same interest value twice should increment, not create duplicate."""
+        id1 = save_profile_fact("兴趣", "运动", "篮球")
+        id2 = save_profile_fact("兴趣", "运动", "篮球")
+        assert id1 == id2
+        fact = find_current_fact("兴趣", "运动")
+        assert fact["mention_count"] == 2
+
+    def test_interest_exact_match_updates_existing(self):
+        """Third distinct value should match its own row, not the first-found."""
+        save_profile_fact("兴趣", "运动", "篮球")
+        save_profile_fact("兴趣", "运动", "足球")
+        save_profile_fact("兴趣", "运动", "篮球")  # re-mention first value
+        profile = load_full_current_profile(exclude_superseded=False)
+        basketball = [f for f in profile
+                      if f["category"] == "兴趣" and f["value"] == "篮球"]
+        assert len(basketball) == 1
+        assert basketball[0]["mention_count"] == 2
+
+    def test_interest_different_values_coexist(self):
+        """Multiple distinct interest values should all remain active."""
+        save_profile_fact("兴趣", "运动", "篮球")
+        save_profile_fact("兴趣", "运动", "足球")
+        save_profile_fact("兴趣", "运动", "游泳")
+        profile = load_full_current_profile(exclude_superseded=False)
+        interests = [f for f in profile
+                     if f["category"] == "兴趣" and f["subject"] == "运动"
+                     and f.get("end_time") is None]
+        values = {f["value"] for f in interests}
+        assert values == {"篮球", "足球", "游泳"}
+
+    def test_interest_no_supersede_chain(self):
+        """Interest facts should never have superseded_by set."""
+        save_profile_fact("兴趣", "运动", "篮球")
+        save_profile_fact("兴趣", "运动", "足球")
+        profile = load_full_current_profile(exclude_superseded=False)
+        interests = [f for f in profile
+                     if f["category"] == "兴趣" and f["subject"] == "运动"]
+        for f in interests:
+            assert f.get("superseded_by") is None
 
 
 # ═══════════════════════════════════════════════════════════

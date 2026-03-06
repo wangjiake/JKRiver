@@ -87,28 +87,34 @@ def parse_perceive_output(
         "topic_keywords": [],
         "raw": raw,
     }
+    def _extract_value(line: str) -> str:
+        """Extract value after the first full-width or ASCII colon."""
+        if "：" in line:
+            return line.split("：", 1)[1].strip()
+        return line.split(":", 1)[1].strip() if ":" in line else line.strip()
+
     for line in raw.split("\n"):
         line = line.strip()
         if line.startswith(f"{l_correction}：") or line.startswith(f"{l_correction}:"):
-            val = line.split("：", 1)[-1].split(":", 1)[-1].strip()
+            val = _extract_value(line)
             if val:
                 result["corrected_input"] = val
         elif line.startswith(f"{l_category}：") or line.startswith(f"{l_category}:"):
-            val = line.split("：", 1)[-1].split(":", 1)[-1].strip().lower()
+            val = _extract_value(line).lower()
             if val in ("knowledge", "chat", "personal"):
                 result["category"] = val
         elif line.startswith(f"{l_intent}：") or line.startswith(f"{l_intent}:"):
-            result["intent"] = line.split("：", 1)[-1].split(":", 1)[-1].strip()
+            result["intent"] = _extract_value(line)
         elif line.startswith(f"{l_summary}：") or line.startswith(f"{l_summary}:"):
-            result["ai_summary"] = line.split("：", 1)[-1].split(":", 1)[-1].strip()
+            result["ai_summary"] = _extract_value(line)
         elif line.startswith(f"{l_keywords}：") or line.startswith(f"{l_keywords}:"):
-            kw_str = line.split("：", 1)[-1].split(":", 1)[-1].strip()
+            kw_str = _extract_value(line)
             result["topic_keywords"] = [k.strip() for k in kw_str.split(",") if k.strip()]
         elif line.startswith(f"{l_need_online}：") or line.startswith(f"{l_need_online}:"):
-            val = line.split("：", 1)[-1].split(":", 1)[-1].strip().lower()
+            val = _extract_value(line).lower()
             result["need_online"] = val in truthy_values
         elif line.startswith(f"{l_need_tools}：") or line.startswith(f"{l_need_tools}:"):
-            val = line.split("：", 1)[-1].split(":", 1)[-1].strip().lower()
+            val = _extract_value(line).lower()
             result["need_tools"] = val in truthy_values
     result["need_memory"] = result["category"] in ("chat", "personal")
     result["memory_type"] = "personal" if result["category"] == "personal" else CL.get("memory_type_none", "无")

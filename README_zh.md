@@ -16,8 +16,6 @@
 [![Discord](https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white)](https://discord.gg/ZnmFrPvXym)
 [![Docs](https://img.shields.io/badge/文档-wangjiake.github.io-06b6d4?logo=readthedocs&logoColor=white)](https://wangjiake.github.io/riverse-docs/zh/)
 
-不想装环境？**[用 Docker 三条命令即可体验](https://github.com/wangjiake/Riverse-Docker)**
-
 📖 **完整文档：[wangjiake.github.io/riverse-docs](https://wangjiake.github.io/riverse-docs/zh/)**
 
 ---
@@ -107,32 +105,90 @@ Riverse 是一个运行在你自己机器上的个人 AI Agent。它记住每一
 
 ## 快速开始
 
-### 前置要求
+### 方式一：Docker Compose（推荐）
 
-Python 3.10+ · PostgreSQL 16+ · [Ollama](https://ollama.ai)（可选，也可纯云端）
+最快上手方式，不需要安装 Python 和 PostgreSQL。
 
-### 从源码安装
+```bash
+git clone https://github.com/wangjiake/JKRiver.git
+cd JKRiver/docker
+cp .env.example .env
+```
+
+编辑 `.env` — 设置 API Key：
+
+```env
+OPENAI_API_KEY=sk-your-key-here
+```
+
+```bash
+docker compose up -d
+```
+
+搞定。Web 面板 `http://localhost:2345`，API 地址 `http://localhost:8400/docs`。
+
+> **导入聊天记录：** 将 ChatGPT / Claude / Gemini 的导出文件放入 `docker/data/ChatGPT/`、`docker/data/Claude/` 或 `docker/data/Gemini/`，重启即可导入。
+>
+> 如需 Telegram/Discord Bot，在 `.env` 中设置 `TELEGRAM_BOT_TOKEN` 或 `DISCORD_BOT_TOKEN` 后重启。
+
+---
+
+### 方式二：从源码安装
+
+#### 1. 前置要求
+
+- **Python 3.10+**
+- **PostgreSQL 16+** — [安装指南](https://www.postgresql.org/download/)
+- **Ollama**（可选）— [ollama.ai](https://ollama.ai)，仅本地模型模式需要
+
+#### 2. 克隆并安装依赖
 
 ```bash
 git clone https://github.com/wangjiake/JKRiver.git
 cd JKRiver
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-
-# 建库建表
-createdb -h localhost -U your_username Riverse
-psql -h localhost -U your_username -d Riverse -f agent/schema.sql
-
-# 编辑 settings.yaml — 设置 database.user、LLM、Bot Token
-# 完整配置说明：https://wangjiake.github.io/riverse-docs/zh/getting-started/configuration/
-
-# 启动
-python -m agent.telegram_bot          # Telegram Bot
-python -m agent.main                  # CLI
-python web.py                         # Web 仪表盘
 ```
 
-> 📖 **[完整文档 →](https://wangjiake.github.io/riverse-docs/zh/)** — 安装、配置、功能说明、开发指南。
+#### 3. 配置 PostgreSQL
+
+```bash
+# 创建数据库（把 YOUR_USERNAME 替换为你的 PostgreSQL 用户名）
+createdb -h localhost -U YOUR_USERNAME Riverse
+
+# 创建所有表
+psql -h localhost -U YOUR_USERNAME -d Riverse -f agent/schema.sql
+```
+
+> **提示：** macOS/Linux 终端运行 `whoami` 查看用户名。Windows 默认 PostgreSQL 用户通常是 `postgres`。
+
+#### 4. 编辑配置
+
+```bash
+cp settings.yaml.default settings.yaml
+```
+
+编辑 `settings.yaml`，至少修改以下内容：
+
+```yaml
+database:
+    user: "YOUR_USERNAME"               # 你的 PostgreSQL 用户名
+
+llm_provider: "openai"                  # "openai" 用云端 API，"local" 用本地 Ollama
+openai:
+    api_key: "sk-your-key-here"         # 使用 openai 时必填
+```
+
+> 完整配置说明：**[wangjiake.github.io/riverse-docs](https://wangjiake.github.io/riverse-docs/zh/getting-started/configuration/)**
+
+#### 5. 启动
+
+```bash
+python -m agent.main                    # CLI 模式
+python -m agent.telegram_bot            # Telegram Bot
+python -m agent.discord_bot             # Discord Bot
+python web.py                           # Web 面板 (http://localhost:5001)
+```
 
 ### 测试
 

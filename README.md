@@ -16,8 +16,6 @@
 [![Discord](https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white)](https://discord.gg/ZnmFrPvXym)
 [![Docs](https://img.shields.io/badge/Docs-wangjiake.github.io-06b6d4?logo=readthedocs&logoColor=white)](https://wangjiake.github.io/riverse-docs/)
 
-Don't want to install anything? **[Run with Docker in 3 commands](https://github.com/wangjiake/Riverse-Docker)**
-
 📖 **Full documentation: [wangjiake.github.io/riverse-docs](https://wangjiake.github.io/riverse-docs/)**
 
 ---
@@ -107,32 +105,90 @@ Conversation flows in ──→ Erosion ──→ Sedimentation ──→ Shapes
 
 ## Quick Start
 
-### Prerequisites
+### Option A: Docker Compose (Recommended)
 
-Python 3.10+ · PostgreSQL 16+ · [Ollama](https://ollama.ai) (optional, can use cloud-only)
+The fastest way to get started. No Python or PostgreSQL installation needed.
 
-### From Source
+```bash
+git clone https://github.com/wangjiake/JKRiver.git
+cd JKRiver/docker
+cp .env.example .env
+```
+
+Edit `.env` — set your API key:
+
+```env
+OPENAI_API_KEY=sk-your-key-here
+```
+
+```bash
+docker compose up -d
+```
+
+Done. Web Dashboard at `http://localhost:2345`, API at `http://localhost:8400/docs`.
+
+> **Import your chat history:** Drop your ChatGPT / Claude / Gemini export files into `docker/data/ChatGPT/`, `docker/data/Claude/`, or `docker/data/Gemini/` and restart.
+>
+> For Telegram/Discord bots, set `TELEGRAM_BOT_TOKEN` or `DISCORD_BOT_TOKEN` in `.env` and restart.
+
+---
+
+### Option B: From Source
+
+#### 1. Prerequisites
+
+- **Python 3.10+**
+- **PostgreSQL 16+** — [Install guide](https://www.postgresql.org/download/)
+- **Ollama** (optional) — [ollama.ai](https://ollama.ai), only needed for local LLM mode
+
+#### 2. Clone and install
 
 ```bash
 git clone https://github.com/wangjiake/JKRiver.git
 cd JKRiver
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-
-# Setup database
-createdb -h localhost -U your_username Riverse
-psql -h localhost -U your_username -d Riverse -f agent/schema.sql
-
-# Edit settings.yaml — set database.user, LLM provider, bot tokens
-# See full configuration guide: https://wangjiake.github.io/riverse-docs/getting-started/configuration/
-
-# Run
-python -m agent.telegram_bot          # Telegram Bot
-python -m agent.main                  # CLI
-python web.py                         # Web Dashboard
 ```
 
-> 📖 **[Full documentation →](https://wangjiake.github.io/riverse-docs/)** — installation, configuration, features, development guides.
+#### 3. Set up PostgreSQL
+
+```bash
+# Create the database (replace YOUR_USERNAME with your PostgreSQL user)
+createdb -h localhost -U YOUR_USERNAME Riverse
+
+# Create all tables
+psql -h localhost -U YOUR_USERNAME -d Riverse -f agent/schema.sql
+```
+
+> **Tip:** On macOS/Linux, run `whoami` to find your username. On Windows with default PostgreSQL, the user is usually `postgres`.
+
+#### 4. Configure
+
+```bash
+cp settings.yaml.default settings.yaml
+```
+
+Edit `settings.yaml` — at minimum, change these:
+
+```yaml
+database:
+    user: "YOUR_USERNAME"               # Your PostgreSQL username
+
+llm_provider: "openai"                  # "openai" for cloud API, "local" for Ollama
+openai:
+    api_key: "sk-your-key-here"         # Required if using openai provider
+```
+
+> Full configuration guide: **[wangjiake.github.io/riverse-docs](https://wangjiake.github.io/riverse-docs/getting-started/configuration/)**
+
+#### 5. Run
+
+```bash
+python -m agent.main                    # CLI mode
+python -m agent.telegram_bot            # Telegram Bot
+python -m agent.discord_bot             # Discord Bot
+python web.py                           # Web Dashboard (http://localhost:5001)
+```
 
 ### Testing
 

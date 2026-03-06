@@ -51,8 +51,15 @@ def save_event(category: str, summary: str, session_id: str | None = None,
         conn.close()
 
 def _is_similar_event(existing: str, new: str) -> bool:
-    STOPWORDS = ["用户", "的", "是", "了", "在", "很", "比较", "非常",
-                 "喜欢", "感兴趣", "关注", " ", "。", "，"]
+    STOPWORDS = [
+        "用户", "的", "是", "了", "在", "很", "比较", "非常",
+        "喜欢", "感兴趣", "关注", "。", "，",
+        "the", "a", "an", "is", "are", "was", "were", "be",
+        "user", "very", "really", "quite", "interested", "in",
+        "ユーザー", "の", "は", "が", "を", "に", "で", "と",
+        "とても", "非常に", "かなり",
+        " ", ".", ",",
+    ]
     def clean(s):
         s = s.strip()
         for w in STOPWORDS:

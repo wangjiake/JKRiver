@@ -1,0 +1,72 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: Riverse
+      POSTGRES_USER: postgres
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d Riverse"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  riverhistory:
+    image: wangjiake/riverhistory:latest
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      LANGUAGE: ${LANGUAGE:-en}
+      LLM_PROVIDER: ${LLM_PROVIDER:-openai}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_API_BASE: ${OPENAI_API_BASE:-https://api.openai.com}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:14b}
+      OLLAMA_API_BASE: ${OLLAMA_API_BASE:-http://host.docker.internal:11434}
+      DB_NAME: Riverse
+      DB_USER: postgres
+      DB_HOST: postgres
+      DEMO_MODE: ${DEMO_MODE:-true}
+      DEMO_PROCESS: ${DEMO_PROCESS:-false}
+    ports:
+      - "2345:2345"
+    volumes:
+      - ./demo_en.json:/demo_en.json:ro
+      - ./demo_zh.json:/demo_zh.json:ro
+      - ./data:/app_work/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  jkriver:
+    image: wangjiake/jkriver:latest
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      LANGUAGE: ${LANGUAGE:-en}
+      LLM_PROVIDER: ${LLM_PROVIDER:-openai}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_API_BASE: ${OPENAI_API_BASE:-https://api.openai.com}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:14b}
+      OLLAMA_API_BASE: ${OLLAMA_API_BASE:-http://host.docker.internal:11434}
+      DB_NAME: Riverse
+      DB_USER: postgres
+      DB_HOST: postgres
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_ALLOWED_USERS: ${TELEGRAM_ALLOWED_USERS:-}
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
+      SLEEP_MODE: ${SLEEP_MODE:-cron}
+      SLEEP_CRON_HOUR: ${SLEEP_CRON_HOUR:-0}
+    ports:
+      - "8400:8400"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  pgdata:

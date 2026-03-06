@@ -72,6 +72,8 @@ def _consolidate_profile():
                 continue
             if old.get("superseded_by") or old.get("end_time"):
                 continue
+            if old.get("value", "").strip().lower() != keeper.get("value", "").strip().lower():
+                continue
             old_evidence = old.get("evidence", [])
             if old_evidence and isinstance(old_evidence, list):
                 add_evidence(keeper["id"], {"merged_from": old["id"]})

@@ -24,8 +24,6 @@ def _parse_json_array(raw: str) -> list[dict]:
                 merged.extend(arr)
         except (json.JSONDecodeError, ValueError):
             continue
-    if merged:
-        pass
     return merged
 
 

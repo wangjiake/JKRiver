@@ -187,7 +187,7 @@ openai:
 python -m agent.main                    # CLI 模式
 python -m agent.telegram_bot            # Telegram Bot
 python -m agent.discord_bot             # Discord Bot
-python web.py                           # Web 面板 (http://localhost:5001)
+python web.py                           # Web 面板 (http://localhost:1234)
 ```
 
 ### 测试

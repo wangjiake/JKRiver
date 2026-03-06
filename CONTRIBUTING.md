@@ -50,6 +50,35 @@ Follow the project's `.editorconfig`:
 
 Keep code consistent with the existing style in each file.
 
+## Commit Messages
+
+This project follows [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+<type>: <short summary>
+```
+
+Common types:
+
+| Type | When to use |
+|---|---|
+| `feat` | New feature |
+| `fix` | Bug fix |
+| `docs` | Documentation only |
+| `refactor` | Code change that neither fixes a bug nor adds a feature |
+| `test` | Adding or updating tests |
+| `chore` | Build, CI, dependency updates |
+
+Examples:
+
+```
+feat: add Japanese prompt support
+fix: interest category check ignoring non-English labels
+docs: fix web dashboard port in README
+```
+
+Keep the summary under 72 characters. Use the body for details if needed.
+
 ## Pull Request Process
 
 1. **Fork** the repository and create a feature branch from `main`

@@ -45,6 +45,12 @@ _LOG = {
 
 DEFAULT_MAX_MESSAGES_PER_DAY = 3
 DEFAULT_MIN_GAP_MINUTES = 120
+DEFAULT_EVENT_MIN_IMPORTANCE = 0.6
+DEFAULT_FOLLOWUP_AFTER_HOURS = 24
+DEFAULT_EVENT_MAX_AGE_DAYS = 7
+DEFAULT_IDLE_HOURS = 48
+DEFAULT_STRATEGY_LOG_HOURS = 168
+MAX_STRATEGIES_PER_SCAN = 5
 
 def _log(key: str, lang: str = "en") -> str:
     return _LOG.get(lang, _LOG["en"]).get(key, _LOG["en"].get(key, key))
@@ -126,9 +132,9 @@ class ProactiveScanner:
 
         evt_cfg = self.triggers_cfg.get("event_followup", {})
         if evt_cfg.get("enabled", True):
-            min_importance = evt_cfg.get("min_importance", 0.6)
-            followup_after = evt_cfg.get("followup_after_hours", 24)
-            max_age = evt_cfg.get("max_age_days", 7)
+            min_importance = evt_cfg.get("min_importance", DEFAULT_EVENT_MIN_IMPORTANCE)
+            followup_after = evt_cfg.get("followup_after_hours", DEFAULT_FOLLOWUP_AFTER_HOURS)
+            max_age = evt_cfg.get("max_age_days", DEFAULT_EVENT_MAX_AGE_DAYS)
 
             events = load_active_events(top_k=20)
             recent_logs = load_proactive_log(chat_id, since_hours=max_age * 24)
@@ -167,12 +173,12 @@ class ProactiveScanner:
         strat_cfg = self.triggers_cfg.get("strategy", {})
         if strat_cfg.get("enabled", True):
             strategies = load_pending_strategies()
-            recent_logs = load_proactive_log(chat_id, since_hours=168)
+            recent_logs = load_proactive_log(chat_id, since_hours=DEFAULT_STRATEGY_LOG_HOURS)
             sent_refs = {
                 log["trigger_ref"] for log in recent_logs
                 if log.get("trigger_type") == "strategy"
             }
-            for strat in strategies[:5]:
+            for strat in strategies[:MAX_STRATEGIES_PER_SCAN]:
                 ref_key = f"strategy_{strat.get('id', '')}"
                 if ref_key in sent_refs:
                     continue
@@ -186,7 +192,7 @@ class ProactiveScanner:
 
         idle_cfg = self.triggers_cfg.get("idle_checkin", {})
         if idle_cfg.get("enabled", True):
-            idle_hours = idle_cfg.get("idle_hours", 48)
+            idle_hours = idle_cfg.get("idle_hours", DEFAULT_IDLE_HOURS)
             session_id = f"tg_{chat_id}"
             last_time = get_last_interaction_time(session_id)
             if last_time:

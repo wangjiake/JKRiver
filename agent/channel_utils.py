@@ -12,31 +12,33 @@ from agent.proactive import ProactiveScanner
 
 logger = logging.getLogger(__name__)
 
-_ollama_checked = False
+_OLLAMA_CHECK_TTL = 300  # re-check after 5 minutes
+_ollama_checked: float | None = None
 
 
 def ensure_ollama(config: dict) -> bool:
     """Ensure Ollama is reachable; auto-start if local provider and not running.
 
-    Uses a module-level flag to avoid repeated checks (and repeated bind errors).
+    Uses a module-level timestamp to avoid repeated checks, re-checking
+    after _OLLAMA_CHECK_TTL seconds.
     Returns True if reachable or not applicable.
     """
     global _ollama_checked
-    if _ollama_checked:
+    if _ollama_checked is not None and (time.monotonic() - _ollama_checked) < _OLLAMA_CHECK_TTL:
         return True
 
     provider = config.get("llm_provider", "local")
     llm = config.get("llm", {})
     api_base = llm.get("api_base", "")
     if not api_base:
-        _ollama_checked = True
+        _ollama_checked = time.monotonic()
         return True
 
     import requests
     # Already reachable?
     try:
         requests.get(api_base, timeout=3)
-        _ollama_checked = True
+        _ollama_checked = time.monotonic()
         return True
     except Exception:
         pass
@@ -44,7 +46,7 @@ def ensure_ollama(config: dict) -> bool:
     # Only auto-start for local provider
     if provider != "local":
         logger.warning("Cannot reach LLM API at %s", api_base)
-        _ollama_checked = True
+        _ollama_checked = time.monotonic()
         return False
 
     parsed = urlparse(api_base)
@@ -58,12 +60,12 @@ def ensure_ollama(config: dict) -> bool:
             time.sleep(1)
             try:
                 requests.get(api_base, timeout=2)
-                _ollama_checked = True
+                _ollama_checked = time.monotonic()
                 return True
             except Exception:
                 pass
         logger.warning("Ollama port %d bound but API not responding", port)
-        _ollama_checked = True
+        _ollama_checked = time.monotonic()
         return False
 
     # Port free → start Ollama
@@ -76,7 +78,7 @@ def ensure_ollama(config: dict) -> bool:
         )
     except FileNotFoundError:
         logger.warning("'ollama' not found in PATH; please install Ollama first")
-        _ollama_checked = True
+        _ollama_checked = time.monotonic()
         return False
 
     for _ in range(15):
@@ -84,13 +86,13 @@ def ensure_ollama(config: dict) -> bool:
         try:
             requests.get(api_base, timeout=2)
             logger.info("Ollama is ready")
-            _ollama_checked = True
+            _ollama_checked = time.monotonic()
             return True
         except Exception:
             pass
 
     logger.warning("Ollama started but not responding at %s", api_base)
-    _ollama_checked = True
+    _ollama_checked = time.monotonic()
     return False
 
 

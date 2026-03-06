@@ -10,6 +10,10 @@ from agent.config.prompts import get_labels
 
 logger = logging.getLogger(__name__)
 
+EMBEDDING_DIM = 1024
+MIN_ROWS_FOR_INDEX = 100
+DEFAULT_MIN_SCORE = 0.40
+
 _table_ensured = False
 _pgvector_available = None  # None = not checked yet
 
@@ -57,7 +61,7 @@ def _ensure_embedding_table():
             """)
             if has_pgvector:
                 # Add vector column if it doesn't exist
-                cur.execute("""
+                cur.execute(f"""
                     DO $$
                     BEGIN
                         IF NOT EXISTS (
@@ -65,7 +69,7 @@ def _ensure_embedding_table():
                             WHERE table_name = 'memory_embeddings'
                             AND column_name = 'embedding_vec'
                         ) THEN
-                            ALTER TABLE memory_embeddings ADD COLUMN embedding_vec vector(1024);
+                            ALTER TABLE memory_embeddings ADD COLUMN embedding_vec vector({EMBEDDING_DIM});
                         END IF;
                     END $$;
                 """)
@@ -78,7 +82,7 @@ def _ensure_embedding_table():
                 # Create IVFFlat index if enough rows exist
                 cur.execute("SELECT COUNT(*) FROM memory_embeddings")
                 count = cur.fetchone()[0]
-                if count >= 100:
+                if count >= MIN_ROWS_FOR_INDEX:
                     cur.execute("""
                         CREATE INDEX IF NOT EXISTS idx_memory_embeddings_vec
                         ON memory_embeddings USING ivfflat (embedding_vec vector_cosine_ops)
@@ -179,7 +183,7 @@ def _vector_search_python(query_vec: list[float], top_k: int, min_score: float,
 
 
 def vector_search(query_text: str, config: dict,
-                  top_k: int = 5, min_score: float = 0.40,
+                  top_k: int = 5, min_score: float = DEFAULT_MIN_SCORE,
                   source_tables: list[str] | None = None) -> list[dict]:
     emb_cfg = config.get("embedding", {})
     model = emb_cfg.get("model", "")
@@ -398,4 +402,4 @@ def _cleanup_orphaned(conn):
             logger.warning("orphan cleanup failed for %s: %s", table, e)
 
     if total_cleaned > 0:
-        pass
+        logger.debug("Cleaned %d orphaned embeddings", total_cleaned)

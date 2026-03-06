@@ -1,7 +1,11 @@
 
+import logging
 import re
+import time
 import requests
 import httpx
+
+logger = logging.getLogger(__name__)
 
 # ── Async versions ──
 
@@ -27,6 +31,7 @@ async def _call_chat_completions_async(messages: list[dict], config: dict) -> st
     else:
         token_param = {"max_tokens": max_tokens, "temperature": temperature}
 
+    t0 = time.monotonic()
     try:
         async with httpx.AsyncClient(timeout=120) as client:
             resp = await client.post(
@@ -39,8 +44,17 @@ async def _call_chat_completions_async(messages: list[dict], config: dict) -> st
                 },
             )
             resp.raise_for_status()
-            return resp.json()["choices"][0]["message"]["content"]
+            data = resp.json()
+            content = data["choices"][0]["message"]["content"]
+            duration_ms = (time.monotonic() - t0) * 1000
+            usage = data.get("usage", {})
+            logger.debug("LLM chat_async ok model=%s duration_ms=%.0f tokens=%s",
+                          model, duration_ms, usage.get("total_tokens", "?"))
+            return content
     except Exception as e:
+        duration_ms = (time.monotonic() - t0) * 1000
+        logger.warning("LLM chat_async fail model=%s duration_ms=%.0f error=%s",
+                        model, duration_ms, e)
         from agent.config.prompts import get_labels
         EL = get_labels("errors.llm", config.get("language", "en"))
         return EL["call_failed"].format(error=e)
@@ -57,6 +71,7 @@ async def _call_responses_api_async(messages: list[dict], config: dict) -> str:
         "Authorization": f"Bearer {api_key}",
     }
 
+    t0 = time.monotonic()
     try:
         async with httpx.AsyncClient(timeout=120) as client:
             resp = await client.post(
@@ -73,6 +88,11 @@ async def _call_responses_api_async(messages: list[dict], config: dict) -> str:
             resp.raise_for_status()
             data = resp.json()
 
+        duration_ms = (time.monotonic() - t0) * 1000
+        usage = data.get("usage", {})
+        logger.debug("LLM responses_async ok model=%s duration_ms=%.0f tokens=%s",
+                      model, duration_ms, usage.get("total_tokens", "?"))
+
         for item in data.get("output", []):
             if item.get("type") == "message":
                 for content in item.get("content", []):
@@ -87,6 +107,9 @@ async def _call_responses_api_async(messages: list[dict], config: dict) -> str:
         EL = get_labels("errors.llm", config.get("language", "en"))
         return EL["responses_no_text"]
     except Exception as e:
+        duration_ms = (time.monotonic() - t0) * 1000
+        logger.warning("LLM responses_async fail model=%s duration_ms=%.0f error=%s",
+                        model, duration_ms, e)
         from agent.config.prompts import get_labels
         EL = get_labels("errors.llm", config.get("language", "en"))
         return EL["call_failed"].format(error=e)
@@ -109,13 +132,13 @@ def _call_chat_completions(messages: list[dict], config: dict) -> str:
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
 
-    # gpt-5/o1/o3 系列：max_completion_tokens + 不支持自定义 temperature
     is_new_model = any(k in model for k in ("gpt-5", "o1", "o3"))
     if is_new_model:
         token_param = {"max_completion_tokens": max_tokens}
     else:
         token_param = {"max_tokens": max_tokens, "temperature": temperature}
 
+    t0 = time.monotonic()
     try:
         resp = requests.post(
             f"{api_base}/v1/chat/completions",
@@ -128,8 +151,17 @@ def _call_chat_completions(messages: list[dict], config: dict) -> str:
             timeout=120,
         )
         resp.raise_for_status()
-        return resp.json()["choices"][0]["message"]["content"]
+        data = resp.json()
+        content = data["choices"][0]["message"]["content"]
+        duration_ms = (time.monotonic() - t0) * 1000
+        usage = data.get("usage", {})
+        logger.debug("LLM chat ok model=%s duration_ms=%.0f tokens=%s",
+                      model, duration_ms, usage.get("total_tokens", "?"))
+        return content
     except Exception as e:
+        duration_ms = (time.monotonic() - t0) * 1000
+        logger.warning("LLM chat fail model=%s duration_ms=%.0f error=%s",
+                        model, duration_ms, e)
         from agent.config.prompts import get_labels
         EL = get_labels("errors.llm", config.get("language", "en"))
         return EL["call_failed"].format(error=e)
@@ -146,6 +178,7 @@ def _call_responses_api(messages: list[dict], config: dict) -> str:
         "Authorization": f"Bearer {api_key}",
     }
 
+    t0 = time.monotonic()
     try:
         resp = requests.post(
             f"{api_base}/v1/responses",
@@ -161,6 +194,10 @@ def _call_responses_api(messages: list[dict], config: dict) -> str:
         )
         resp.raise_for_status()
         data = resp.json()
+        duration_ms = (time.monotonic() - t0) * 1000
+        usage = data.get("usage", {})
+        logger.debug("LLM responses ok model=%s duration_ms=%.0f tokens=%s",
+                      model, duration_ms, usage.get("total_tokens", "?"))
 
         for item in data.get("output", []):
             if item.get("type") == "message":
@@ -176,6 +213,9 @@ def _call_responses_api(messages: list[dict], config: dict) -> str:
         EL = get_labels("errors.llm", config.get("language", "en"))
         return EL["responses_no_text"]
     except Exception as e:
+        duration_ms = (time.monotonic() - t0) * 1000
+        logger.warning("LLM responses fail model=%s duration_ms=%.0f error=%s",
+                        model, duration_ms, e)
         from agent.config.prompts import get_labels
         EL = get_labels("errors.llm", config.get("language", "en"))
         return EL["call_failed"].format(error=e)

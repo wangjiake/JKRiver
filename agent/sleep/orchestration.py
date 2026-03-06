@@ -41,6 +41,8 @@ from agent.sleep.trajectory import generate_trajectory_summary, extract_fact_edg
 
 logger = logging.getLogger(__name__)
 
+RECENT_PROFILE_LOOKBACK_DAYS = 90
+
 
 def run():
     config = load_config()
@@ -92,9 +94,7 @@ def _run_sleep_pipeline_inner(session_convs, config, language, L):
     existing_profile = load_full_current_profile(exclude_superseded=True)
 
     trajectory = load_trajectory_summary()
-    if trajectory and trajectory.get("life_phase"):
-        pass
-    else:
+    if not (trajectory and trajectory.get("life_phase")):
         trajectory = None
 
     total_session_count = len(session_convs)
@@ -199,9 +199,7 @@ def _run_sleep_pipeline_inner(session_convs, config, language, L):
 
                 if cat and subj and inferred:
                     existing = find_current_fact(cat, subj)
-                    if existing and existing.get("value", "").strip().lower() == inferred.strip().lower():
-                        pass
-                    else:
+                    if not (existing and existing.get("value", "").strip().lower() == inferred.strip().lower()):
                         fact_id = save_profile_fact(
                             category=cat,
                             subject=subj,
@@ -224,8 +222,6 @@ def _run_sleep_pipeline_inner(session_convs, config, language, L):
                     except Exception:
                         _pipeline_errors += 1
                         logger.error("Save clarify strategy failed", exc_info=True)
-        else:
-            pass
 
     current_profile = load_full_current_profile(exclude_superseded=True)
     timeline = load_timeline()
@@ -256,7 +252,7 @@ def _run_sleep_pipeline_inner(session_convs, config, language, L):
         if has_contradictions:
             classify_profile = current_profile
         elif len(obs_subjects) <= 3:
-            three_months_ago = get_now() - timedelta(days=90)
+            three_months_ago = get_now() - timedelta(days=RECENT_PROFILE_LOOKBACK_DAYS)
             classify_profile = [
                 p for p in current_profile
                 if p.get("subject") in obs_subjects
@@ -283,8 +279,6 @@ def _run_sleep_pipeline_inner(session_convs, config, language, L):
                 if obs.get("type") in ("statement", "contradiction"):
                     classifications.append({"obs_index": idx, "action": "new",
                                             "reason": L["auto_classify_reason"]})
-                else:
-                    pass
 
         supports = [c for c in classifications if c.get("action") == "support"]
         contradictions = [c for c in classifications if c.get("action") == "contradict"]
@@ -456,8 +450,6 @@ def _run_sleep_pipeline_inner(session_convs, config, language, L):
                     _pipeline_errors += 1
                     logger.error("Save strategy failed: %s", e)
 
-    else:
-        pass
 
     # cross-verify suspected facts
     suspected_facts = load_suspected_profile()
@@ -479,8 +471,6 @@ def _run_sleep_pipeline_inner(session_convs, config, language, L):
                 confirm_profile_fact(f["id"], reference_time=latest_conv_time)
                 affected_fact_ids.add(f["id"])
                 confirmed_count += 1
-            else:
-                pass
 
     # resolve disputes
     disputed_pairs = load_disputed_facts()
@@ -503,11 +493,6 @@ def _run_sleep_pipeline_inner(session_convs, config, language, L):
                 delete_fact_edges_for(new_fid)
                 affected_fact_ids.add(old_fid)
                 dispute_resolved += 1
-            else:
-                pass
-
-    else:
-        pass
 
     # Extract fact edges (knowledge network)
     if affected_fact_ids:
@@ -545,9 +530,6 @@ def _run_sleep_pipeline_inner(session_convs, config, language, L):
                 _pipeline_errors += 1
                 logger.error("Save expired-fact strategy failed", exc_info=True)
             stale_count += 1
-
-    else:
-        pass
 
     key_anchors = []
     if trajectory and trajectory.get("key_anchors"):
@@ -594,8 +576,6 @@ def _run_sleep_pipeline_inner(session_convs, config, language, L):
                 assessment=m["assessment"],
                 evidence_summary=m.get("evidence", ""),
             )
-    else:
-        pass
 
     should_update_trajectory = False
     conn = get_db_connection()
@@ -641,12 +621,6 @@ def _run_sleep_pipeline_inner(session_convs, config, language, L):
                 except Exception as e:
                     _pipeline_errors += 1
                     logger.error("Save trajectory failed: %s", e)
-            else:
-                pass
-        else:
-            pass
-    else:
-        pass
 
     # Profile dedup consolidation (only when new facts created or disputes resolved)
     if new_fact_count > 0 or dispute_resolved > 0:

@@ -1,3 +1,13 @@
+"""Profile storage — user facts, relationships, trajectory, user model.
+
+All write functions follow the commit/transaction proxy pattern:
+each function calls conn.commit() once at the end.  When called inside
+a transaction() block, get_db_connection() returns a _TransactionProxy
+that makes commit() a no-op, so the real commit happens when the
+transaction block exits.  This keeps functions self-contained for
+standalone use while allowing batched atomic transactions.
+"""
+
 import json
 from datetime import datetime, timedelta
 from psycopg2.extras import RealDictCursor
@@ -166,8 +176,6 @@ def save_or_update_relationship(name: str | None, relation: str,
                     "last_mentioned_at = %s WHERE id = %s",
                     (json.dumps(merged, ensure_ascii=False), mc + 1, now, rid),
                 )
-                conn.commit()
-                return rid
             else:
                 cur.execute(
                     "INSERT INTO relationships (name, relation, details, "
@@ -176,8 +184,8 @@ def save_or_update_relationship(name: str | None, relation: str,
                     (name, relation, json.dumps(details, ensure_ascii=False), now, now),
                 )
                 rid = cur.fetchone()[0]
-                conn.commit()
-                return rid
+        conn.commit()
+        return rid
     finally:
         conn.close()
 
@@ -228,8 +236,7 @@ def save_profile_fact(category: str, subject: str, value: str,
                         (new_mc, json.dumps(merged, ensure_ascii=False),
                          now, new_expires, existing["id"]),
                     )
-                    conn.commit()
-                    return existing["id"]
+                    result_id = existing["id"]
                 elif existing["category"] in (get_labels("context.labels", _lang()).get("interest_category", "interest"),):
                     cur.execute(
                         "SELECT id, evidence, mention_count FROM user_profile "
@@ -250,8 +257,7 @@ def save_profile_fact(category: str, subject: str, value: str,
                             (new_mc, json.dumps(merged_ev, ensure_ascii=False),
                              now, new_expires, exact_match["id"]),
                         )
-                        conn.commit()
-                        return exact_match["id"]
+                        result_id = exact_match["id"]
                     else:
                         cur.execute(
                             "INSERT INTO user_profile "
@@ -266,9 +272,7 @@ def save_profile_fact(category: str, subject: str, value: str,
                              json.dumps(evidence, ensure_ascii=False),
                              now, now),
                         )
-                        new_id = cur.fetchone()["id"]
-                        conn.commit()
-                        return new_id
+                        result_id = cur.fetchone()["id"]
                 else:
                     cur.execute(
                         "INSERT INTO user_profile "
@@ -284,13 +288,11 @@ def save_profile_fact(category: str, subject: str, value: str,
                          json.dumps(evidence, ensure_ascii=False),
                          now, now, existing["id"]),
                     )
-                    new_id = cur.fetchone()["id"]
+                    result_id = cur.fetchone()["id"]
                     cur.execute(
                         "UPDATE user_profile SET superseded_by = %s WHERE id = %s",
-                        (new_id, existing["id"]),
+                        (result_id, existing["id"]),
                     )
-                    conn.commit()
-                    return new_id
             else:
                 cur.execute(
                     "INSERT INTO user_profile "
@@ -305,9 +307,9 @@ def save_profile_fact(category: str, subject: str, value: str,
                      json.dumps(evidence, ensure_ascii=False),
                      now, now),
                 )
-                new_id = cur.fetchone()["id"]
-                conn.commit()
-                return new_id
+                result_id = cur.fetchone()["id"]
+        conn.commit()
+        return result_id
     finally:
         conn.close()
 

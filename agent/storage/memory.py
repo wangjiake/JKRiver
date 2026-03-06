@@ -154,8 +154,11 @@ def save_fact_edge(source_fact_id: int, target_fact_id: int,
         return edge_id
     except Exception:
         logger.error("save_fact_edge failed (src=%s, tgt=%s)", source_fact_id, target_fact_id, exc_info=True)
-        conn.rollback()
-        return -1
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        raise
     finally:
         conn.close()
 
@@ -193,8 +196,7 @@ def load_fact_edges(fact_ids: list[int] | None = None) -> list[dict]:
                 return [dict(r) for r in cur.fetchall()]
             except Exception:
                 logger.error("load_fact_edges query failed", exc_info=True)
-                conn.rollback()
-                return []
+                raise
     finally:
         conn.close()
 
@@ -210,8 +212,7 @@ def delete_fact_edges_for(fact_id: int):
                 )
             except Exception:
                 logger.error("delete_fact_edges_for failed (fact_id=%s)", fact_id, exc_info=True)
-                conn.rollback()
-                return
+                raise
         conn.commit()
     finally:
         conn.close()

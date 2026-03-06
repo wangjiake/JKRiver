@@ -44,7 +44,7 @@ def save_event(category: str, summary: str, session_id: str | None = None,
                 cur.execute(
                     "INSERT INTO event_log (category, summary, importance, expires_at, source_session, created_at) "
                     "VALUES (%s, %s, %s, %s, %s, %s)",
-                    (category, summary, importance, expires_at, session_id, get_now()),
+                    (category, summary, importance, expires_at, session_id, now),
                 )
         conn.commit()
     finally:
@@ -60,7 +60,7 @@ def _is_similar_event(existing: str, new: str) -> bool:
         return s
     a, b = clean(existing), clean(new)
     if not a or not b:
-        return True
+        return False
     return a == b or a in b or b in a
 
 def load_active_events(top_k: int = 10, category: str | None = None) -> list[dict]:

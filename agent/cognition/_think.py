@@ -88,7 +88,7 @@ def strip_internal_sections(memory_text: str, language: str = "en") -> str:
         if any(marker in line for marker in markers):
             skip = True
             continue
-        if line.startswith("【") and skip:
+        if skip and (line.startswith("【") or line.startswith("[")):
             skip = False
         if not skip:
             result_lines.append(line)
@@ -125,10 +125,10 @@ def make_thinking_notes(
     else:
         notes.append(L.get("note_memory_not_found", "需要记忆但未找到"))
 
-    if verification_result != "PASS":
-        notes.append(L.get("note_verification_blocked", "验证拦截：{result}").format(result=verification_result))
-    else:
+    if verification_result == "PASS":
         notes.append(L.get("note_verification_pass", "验证通过"))
+    elif verification_result != "SKIP":
+        notes.append(L.get("note_verification_blocked", "验证拦截：{result}").format(result=verification_result))
 
     return "；".join(notes)
 

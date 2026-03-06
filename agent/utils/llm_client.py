@@ -36,7 +36,10 @@ def _build_chat_request(messages: list[dict], config: dict) -> tuple[str, dict, 
 
 def _parse_chat_response(data: dict) -> str:
     """Extract content text from chat completions response."""
-    return data["choices"][0]["message"]["content"]
+    choices = data.get("choices")
+    if not choices:
+        return ""
+    return choices[0].get("message", {}).get("content", "")
 
 
 def _build_responses_request(messages: list[dict], config: dict) -> tuple[str, dict, dict]:

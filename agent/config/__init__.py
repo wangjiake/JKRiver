@@ -14,7 +14,10 @@ def load_config(path: str = None) -> dict:
     if not os.path.exists(path) and os.path.exists(_DEFAULT_PATH):
         shutil.copy2(_DEFAULT_PATH, path)
     with open(path, "r", encoding="utf-8") as f:
-        raw = yaml.safe_load(f)
+        try:
+            raw = yaml.safe_load(f)
+        except yaml.YAMLError as e:
+            raise ValueError(f"Failed to parse {path}: {e}") from e
 
     provider = raw.get("llm_provider", "local")
     llm_config = raw.get(provider, raw.get("local", {}))

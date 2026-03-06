@@ -50,12 +50,9 @@ def run():
     language = config.get("language", "en")
     L = get_labels("context.labels", language)
 
-    MAX_SESSIONS_PER_RUN = 20
     session_convs = get_unprocessed_conversations()
     if not session_convs:
         return
-    if len(session_convs) > MAX_SESSIONS_PER_RUN:
-        session_convs = dict(list(session_convs.items())[:MAX_SESSIONS_PER_RUN])
 
     _run_sleep_pipeline(session_convs, config, language, L)
 
@@ -516,18 +513,22 @@ def _step_resolve_disputes(state: _PipelineState):
         new_fid = j["new_fact_id"]
         action = j["action"]
 
-        if action == "accept_new":
-            resolve_dispute(old_fid, new_fid, accept_new=True,
-                          resolution_time=state.latest_conv_time)
-            delete_fact_edges_for(old_fid)
-            state.affected_fact_ids.add(new_fid)
-            state.dispute_resolved += 1
-        elif action == "reject_new":
-            resolve_dispute(old_fid, new_fid, accept_new=False,
-                          resolution_time=state.latest_conv_time)
-            delete_fact_edges_for(new_fid)
-            state.affected_fact_ids.add(old_fid)
-            state.dispute_resolved += 1
+        try:
+            if action == "accept_new":
+                resolve_dispute(old_fid, new_fid, accept_new=True,
+                              resolution_time=state.latest_conv_time)
+                delete_fact_edges_for(old_fid)
+                state.affected_fact_ids.add(new_fid)
+                state.dispute_resolved += 1
+            elif action == "reject_new":
+                resolve_dispute(old_fid, new_fid, accept_new=False,
+                              resolution_time=state.latest_conv_time)
+                delete_fact_edges_for(new_fid)
+                state.affected_fact_ids.add(old_fid)
+                state.dispute_resolved += 1
+        except Exception:
+            state.pipeline_errors += 1
+            logger.error("Resolve dispute failed (old=%s, new=%s)", old_fid, new_fid, exc_info=True)
 
 
 def _step_extract_edges(state: _PipelineState):
@@ -553,7 +554,10 @@ def _step_expire_facts(state: _PipelineState):
             continue
 
         close_time_period(f["id"], end_time=state.latest_conv_time)
-        delete_fact_edges_for(f["id"])
+        try:
+            delete_fact_edges_for(f["id"])
+        except Exception:
+            logger.error("Delete edges for expired fact %s failed", f["id"], exc_info=True)
         try:
             save_strategy(
                 hypothesis_category=f["category"],
@@ -694,9 +698,13 @@ def _step_snapshot(state: _PipelineState):
             rel_lines = [f"  {r['relation']}: {r.get('name', '?')}" for r in snapshot_relationships[:10]]
             snapshot_text += f"\n\n{state.L['section_relationships']}\n" + "\n".join(rel_lines)
 
-        snapshot_edges = load_fact_edges(
-            [p["id"] for p in final_profile if p.get("id")]
-        ) if final_profile else []
+        try:
+            snapshot_edges = load_fact_edges(
+                [p["id"] for p in final_profile if p.get("id")]
+            ) if final_profile else []
+        except Exception:
+            logger.error("Load fact edges for snapshot failed", exc_info=True)
+            snapshot_edges = []
         if snapshot_edges:
             edge_lines = [
                 f"  [{e.get('src_category','')}/{e.get('src_subject','')}] "
@@ -726,12 +734,9 @@ async def run_async():
     language = config.get("language", "en")
     L = get_labels("context.labels", language)
 
-    MAX_SESSIONS_PER_RUN = 20
     session_convs = await asyncio.to_thread(get_unprocessed_conversations)
     if not session_convs:
         return
-    if len(session_convs) > MAX_SESSIONS_PER_RUN:
-        session_convs = dict(list(session_convs.items())[:MAX_SESSIONS_PER_RUN])
 
     # Run the transactional pipeline on a thread (keeps all DB ops on one thread)
     await asyncio.to_thread(_run_sleep_pipeline, session_convs, config, language, L)

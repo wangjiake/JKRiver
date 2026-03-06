@@ -280,6 +280,7 @@ def embed_all_memories(config: dict):
     try:
         get_embedding("test", model=model, api_base=api_base)
     except Exception as e:
+        logger.debug("Embedding service unreachable, skipping: %s", e)
         return
 
     _ensure_embedding_table()

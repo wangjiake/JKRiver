@@ -1,5 +1,6 @@
 
 from collections import defaultdict
+from datetime import datetime
 from agent.storage import (
     get_db_connection,
     load_full_current_profile,
@@ -64,7 +65,7 @@ def _consolidate_profile():
     for (cat, subj), entries in groups.items():
         if len(entries) <= 1:
             continue
-        entries.sort(key=lambda x: x.get("updated_at") or x.get("created_at"), reverse=True)
+        entries.sort(key=lambda x: x.get("updated_at") or x.get("created_at") or datetime.min, reverse=True)
         keeper = entries[0]
         for old in entries[1:]:
             if old["id"] == keeper["id"]:

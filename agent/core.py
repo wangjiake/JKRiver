@@ -532,7 +532,7 @@ def _save_turn_data(session, perception: dict, think_result: dict,
                 with open(file_path, "rb") as f:
                     file_data = f.read()
         except Exception:
-            pass
+            logger.warning("Failed to read file attachment: %s", file_path, exc_info=True)
 
     save_conversation_turn({
         "session_id": session.id,

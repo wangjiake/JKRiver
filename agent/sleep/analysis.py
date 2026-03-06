@@ -241,7 +241,7 @@ def cross_verify_suspected_facts(suspected_facts: list[dict], config: dict,
 
     # 按 subject 分类加载相关对话摘要（限最近 3 个月）
     obs_context = ""
-    three_months_ago = datetime.now() - timedelta(days=90)
+    three_months_ago = get_now() - timedelta(days=90)
     for cat, subj in seen_subjects:
         if not subj:
             continue

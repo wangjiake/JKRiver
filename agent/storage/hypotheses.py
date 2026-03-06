@@ -1,10 +1,13 @@
 import json
+import logging
 from datetime import datetime, timedelta
 from psycopg2.extras import RealDictCursor
 from agent.utils.time_context import get_now
 from agent.config import load_config
 from agent.config.prompts import get_labels
 from ._db import get_db_connection
+
+logger = logging.getLogger(__name__)
 
 def _lang() -> str:
     return load_config().get("language", "en")
@@ -148,6 +151,7 @@ def save_hypothesis(category: str, subject: str, claim: str,
                     conn.commit()
                     return hyp_id
                 except Exception:
+                    logger.debug("Hypothesis INSERT conflict, falling back to SELECT", exc_info=True)
                     conn.rollback()
                     cur.execute(
                         "SELECT id FROM hypotheses WHERE category = %s AND subject = %s "

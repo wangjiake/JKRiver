@@ -215,12 +215,16 @@ Test data is included in `tests/data/`. No external dependencies needed.
 | Runtime | Python 3.10+, PostgreSQL 16+ |
 | Local LLM | Ollama (any compatible model) |
 | Cloud LLM | OpenAI GPT-4o / DeepSeek (fallback) |
-| Embeddings | Ollama + BGE-M3 |
+| Embeddings | Ollama + BGE-M3 (auto-accelerated with [pgvector](https://github.com/pgvector/pgvector) if installed) |
 | REST API | FastAPI + Uvicorn |
 | Web Dashboard | Flask |
 | Telegram / Discord | python-telegram-bot / discord.py |
 | Voice / Vision | Whisper-1, GPT-4 Vision, LLaVA |
 | TTS | Edge TTS |
+
+## Security Notice
+
+Riverse is designed as a **single-user, local-first** application. The REST API and Web Dashboard have **no built-in authentication** — do not expose them to the public internet. If you need remote access, place them behind a reverse proxy (e.g. Nginx, Caddy) with authentication, or use an SSH tunnel.
 
 ---
 

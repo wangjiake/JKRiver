@@ -6,6 +6,7 @@ import psycopg2
 from agent.config import load_config
 
 _db_config: dict | None = None
+_db_config_lock = threading.Lock()
 
 
 def _load_db_config() -> dict:
@@ -27,7 +28,9 @@ def _get_db_config() -> dict:
     """Lazy-load database config on first use (not at import time)."""
     global _db_config
     if _db_config is None:
-        _db_config = _load_db_config()
+        with _db_config_lock:
+            if _db_config is None:
+                _db_config = _load_db_config()
     return _db_config
 
 

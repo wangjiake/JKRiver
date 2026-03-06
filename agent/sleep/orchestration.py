@@ -76,6 +76,12 @@ def _run_sleep_pipeline(session_convs, config, language, L):
     The transaction() context manager makes get_db_connection() return a
     proxy that suppresses per-call commit/close.  If anything raises, the
     entire batch is rolled back so the database stays consistent.
+
+    Idempotency: mark_processed() runs last (_step_finalize).  If the
+    pipeline crashes mid-way, the transaction rolls back and the same
+    sessions will be re-processed on the next run (at-least-once).  This
+    is safe because all steps are pure DB operations with no external
+    side effects (no webhooks, no notifications).
     """
     with transaction():
         _run_sleep_pipeline_inner(session_convs, config, language, L)
@@ -628,12 +634,9 @@ def _step_trajectory(state: _PipelineState):
     """Update trajectory summary when appropriate."""
     should_update_trajectory = False
     conn = get_db_connection()
-    try:
-        with conn.cursor() as cur:
-            cur.execute("SELECT COUNT(DISTINCT session_id) FROM raw_conversations WHERE processed = TRUE")
-            total_sessions = cur.fetchone()[0] + len(state.session_convs)
-    finally:
-        conn.close()
+    with conn.cursor() as cur:
+        cur.execute("SELECT COUNT(DISTINCT session_id) FROM raw_conversations WHERE processed = TRUE")
+        total_sessions = cur.fetchone()[0] + len(state.session_convs)
 
     prev_session_count = state.trajectory.get("session_count", 0) if state.trajectory else 0
     sessions_since_update = total_sessions - prev_session_count

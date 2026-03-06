@@ -25,8 +25,10 @@ async def lifespan(app: FastAPI):
     _manager = SessionManager(_config)
     yield
 
-app = FastAPI(title="Riverse Agent API", version="1.0", lifespan=lifespan)
+app = FastAPI(title="Riverse Agent API", version="1.2.0", lifespan=lifespan)
 
+# WARNING: No authentication — designed for single-user local use only.
+# Do NOT expose to the public internet without a reverse proxy + auth.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-03-01
+
+### Added
+
+- Multilingual synonyms YAML for category/subject matching
+- PostgreSQL service in CI with storage tests
+- OSS community files: contributing, CoC, changelog, security, CI, issue/PR templates
+
+### Fixed
+
+- Perceive JSON output parsing
+- Interest category check to use synonyms instead of single-language label
+- Web dashboard port in READMEs
+
 ## [0.1.0] - 2026-02-25
 
 ### Added
@@ -29,5 +43,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - FastAPI REST API + Flask Web Dashboard
 - Health endpoint (`/health`) and config validation
 
-[Unreleased]: https://github.com/wangjiake/JKRiver/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/wangjiake/JKRiver/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/wangjiake/JKRiver/compare/v0.1.0...v1.1.0
 [0.1.0]: https://github.com/wangjiake/JKRiver/releases/tag/v0.1.0

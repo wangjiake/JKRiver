@@ -20,6 +20,7 @@ from agent.utils.profile_filter import format_profile_text
 from agent.tools import ToolRegistry
 from agent.tools.preprocess import preprocess_input
 from agent.tools._resolver import resolve_tools_async
+from agent.utils.llm_client import is_llm_error
 import asyncio
 from agent.config.prompts import get_labels
 from agent.skills import SkillRegistry
@@ -576,7 +577,7 @@ def _extract_citations(tool_results: list[dict], language: str = "en") -> str:
         if not t["result"].success:
             continue
         data = t["result"].data
-        pattern = re.escape(citation_label) + r":\n(.+)"
+        pattern = re.escape(citation_label) + r":\n(.+?)(?:\n\n|\Z)"
         ref_match = re.search(pattern, data, re.DOTALL)
         if ref_match:
             for line in ref_match.group(1).strip().split("\n"):
@@ -691,8 +692,11 @@ async def run_cycle_async(user_input: str | dict, session: Session,
     think_result = await session.cognition.think_async(llm_input, perception, memories, use_cloud=has_tool_data)
     final_response = _finalize_response(think_result, tool_results, language)
 
-    _save_turn_data(session, perception, think_result, memories, memories_used_at,
-                    user_input_at, raw_user_input, final_response, tool_results, input_metadata, L)
+    if not is_llm_error(final_response):
+        _save_turn_data(session, perception, think_result, memories, memories_used_at,
+                        user_input_at, raw_user_input, final_response, tool_results, input_metadata, L)
+    else:
+        logger.warning("Skipping DB save: LLM error response: %s", final_response[:100])
 
     return {
         "response": final_response,

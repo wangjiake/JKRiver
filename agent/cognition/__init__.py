@@ -4,7 +4,7 @@ __all__ = ["CognitionEngine"]
 
 import asyncio
 
-from agent.utils.llm_client import call_llm_async
+from agent.utils.llm_client import call_llm_async, is_llm_error
 from agent.utils.time_context import get_now
 from agent.config.prompts import get_prompt, get_labels, get_failure_keywords
 
@@ -33,9 +33,7 @@ class CognitionEngine:
         self._escalation_min_len = esc.get("min_response_length", 20)
 
     def _should_escalate(self, response: str) -> bool:
-        EL = get_labels("errors.llm", self.language)
-        fail_prefix = EL.get("call_failed", "").split("{error}")[0]
-        if not response or (fail_prefix and response.startswith(fail_prefix)):
+        if not response or is_llm_error(response):
             return True
         if len(response.strip()) < self._escalation_min_len:
             return True

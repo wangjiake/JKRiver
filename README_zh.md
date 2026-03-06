@@ -215,12 +215,16 @@ python tests/test_demo_pipeline.py --clean
 | 运行时 | Python 3.10+, PostgreSQL 16+ |
 | 本地 LLM | Ollama（任意兼容模型） |
 | 云端 LLM | OpenAI GPT-4o / DeepSeek（兜底） |
-| 向量嵌入 | Ollama + BGE-M3 |
+| 向量嵌入 | Ollama + BGE-M3（安装 [pgvector](https://github.com/pgvector/pgvector) 后自动加速） |
 | REST API | FastAPI + Uvicorn |
 | Web 仪表盘 | Flask |
 | Telegram / Discord | python-telegram-bot / discord.py |
 | 语音 / 图像 | Whisper-1, GPT-4 Vision, LLaVA |
 | TTS | Edge TTS |
+
+## 安全提示
+
+Riverse 设计为**单用户本地运行**的应用。REST API 和 Web 面板**没有内置认证**，请勿将其暴露到公网。如需远程访问，请通过反向代理（如 Nginx、Caddy）添加认证，或使用 SSH 隧道。
 
 ---
 

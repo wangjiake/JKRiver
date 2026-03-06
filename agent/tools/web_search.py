@@ -1,7 +1,7 @@
 
 from agent.tools import BaseTool, ToolManifest, ToolResult
 from agent.config.prompts import get_prompt, get_labels
-from agent.utils.llm_client import call_llm
+from agent.utils.llm_client import call_llm, is_llm_error
 
 _FALLBACK = {
     "en": {
@@ -62,9 +62,7 @@ class WebSearchTool(BaseTool):
         cfg["_citation_label"] = L.get("citation_header", "Sources")
         response = call_llm(messages, cfg)
 
-        ELL = get_labels("errors.llm", self.config.get("language", "en"))
-        fail_prefix = ELL.get("call_failed", "").split("{error}")[0]
-        if fail_prefix and response.startswith(fail_prefix):
+        if is_llm_error(response):
             return ToolResult(success=False, data="", error=response)
 
         return ToolResult(success=True, data=response)

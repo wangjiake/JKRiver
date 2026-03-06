@@ -96,6 +96,11 @@ def _log_failure(tag: str, model: str, t0: float, error: Exception):
                     tag, model, duration_ms, error)
 
 
+def is_llm_error(text: str) -> bool:
+    """Check if text is an LLM error message."""
+    return bool(text) and text.startswith("[LLM ")
+
+
 def _error_message(config: dict, key: str = "call_failed", **kwargs) -> str:
     from agent.config.prompts import get_labels
     EL = get_labels("errors.llm", config.get("language", "en"))

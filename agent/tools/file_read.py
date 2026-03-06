@@ -52,11 +52,11 @@ class FileReadTool(BaseTool):
         if not path:
             return ToolResult(success=False, data="", error=EL["missing_path_param"])
 
-        path = os.path.abspath(path)
+        path = os.path.realpath(os.path.abspath(path))
 
         allowed_dirs = self._tool_cfg.get("allowed_dirs", [])
         if allowed_dirs:
-            if not any(path.startswith(os.path.abspath(d)) for d in allowed_dirs):
+            if not any(path.startswith(os.path.realpath(os.path.abspath(d))) for d in allowed_dirs):
                 return ToolResult(
                     success=False, data="",
                     error=EL["path_not_allowed"].format(path=path))

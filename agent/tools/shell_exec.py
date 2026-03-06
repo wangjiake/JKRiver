@@ -1,5 +1,6 @@
 
 import re
+import shlex
 import subprocess
 
 from agent.tools import BaseTool, ToolManifest, ToolResult
@@ -75,9 +76,16 @@ class ShellExecTool(BaseTool):
 
         timeout = self._tool_cfg.get("timeout", 30)
         try:
+            args = shlex.split(command)
+        except ValueError as e:
+            return ToolResult(
+                success=False, data="",
+                error=EL["command_exec_failed"].format(error=f"Invalid command syntax: {e}"))
+
+        try:
             result = subprocess.run(
-                command,
-                shell=True,
+                args,
+                shell=False,
                 capture_output=True,
                 text=True,
                 timeout=timeout,

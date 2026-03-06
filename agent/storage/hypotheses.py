@@ -72,7 +72,6 @@ def save_hypothesis(category: str, subject: str, claim: str,
     if not decay_days or decay_days <= 0:
         decay_days = 365
     expires_at = now + timedelta(days=decay_days)
-    confidence = 0.5
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
@@ -120,13 +119,13 @@ def save_hypothesis(category: str, subject: str, claim: str,
 
                 cur.execute(
                     "UPDATE hypotheses SET claim = %s, evidence_for = %s, "
-                    "confidence = 0.5, mention_count = %s, status = %s, "
+                    "confidence = %s, mention_count = %s, status = %s, "
                     "last_updated_at = %s, "
                     "decay_days = COALESCE(%s, decay_days), "
                     "expires_at = COALESCE(%s, expires_at) "
                     "WHERE id = %s",
                     (claim, json.dumps(merged_evidence, ensure_ascii=False),
-                     new_mention_count, new_status, now,
+                     confidence, new_mention_count, new_status, now,
                      decay_days, expires_at, existing_id),
                 )
                 conn.commit()
@@ -140,11 +139,11 @@ def save_hypothesis(category: str, subject: str, claim: str,
                         "(category, subject, claim, evidence_for, confidence, "
                         " mention_count, status, source_type, "
                         " decay_days, expires_at, first_seen_at, last_updated_at) "
-                        "VALUES (%s, %s, %s, %s, 0.5, 1, 'active', %s, %s, %s, %s, %s) "
+                        "VALUES (%s, %s, %s, %s, %s, 1, 'active', %s, %s, %s, %s, %s) "
                         "RETURNING id",
                         (category, subject, claim,
                          json.dumps(evidence_for, ensure_ascii=False),
-                         source_type,
+                         confidence, source_type,
                          effective_decay, effective_expires, now, now),
                     )
                     hyp_id = cur.fetchone()[0]

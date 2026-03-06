@@ -25,8 +25,9 @@ def _check_pgvector() -> bool:
                 cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
                 conn.commit()
                 _pgvector_available = True
-            except Exception:
+            except Exception as e:
                 conn.rollback()
+                logger.debug("pgvector not available: %s", e)
                 _pgvector_available = False
     finally:
         conn.close()
@@ -195,7 +196,7 @@ def vector_search(query_text: str, config: dict,
         try:
             return _vector_search_pgvector(query_vec, top_k, min_score, source_tables)
         except Exception:
-            logger.warning("pgvector search failed, falling back to Python")
+            logger.warning("pgvector search failed, falling back to Python", exc_info=True)
 
     return _vector_search_python(query_vec, top_k, min_score, source_tables)
 
@@ -220,7 +221,8 @@ def _relationship_to_text(row: dict, language: str = "zh") -> str:
     if isinstance(details, str):
         try:
             details = _json.loads(details)
-        except Exception:
+        except Exception as e:
+            logger.debug("relationship details parse failed: %s", e)
             details = {}
     detail_str = ", ".join(f"{k}: {v}" for k, v in details.items()) if details else ""
     name = row.get("name") or L.get("unknown_name", "(未知)")
@@ -301,6 +303,7 @@ def embed_all_memories(config: dict):
                     rows = cur.fetchall()
             except Exception as e:
                 conn.rollback()
+                logger.warning("source table %s query failed: %s", table_name, e)
                 continue
 
             for row in rows:
@@ -318,6 +321,7 @@ def embed_all_memories(config: dict):
                 try:
                     embedding = get_embedding(text, model=model, api_base=api_base)
                 except Exception as e:
+                    logger.warning("embedding generation failed for %s/%s: %s", table_name, row["id"], e)
                     continue
 
                 emb_json = json.dumps(embedding)
@@ -389,8 +393,9 @@ def _cleanup_orphaned(conn):
                 cur.execute(query)
                 total_cleaned += cur.rowcount
             conn.commit()
-        except Exception:
+        except Exception as e:
             conn.rollback()
+            logger.warning("orphan cleanup failed for %s: %s", table, e)
 
     if total_cleaned > 0:
         pass

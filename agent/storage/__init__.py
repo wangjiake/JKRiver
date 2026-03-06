@@ -5,7 +5,7 @@ All public API is importable directly from `agent.storage`.
 """
 
 # ── database ──
-from ._db import get_db_connection, DB_CONFIG  # noqa: F401
+from ._db import get_db_connection, DB_CONFIG, transaction  # noqa: F401
 
 # ── conversation ──
 from .conversation import (  # noqa: F401

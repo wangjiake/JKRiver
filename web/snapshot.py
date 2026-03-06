@@ -22,7 +22,7 @@ def api_snapshot():
         month_end = next_month - timedelta(seconds=1)
         month_start = datetime(year, mon, 1)
     except Exception:
-        return jsonify([])
+        return jsonify({"error": "Invalid month format, expected YYYY-MM"}), 400
 
     conn = get_conn()
     try:

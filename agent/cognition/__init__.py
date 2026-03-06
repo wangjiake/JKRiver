@@ -1,7 +1,5 @@
 
-import asyncio
 import json
-from datetime import datetime
 from agent.utils.llm_client import call_llm, call_llm_async
 from agent.utils.time_context import get_now
 from agent.config.prompts import get_prompt, get_labels
@@ -29,8 +27,9 @@ class CognitionEngine:
                 return True
         return False
 
-    def perceive(self, user_input: str, available_tools=None) -> dict:
+    # ── Shared helpers (no IO) ────────────────────────────
 
+    def _build_perceive_messages(self, user_input: str, available_tools) -> list[dict]:
         L = get_labels("context.labels", self.language)
 
         recent_context = ""
@@ -60,21 +59,18 @@ class CognitionEngine:
             user_input=user_input,
         )
 
-        messages = [
+        return [
             {"role": "system", "content": system_content},
             {"role": "user", "content": user_content},
         ]
 
-        raw = call_llm(messages, self.config).strip()
+    def _process_perceive_raw(self, raw: str, user_input: str) -> dict:
         perception_at = get_now()
         labels = get_labels("cognition.perceive_labels", self.language)
         result = self._parse_perceive_output(raw, user_input, labels)
         result["perception_at"] = perception_at
         corrected = result.get("corrected_input", user_input)
-        if corrected and corrected != user_input:
-            pass
         result["corrected_input"] = corrected if corrected else user_input
-
         return result
 
     def _parse_perceive_output(self, raw: str, user_input: str, labels: dict | None = None) -> dict:
@@ -128,7 +124,8 @@ class CognitionEngine:
         result["memory_type"] = "personal" if result["category"] == "personal" else CL.get("memory_type_none", "无")
         return result
 
-    def analyze_trajectory(self, user_input: str, memories: dict) -> dict | None:
+    def _build_trajectory_context(self, user_input: str, memories: dict) -> list[dict] | None:
+        """Build trajectory analysis messages. Returns None if insufficient data."""
         from agent.utils.profile_filter import prepare_profile
 
         profile = memories.get("profile", [])
@@ -156,7 +153,6 @@ class CognitionEngine:
 
         L = get_labels("context.labels", self.language)
 
-        # Use prepare_profile to limit profile entries
         top_profile, _ = prepare_profile(
             hypotheses, query_text=user_input, max_entries=15, language=self.language,
         )
@@ -178,20 +174,17 @@ class CognitionEngine:
 
         known_text = "\n\n".join(known_parts)
 
-        messages = [
+        return [
             {"role": "system", "content": get_prompt("cognition.trajectory_analysis", self.language)},
             {"role": "user", "content": f"[system_time: {get_now().strftime('%Y-%m-%dT%H:%M')}]\n\n{L['known_info']}：\n{known_text}\n\n{L['user_input_label']}：{user_input}"},
         ]
-        raw = call_llm(messages, self.config).strip()
 
+    def _finish_trajectory_result(self, raw: str) -> dict | None:
         result = self._parse_trajectory_result(raw)
         if not result:
             return None
-
-        trajectory = result.get("trajectory", "no_data")
-        if trajectory in ("on_track", "no_data"):
+        if result.get("trajectory", "no_data") in ("on_track", "no_data"):
             return None
-
         return result
 
     def _parse_trajectory_result(self, raw: str) -> dict | None:
@@ -209,8 +202,8 @@ class CognitionEngine:
         except (json.JSONDecodeError, ValueError):
             return None
 
-    def think(self, user_input: str, perception: dict,
-              memories: dict, use_cloud: bool = False) -> dict:
+    def _build_think_messages(self, user_input: str, perception: dict,
+                               memories: dict) -> list[dict]:
         messages = [{"role": "system", "content": get_prompt("cognition.system_prompt", self.language)}]
 
         memory_text = memories.get("memory_text", "")
@@ -232,44 +225,11 @@ class CognitionEngine:
             })
 
         messages.append({"role": "user", "content": f"[system_time: {get_now().strftime('%Y-%m-%dT%H:%M')}]\n{user_input}"})
+        return messages
 
-        for i, msg in enumerate(messages):
-            role = msg["role"]
-            content = (msg["content"] if isinstance(msg["content"], str) else str(msg["content"]))[:120].replace("\n", " ")
-
-        if use_cloud and self.cloud_configs:
-            llm_cfg = self.cloud_configs[0]
-            raw_response = call_llm(messages, llm_cfg)
-        else:
-            raw_response = call_llm(messages, self.config)
-            if self._escalation_auto and self.cloud_configs and self._should_escalate(raw_response):
-                cloud_cfg = self.cloud_configs[0]
-                raw_response = call_llm(messages, cloud_cfg)
-        raw_response_at = get_now()
-
-        if perception.get("category") == "personal":
-            verification_result = self._verify(
-                user_input, perception, memory_text, raw_response,
-                self.chat_history,
-            )
-            verification_at = get_now()
-            if verification_result.startswith("FAIL"):
-                fail_reason = verification_result.split(":", 1)[-1].split("：", 1)[-1].strip()
-                messages.append({"role": "assistant", "content": raw_response})
-                messages.append({"role": "user", "content":
-                    get_prompt("cognition.regenerate_message", self.language, fail_reason=fail_reason)
-                })
-                final_response = call_llm(messages, self.config)
-                final_response_at = get_now()
-            else:
-                final_response = raw_response
-                final_response_at = verification_at
-        else:
-            verification_result = "SKIP"
-            final_response = raw_response
-            verification_at = get_now()
-            final_response_at = verification_at
-
+    def _finish_think_result(self, raw_response, raw_response_at, user_input,
+                              perception, memory_text, verification_result,
+                              verification_at, final_response, final_response_at):
         thinking_notes = self._make_thinking_notes(
             perception, memory_text, raw_response, verification_result, final_response
         )
@@ -291,6 +251,38 @@ class CognitionEngine:
             "thinking_notes_at": thinking_notes_at,
         }
 
+    def _build_verify_messages(self, user_input: str, perception: dict,
+                                memory_text: str, response: str,
+                                chat_history: list[dict] | None = None) -> list[dict]:
+        L = get_labels("context.labels", self.language)
+        verify_memory = self._strip_internal_sections(memory_text, language=self.language)
+
+        session_context = ""
+        if chat_history:
+            lines = []
+            for turn in chat_history:
+                lines.append(f"{L['user']}：{turn['user_summary']}")
+                lines.append(f"{L['assistant']}：{turn['assistant_summary']}")
+            session_context = "\n".join(lines)
+
+        return [
+            {"role": "system", "content": get_prompt("cognition.verify_system", self.language)},
+            {"role": "user", "content": (
+                f"[system_time: {get_now().strftime('%Y-%m-%dT%H:%M')}]\n"
+                f"{L['memory']}：\n{verify_memory}\n"
+                f"{L['current_session']}：\n{session_context if session_context else L['none']}\n"
+                f"{L['user_asks']}：{user_input}\n"
+                f"{L['ai_reply']}：{response}\n\n"
+                f"{L['output']}："
+            )},
+        ]
+
+    @staticmethod
+    def _parse_verify_raw(raw: str) -> str:
+        if raw.startswith("FAIL:") or raw.startswith("FAIL："):
+            return raw
+        return "PASS"
+
     @staticmethod
     def _strip_internal_sections(memory_text: str, language: str = "zh") -> str:
         L = get_labels("context.labels", language)
@@ -311,38 +303,6 @@ class CognitionEngine:
                 result_lines.append(line)
         result = "\n".join(result_lines).strip()
         return result if result else none_fallback
-
-    def _verify(self, user_input: str, perception: dict,
-                memory_text: str, response: str,
-                chat_history: list[dict] | None = None) -> str:
-        L = get_labels("context.labels", self.language)
-        verify_memory = self._strip_internal_sections(memory_text, language=self.language)
-
-        session_context = ""
-        if chat_history:
-            lines = []
-            for turn in chat_history:
-                lines.append(f"{L['user']}：{turn['user_summary']}")
-                lines.append(f"{L['assistant']}：{turn['assistant_summary']}")
-            session_context = "\n".join(lines)
-
-        messages = [
-            {"role": "system", "content": get_prompt("cognition.verify_system", self.language)},
-            {"role": "user", "content": (
-                f"[system_time: {get_now().strftime('%Y-%m-%dT%H:%M')}]\n"
-                f"{L['memory']}：\n{verify_memory}\n"
-                f"{L['current_session']}：\n{session_context if session_context else L['none']}\n"
-                f"{L['user_asks']}：{user_input}\n"
-                f"{L['ai_reply']}：{response}\n\n"
-                f"{L['output']}："
-            )},
-        ]
-        result = call_llm(messages, self.config).strip()
-
-        if result.startswith("FAIL:") or result.startswith("FAIL："):
-            return result
-
-        return "PASS"
 
     @staticmethod
     def _summarize_response(response: str, max_len: int = 120) -> str:
@@ -375,20 +335,124 @@ class CognitionEngine:
 
         return "；".join(notes)
 
-    # ── Async versions (delegate to sync via to_thread) ──
+    # ── Sync methods ─────────────────────────────────────
+
+    def perceive(self, user_input: str, available_tools=None) -> dict:
+        messages = self._build_perceive_messages(user_input, available_tools)
+        raw = call_llm(messages, self.config).strip()
+        return self._process_perceive_raw(raw, user_input)
+
+    def analyze_trajectory(self, user_input: str, memories: dict) -> dict | None:
+        messages = self._build_trajectory_context(user_input, memories)
+        if messages is None:
+            return None
+        raw = call_llm(messages, self.config).strip()
+        return self._finish_trajectory_result(raw)
+
+    def _verify(self, user_input: str, perception: dict,
+                memory_text: str, response: str,
+                chat_history: list[dict] | None = None) -> str:
+        messages = self._build_verify_messages(
+            user_input, perception, memory_text, response, chat_history)
+        raw = call_llm(messages, self.config).strip()
+        return self._parse_verify_raw(raw)
+
+    def think(self, user_input: str, perception: dict,
+              memories: dict, use_cloud: bool = False) -> dict:
+        messages = self._build_think_messages(user_input, perception, memories)
+        memory_text = memories.get("memory_text", "")
+
+        if use_cloud and self.cloud_configs:
+            raw_response = call_llm(messages, self.cloud_configs[0])
+        else:
+            raw_response = call_llm(messages, self.config)
+            if self._escalation_auto and self.cloud_configs and self._should_escalate(raw_response):
+                raw_response = call_llm(messages, self.cloud_configs[0])
+        raw_response_at = get_now()
+
+        if perception.get("category") == "personal":
+            verification_result = self._verify(
+                user_input, perception, memory_text, raw_response, self.chat_history)
+            verification_at = get_now()
+            if verification_result.startswith("FAIL"):
+                fail_reason = verification_result.split(":", 1)[-1].split("：", 1)[-1].strip()
+                messages.append({"role": "assistant", "content": raw_response})
+                messages.append({"role": "user", "content":
+                    get_prompt("cognition.regenerate_message", self.language, fail_reason=fail_reason)
+                })
+                final_response = call_llm(messages, self.config)
+                final_response_at = get_now()
+            else:
+                final_response = raw_response
+                final_response_at = verification_at
+        else:
+            verification_result = "SKIP"
+            final_response = raw_response
+            verification_at = get_now()
+            final_response_at = verification_at
+
+        return self._finish_think_result(
+            raw_response, raw_response_at, user_input, perception,
+            memory_text, verification_result, verification_at,
+            final_response, final_response_at)
+
+    # ── Async methods (native async IO via call_llm_async) ──
 
     async def perceive_async(self, user_input: str, available_tools=None) -> dict:
-        return await asyncio.to_thread(self.perceive, user_input, available_tools)
+        messages = self._build_perceive_messages(user_input, available_tools)
+        raw = (await call_llm_async(messages, self.config)).strip()
+        return self._process_perceive_raw(raw, user_input)
 
     async def analyze_trajectory_async(self, user_input: str, memories: dict) -> dict | None:
-        return await asyncio.to_thread(self.analyze_trajectory, user_input, memories)
+        messages = self._build_trajectory_context(user_input, memories)
+        if messages is None:
+            return None
+        raw = (await call_llm_async(messages, self.config)).strip()
+        return self._finish_trajectory_result(raw)
 
     async def _verify_async(self, user_input: str, perception: dict,
                 memory_text: str, response: str,
                 chat_history: list[dict] | None = None) -> str:
-        return await asyncio.to_thread(self._verify, user_input, perception, memory_text,
-                                       response, chat_history)
+        messages = self._build_verify_messages(
+            user_input, perception, memory_text, response, chat_history)
+        raw = (await call_llm_async(messages, self.config)).strip()
+        return self._parse_verify_raw(raw)
 
     async def think_async(self, user_input: str, perception: dict,
               memories: dict, use_cloud: bool = False) -> dict:
-        return await asyncio.to_thread(self.think, user_input, perception, memories, use_cloud)
+        messages = self._build_think_messages(user_input, perception, memories)
+        memory_text = memories.get("memory_text", "")
+
+        if use_cloud and self.cloud_configs:
+            raw_response = await call_llm_async(messages, self.cloud_configs[0])
+        else:
+            raw_response = await call_llm_async(messages, self.config)
+            if self._escalation_auto and self.cloud_configs and self._should_escalate(raw_response):
+                raw_response = await call_llm_async(messages, self.cloud_configs[0])
+        raw_response_at = get_now()
+
+        if perception.get("category") == "personal":
+            verification_result = await self._verify_async(
+                user_input, perception, memory_text, raw_response, self.chat_history)
+            verification_at = get_now()
+            if verification_result.startswith("FAIL"):
+                fail_reason = verification_result.split(":", 1)[-1].split("：", 1)[-1].strip()
+                messages.append({"role": "assistant", "content": raw_response})
+                messages.append({"role": "user", "content":
+                    get_prompt("cognition.regenerate_message", self.language, fail_reason=fail_reason)
+                })
+                final_response = await call_llm_async(messages, self.config)
+                final_response_at = get_now()
+            else:
+                final_response = raw_response
+                final_response_at = verification_at
+        else:
+            verification_result = "SKIP"
+            final_response = raw_response
+            verification_at = get_now()
+            final_response_at = verification_at
+
+        return self._finish_think_result(
+            raw_response, raw_response_at, user_input, perception,
+            memory_text, verification_result, verification_at,
+            final_response, final_response_at)

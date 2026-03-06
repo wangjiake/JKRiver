@@ -7,7 +7,7 @@ from agent.config.prompts import get_labels
 from agent.utils.time_context import get_now
 from agent.utils.profile_filter import prepare_profile, format_profile_text
 from agent.storage import (
-    get_db_connection, save_event, save_session_tag, save_session_summary,
+    get_db_connection, transaction, save_event, save_session_tag, save_session_summary,
     save_observation,
     save_profile_fact, close_time_period, confirm_profile_fact,
     add_evidence, find_current_fact,
@@ -65,6 +65,34 @@ def run():
 
     total_msgs = sum(len(msgs) for msgs in session_convs.values())
 
+    _run_sleep_pipeline(session_convs, config, language, L)
+
+    # Non-critical post-processing (outside transaction)
+    try:
+        from agent.utils.embedding import embed_all_memories
+        embed_all_memories(config)
+    except Exception as e:
+        logger.warning("Embedding failed (non-critical): %s", e)
+
+    try:
+        from agent.utils.clustering import cluster_memories
+        cluster_memories(config)
+    except Exception:
+        logger.warning("Clustering failed (non-critical)", exc_info=True)
+
+
+def _run_sleep_pipeline(session_convs, config, language, L):
+    """Core sleep pipeline — all DB writes are atomic via transaction().
+
+    The transaction() context manager makes get_db_connection() return a
+    proxy that suppresses per-call commit/close.  If anything raises, the
+    entire batch is rolled back so the database stays consistent.
+    """
+    with transaction():
+        _run_sleep_pipeline_inner(session_convs, config, language, L)
+
+
+def _run_sleep_pipeline_inner(session_convs, config, language, L):
     all_msg_ids = []
     all_convs = []
     all_observations = []
@@ -671,20 +699,41 @@ def run():
 
     mark_processed(all_msg_ids)
 
+
+async def run_async():
+    """Async entry point — delegates to sync pipeline in a thread for transaction safety."""
+    config = load_config()
+    language = config.get("language", "zh")
+    L = get_labels("context.labels", language)
+
+    MAX_SESSIONS_PER_RUN = 20
+    session_convs = await asyncio.to_thread(get_unprocessed_conversations)
+    if not session_convs:
+        return
+    if len(session_convs) > MAX_SESSIONS_PER_RUN:
+        session_convs = dict(list(session_convs.items())[:MAX_SESSIONS_PER_RUN])
+
+    # Run the transactional pipeline on a thread (keeps all DB ops on one thread)
+    await asyncio.to_thread(_run_sleep_pipeline, session_convs, config, language, L)
+
+    # Non-critical post-processing
     try:
         from agent.utils.embedding import embed_all_memories
-        embed_all_memories(config)
-    except Exception as e:
-        logger.warning("Embedding failed (non-critical): %s", e)
+        await asyncio.to_thread(embed_all_memories, config)
+    except Exception:
+        logger.warning("Embedding failed (non-critical, async)", exc_info=True)
 
     try:
         from agent.utils.clustering import cluster_memories
-        cluster_memories(config)
+        await asyncio.to_thread(cluster_memories, config)
     except Exception:
-        logger.warning("Clustering failed (non-critical)", exc_info=True)
+        logger.warning("Clustering failed (non-critical, async)", exc_info=True)
 
 
-async def run_async():
+async def _run_async_legacy():
+    """Legacy async implementation with per-session LLM parallelism (kept for reference).
+    Not currently used — run_async() delegates to the transactional sync pipeline instead.
+    """
     config = load_config()
     language = config.get("language", "zh")
     L = get_labels("context.labels", language)

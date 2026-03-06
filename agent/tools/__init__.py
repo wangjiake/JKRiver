@@ -1,11 +1,14 @@
 
 import importlib
+import logging
 import os
 import pkgutil
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
 import yaml
+
+logger = logging.getLogger(__name__)
 
 @dataclass
 class ToolManifest:
@@ -49,6 +52,7 @@ class ToolRegistry:
             try:
                 module = importlib.import_module(f"agent.tools.{modname}")
             except Exception as e:
+                logger.warning("Failed to import tool %s: %s", modname, e)
                 continue
 
             for attr_name in dir(module):
@@ -62,7 +66,7 @@ class ToolRegistry:
                             manifest = instance.manifest()
                             self._tools[manifest.name] = instance
                     except Exception as e:
-                        pass
+                        logger.warning("Failed to init tool %s: %s", attr_name, e)
 
         self._discover_agents()
 
@@ -85,6 +89,7 @@ class ToolRegistry:
         try:
             manager = MCPManager(servers)
         except Exception as e:
+            logger.warning("MCP manager init failed: %s", e)
             return
 
         for tool_info in manager.list_tools():
@@ -96,7 +101,7 @@ class ToolRegistry:
                 else:
                     pass
             except Exception as e:
-                pass
+                logger.warning("Failed to init MCP tool: %s", e)
 
     def _discover_agents(self):
         from agent.tools._agent_proxy import AgentProxyTool

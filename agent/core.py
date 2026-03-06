@@ -1,10 +1,9 @@
-
 import json
+import logging
 import os
 import re
 import uuid
 from datetime import datetime, timezone
-from agent.config import load_config
 from agent.cognition import CognitionEngine
 from agent.utils.time_context import get_now
 from agent.storage import (
@@ -26,6 +25,8 @@ from agent.config.prompts import get_labels
 from agent.skills import SkillRegistry
 from agent.skills.creator import detect_skill_request, create_skill_from_chat, delete_skill, extract_skill_name
 from agent.skills.executor import execute_skill
+
+logger = logging.getLogger(__name__)
 
 class Session:
     def __init__(self, config: dict, session_id: str | None = None):
@@ -62,66 +63,112 @@ class SessionManager:
     def list_sessions(self) -> list[str]:
         return list(self._sessions.keys())
 
-def build_memory_context(perception: dict,
-                         executed_strategy_ids: set | None = None,
-                         config: dict | None = None) -> dict:
-    if executed_strategy_ids is None:
-        executed_strategy_ids = set()
 
-    language = config.get("language", "zh") if config else "zh"
-    L = get_labels("context.labels", language)
+# ── build_memory_context helpers ──────────────────────────
 
-    category = perception.get("category", "chat")
+def _build_chat_memory_context(full_profile, user_model_data, perception,
+                                config, language, L):
+    """Build memory context for chat category (lightweight, early return)."""
+    memory_parts = []
+    query_text = perception.get("ai_summary", "")
+    if full_profile:
+        profile_text = format_profile_text(
+            full_profile, keywords=query_text, config=config,
+            max_entries=30, detail="full", language=language,
+        )
+        if profile_text:
+            memory_parts.append(L["section_profile"] + "\n" + profile_text)
+    if user_model_data:
+        model_lines = [f"  {m['dimension']}: {m['assessment']}" for m in user_model_data]
+        memory_parts.append(L["section_user_traits"] + "\n" + "\n".join(model_lines))
+    memory_text = "\n\n".join(memory_parts) if memory_parts else ""
+    profile_for_db = [
+        {"category": p["category"], "field": p["subject"], "value": p["value"]}
+        for p in full_profile
+    ]
+    return {
+        "profile": profile_for_db,
+        "hypotheses": full_profile,
+        "strategies": [],
+        "user_model": user_model_data,
+        "events": [],
+        "strategy_ids": [],
+        "memory_text": memory_text,
+    }
 
-    full_profile = load_full_current_profile()
 
-    user_model_data = load_user_model()
+def _load_fact_edges_safe(full_profile):
+    """Load fact edges, return [] on error with warning."""
+    if not full_profile:
+        return []
+    try:
+        profile_ids = [p["id"] for p in full_profile if p.get("id")]
+        return load_fact_edges(profile_ids) or []
+    except Exception:
+        logger.warning("fact_edges load failed", exc_info=True)
+        return []
 
-    if category == "chat":
-        memory_parts = []
-        query_text = perception.get("ai_summary", "")
-        if full_profile:
-            profile_text = format_profile_text(
-                full_profile, keywords=query_text, config=config,
-                max_entries=30, detail="full", language=language,
-            )
-            if profile_text:
-                memory_parts.append(L["section_profile"] + "\n" + profile_text)
-        if user_model_data:
-            model_lines = [f"  {m['dimension']}: {m['assessment']}" for m in user_model_data]
-            memory_parts.append(L["section_user_traits"] + "\n" + "\n".join(model_lines))
-        memory_text = "\n\n".join(memory_parts) if memory_parts else ""
 
-        profile_for_db = [
-            {"category": p["category"], "field": p["subject"], "value": p["value"]}
-            for p in full_profile
-        ]
-        return {
-            "profile": profile_for_db,
-            "hypotheses": full_profile,
-            "strategies": [],
-            "user_model": user_model_data,
-            "events": [],
-            "strategy_ids": [],
-            "memory_text": memory_text,
-        }
+def _load_vector_results_safe(perception, config):
+    """Vector search, return [] on error with warning."""
+    if not (config and config.get("embedding", {}).get("enabled")):
+        return []
+    try:
+        from agent.utils.embedding import vector_search
+        query_parts = []
+        ai_summary = perception.get("ai_summary", "")
+        if ai_summary:
+            query_parts.append(ai_summary)
+        for kw in perception.get("topic_keywords", []):
+            query_parts.append(kw)
+        query_text = " ".join(query_parts)
+        if not query_text.strip():
+            return []
+        return vector_search(query_text, config) or []
+    except Exception:
+        logger.warning("vector search failed", exc_info=True)
+        return []
 
-    topic_keywords = perception.get("topic_keywords", [])
-    all_strategies = load_pending_strategies(topic_keywords=topic_keywords if topic_keywords else None)
+
+def _load_cluster_themes_safe(config):
+    """Load cluster themes, return [] on error with warning."""
+    if not (config and config.get("embedding", {}).get("clustering", {}).get("show_themes")):
+        return []
+    try:
+        from agent.utils.clustering import load_cluster_themes
+        return load_cluster_themes() or []
+    except Exception:
+        logger.warning("cluster themes load failed", exc_info=True)
+        return []
+
+
+def _assemble_memory_context(
+    *,
+    perception: dict,
+    full_profile: list,
+    user_model_data: list,
+    config: dict | None,
+    language: str,
+    L: dict,
+    executed_strategy_ids: set,
+    all_strategies: list,
+    relationships_data: list | None,
+    events: list,
+    trajectory_data: dict | None,
+    snapshot: dict | None,
+    timeline: list,
+    fact_edges: list,
+    vs_results: list,
+    cluster_themes: list,
+) -> dict:
+    """Assemble memory context dict from pre-loaded data. Shared by sync/async."""
     strategies = [s for s in all_strategies if s["id"] not in executed_strategy_ids]
     strategy_ids_in_context = [s["id"] for s in strategies[:2]]
 
-    relationships_data = load_relationships()
-
-    events = load_active_events(top_k=5)
-
-    trajectory_data = load_trajectory_summary()
-
     memory_parts = []
-
-    # Try pre-compiled snapshot first, fallback to real-time build
-    snapshot = load_memory_snapshot()
     query_text = perception.get("ai_summary", "")
+
+    # Profile / snapshot
     if snapshot and snapshot.get("snapshot_text"):
         memory_parts.append(L["section_profile"] + "\n" + snapshot["snapshot_text"])
     else:
@@ -132,7 +179,7 @@ def build_memory_context(perception: dict,
         if profile_text:
             memory_parts.append(L["section_profile"] + "\n" + profile_text)
 
-    timeline = load_timeline()
+    # Timeline
     changed_keys = set()
     for t in timeline:
         if t["end_time"] is not None or t.get("human_end_time") is not None or t.get("rejected"):
@@ -159,6 +206,7 @@ def build_memory_context(perception: dict,
                         f"  [{cat}] {subj}: {t['value']} ({start_str} ~ {L['until_now']}, {L['current_tag']})")
         memory_parts.append(L["section_timeline"] + "\n" + "\n".join(timeline_lines))
 
+    # Strategies
     if strategies[:2]:
         strat_lines = []
         for s in strategies[:2]:
@@ -171,6 +219,7 @@ def build_memory_context(perception: dict,
             L["section_strategies"] + "\n" + "\n".join(strat_lines)
         )
 
+    # Relationships
     if relationships_data:
         relationships_data = sorted(
             relationships_data,
@@ -181,8 +230,7 @@ def build_memory_context(perception: dict,
         for r in relationships_data:
             details = r.get("details", {})
             if isinstance(details, str):
-                _json2 = json
-                details = _json2.loads(details) if details else {}
+                details = json.loads(details) if details else {}
             detail_str = "，".join(f"{k}: {v}" for k, v in details.items()) if details else ""
             name_str = r.get("name") or L["unknown_name"]
             line = f"  {r['relation']}: {name_str}"
@@ -191,89 +239,65 @@ def build_memory_context(perception: dict,
             rel_lines.append(line)
         memory_parts.append(L["section_relationships"] + "\n" + "\n".join(rel_lines))
 
+    # User model
     if user_model_data:
         model_lines = [f"  {m['dimension']}: {m['assessment']}" for m in user_model_data]
         memory_parts.append(L["section_user_traits"] + "\n" + "\n".join(model_lines))
 
+    # Events
     if events:
         event_lines = [f"  [{e['category']}] {e['summary']}" for e in events]
         memory_parts.append(L["section_events"] + "\n" + "\n".join(event_lines))
 
+    # Trajectory
     if trajectory_data and trajectory_data.get("life_phase"):
-        _json = json
         traj_lines = [
             f"  {L['phase']}: {trajectory_data.get('life_phase', '?')}",
             f"  {L['direction']}: {trajectory_data.get('trajectory_direction', '?')}",
             f"  {L['stability']}: {trajectory_data.get('stability_assessment', '?')}",
-            f"  {L['anchors']}: {_json.dumps(trajectory_data.get('key_anchors', []), ensure_ascii=False)}",
-            f"  {L['volatile_areas']}: {_json.dumps(trajectory_data.get('volatile_areas', []), ensure_ascii=False)}",
+            f"  {L['anchors']}: {json.dumps(trajectory_data.get('key_anchors', []), ensure_ascii=False)}",
+            f"  {L['volatile_areas']}: {json.dumps(trajectory_data.get('volatile_areas', []), ensure_ascii=False)}",
         ]
         if trajectory_data.get('recent_momentum'):
             traj_lines.append(f"  {L['momentum']}: {trajectory_data['recent_momentum']}")
         memory_parts.append(L["section_trajectory"] + "\n" + "\n".join(traj_lines))
 
-    if full_profile:
-        try:
-            profile_ids = [p["id"] for p in full_profile if p.get("id")]
-            fact_edges = load_fact_edges(profile_ids)
-            if fact_edges:
-                edge_lines = [
-                    f"  [{e.get('src_category','')}/{e.get('src_subject','')}] "
-                    f"--[{e['edge_type']}]--> "
-                    f"[{e.get('tgt_category','')}/{e.get('tgt_subject','')}]: "
-                    f"{e.get('description', '')}"
-                    for e in fact_edges[:15]
-                ]
-                memory_parts.append(L["section_knowledge_network"] + "\n" + "\n".join(edge_lines))
-        except Exception:
-            pass
+    # Fact edges (knowledge network)
+    if fact_edges:
+        edge_lines = [
+            f"  [{e.get('src_category','')}/{e.get('src_subject','')}] "
+            f"--[{e['edge_type']}]--> "
+            f"[{e.get('tgt_category','')}/{e.get('tgt_subject','')}]: "
+            f"{e.get('description', '')}"
+            for e in fact_edges[:15]
+        ]
+        memory_parts.append(L["section_knowledge_network"] + "\n" + "\n".join(edge_lines))
 
-    if config and config.get("embedding", {}).get("enabled"):
-        try:
-            from agent.utils.embedding import vector_search
-            query_parts = []
-            ai_summary = perception.get("ai_summary", "")
-            if ai_summary:
-                query_parts.append(ai_summary)
-            for kw in topic_keywords:
-                query_parts.append(kw)
-            query_text = " ".join(query_parts)
+    # Vector search results (deduplicated)
+    if vs_results:
+        existing_profile_ids = {p.get("id") for p in full_profile if p.get("id")}
+        existing_event_ids = {e.get("id") for e in events if e.get("id")}
+        unique_results = []
+        for r in vs_results:
+            if r["source_table"] == "user_profile" and r["source_id"] in existing_profile_ids:
+                continue
+            if r["source_table"] == "event_log" and r["source_id"] in existing_event_ids:
+                continue
+            unique_results.append(r)
+        if unique_results:
+            vs_lines = [
+                f"  [{r['source_table']}] {r['text_content']} ({L['relevance']}: {r['score']:.2f})"
+                for r in unique_results
+            ]
+            memory_parts.append(L["section_vector_search"] + "\n" + "\n".join(vs_lines))
 
-            if query_text.strip():
-                vs_results = vector_search(query_text, config)
-                if vs_results:
-                    existing_profile_ids = {p.get("id") for p in full_profile if p.get("id")}
-                    existing_event_ids = {e.get("id") for e in events if e.get("id")}
-
-                    unique_results = []
-                    for r in vs_results:
-                        if r["source_table"] == "user_profile" and r["source_id"] in existing_profile_ids:
-                            continue
-                        if r["source_table"] == "event_log" and r["source_id"] in existing_event_ids:
-                            continue
-                        unique_results.append(r)
-
-                    if unique_results:
-                        vs_lines = [
-                            f"  [{r['source_table']}] {r['text_content']} ({L['relevance']}: {r['score']:.2f})"
-                            for r in unique_results
-                        ]
-                        memory_parts.append(L["section_vector_search"] + "\n" + "\n".join(vs_lines))
-        except Exception:
-            pass
-
-    if config and config.get("embedding", {}).get("clustering", {}).get("show_themes"):
-        try:
-            from agent.utils.clustering import load_cluster_themes
-            cluster_themes = load_cluster_themes()
-            if cluster_themes:
-                theme_lines = [
-                    f"  [{t['member_count']} memories] {t['theme']}"
-                    for t in cluster_themes
-                ]
-                memory_parts.append(L["section_cluster_themes"] + "\n" + "\n".join(theme_lines))
-        except Exception:
-            pass
+    # Cluster themes
+    if cluster_themes:
+        theme_lines = [
+            f"  [{t['member_count']} memories] {t['theme']}"
+            for t in cluster_themes
+        ]
+        memory_parts.append(L["section_cluster_themes"] + "\n" + "\n".join(theme_lines))
 
     memory_text = "\n\n".join(memory_parts) if memory_parts else ""
 
@@ -291,6 +315,120 @@ def build_memory_context(perception: dict,
         "strategy_ids": strategy_ids_in_context,
         "memory_text": memory_text,
     }
+
+
+# ── build_memory_context (sync / async) ──────────────────
+
+def build_memory_context(perception: dict,
+                         executed_strategy_ids: set | None = None,
+                         config: dict | None = None) -> dict:
+    if executed_strategy_ids is None:
+        executed_strategy_ids = set()
+
+    language = config.get("language", "zh") if config else "zh"
+    L = get_labels("context.labels", language)
+
+    full_profile = load_full_current_profile()
+    user_model_data = load_user_model()
+
+    if perception.get("category", "chat") == "chat":
+        return _build_chat_memory_context(full_profile, user_model_data,
+                                          perception, config, language, L)
+
+    topic_keywords = perception.get("topic_keywords", [])
+    all_strategies = load_pending_strategies(
+        topic_keywords=topic_keywords if topic_keywords else None)
+    relationships_data = load_relationships()
+    events = load_active_events(top_k=5)
+    trajectory_data = load_trajectory_summary()
+    snapshot = load_memory_snapshot()
+    timeline = load_timeline()
+
+    fact_edges = _load_fact_edges_safe(full_profile)
+    vs_results = _load_vector_results_safe(perception, config)
+    cluster_themes = _load_cluster_themes_safe(config)
+
+    return _assemble_memory_context(
+        perception=perception,
+        full_profile=full_profile,
+        user_model_data=user_model_data,
+        config=config,
+        language=language,
+        L=L,
+        executed_strategy_ids=executed_strategy_ids,
+        all_strategies=all_strategies,
+        relationships_data=relationships_data,
+        events=events,
+        trajectory_data=trajectory_data,
+        snapshot=snapshot,
+        timeline=timeline,
+        fact_edges=fact_edges,
+        vs_results=vs_results,
+        cluster_themes=cluster_themes,
+    )
+
+
+async def build_memory_context_async(perception: dict,
+                                     executed_strategy_ids: set | None = None,
+                                     config: dict | None = None) -> dict:
+    """Async version — parallelizes independent DB queries."""
+    if executed_strategy_ids is None:
+        executed_strategy_ids = set()
+
+    language = config.get("language", "zh") if config else "zh"
+    L = get_labels("context.labels", language)
+    category = perception.get("category", "chat")
+
+    if category == "chat":
+        full_profile, user_model_data = await asyncio.gather(
+            asyncio.to_thread(load_full_current_profile),
+            asyncio.to_thread(load_user_model),
+        )
+        return _build_chat_memory_context(full_profile, user_model_data,
+                                          perception, config, language, L)
+
+    # Round 1: all independent DB queries in parallel
+    topic_keywords = perception.get("topic_keywords", [])
+    (full_profile, user_model_data, all_strategies,
+     relationships_data, events, trajectory_data,
+     snapshot, timeline) = await asyncio.gather(
+        asyncio.to_thread(load_full_current_profile),
+        asyncio.to_thread(load_user_model),
+        asyncio.to_thread(load_pending_strategies,
+                          topic_keywords if topic_keywords else None),
+        asyncio.to_thread(load_relationships),
+        asyncio.to_thread(load_active_events, 5),
+        asyncio.to_thread(load_trajectory_summary),
+        asyncio.to_thread(load_memory_snapshot),
+        asyncio.to_thread(load_timeline),
+    )
+
+    # Round 2: queries that may depend on profile
+    fact_edges, vs_results, cluster_themes = await asyncio.gather(
+        asyncio.to_thread(_load_fact_edges_safe, full_profile),
+        asyncio.to_thread(_load_vector_results_safe, perception, config),
+        asyncio.to_thread(_load_cluster_themes_safe, config),
+    )
+
+    return _assemble_memory_context(
+        perception=perception,
+        full_profile=full_profile,
+        user_model_data=user_model_data,
+        config=config,
+        language=language,
+        L=L,
+        executed_strategy_ids=executed_strategy_ids,
+        all_strategies=all_strategies,
+        relationships_data=relationships_data,
+        events=events,
+        trajectory_data=trajectory_data,
+        snapshot=snapshot,
+        timeline=timeline,
+        fact_edges=fact_edges,
+        vs_results=vs_results,
+        cluster_themes=cluster_themes,
+    )
+
 
 def _build_trajectory_block(trajectory: dict, L: dict) -> str:
     """Build trajectory divergence block for memory context."""
@@ -512,6 +650,19 @@ def _extract_citations(tool_results: list[dict], language: str = "zh") -> str:
         return f"{citation_label}:\n" + "\n".join(lines)
     return ""
 
+
+def _finalize_response(think_result: dict, tool_results: list[dict],
+                        language: str) -> str:
+    """Append citations to final_response if tool results contain references."""
+    final_response = think_result["final_response"]
+    if tool_results:
+        citations = _extract_citations(tool_results, language=language)
+        if citations:
+            final_response += "\n\n" + citations
+            think_result["final_response"] = final_response
+    return final_response
+
+
 def run_cycle(user_input: str | dict, session: Session,
               log_fn=None) -> dict:
     def log(level, msg):
@@ -583,13 +734,7 @@ def run_cycle(user_input: str | dict, session: Session,
     has_tool_data = any(t["result"].success and t["result"].data for t in tool_results) if tool_results else False
     log("info", f"思考中...{'(云端)' if has_tool_data else '(本地)'}")
     think_result = session.cognition.think(llm_input, perception, memories, use_cloud=has_tool_data)
-    final_response = think_result["final_response"]
-
-    if tool_results:
-        citations = _extract_citations(tool_results, language=language)
-        if citations:
-            final_response += "\n\n" + citations
-            think_result["final_response"] = final_response
+    final_response = _finalize_response(think_result, tool_results, language)
 
     _save_turn_data(session, perception, think_result, memories, memories_used_at,
                     user_input_at, raw_user_input, final_response, tool_results, input_metadata, L)
@@ -656,20 +801,14 @@ async def run_cycle_async(user_input: str | dict, session: Session,
         # Memory build + tool resolution in parallel
         log("info", "记忆构建 + 工具调度 并行中...")
 
-        async def _build_memory():
-            return build_memory_context(perception, session.executed_strategy_ids,
-                                        config=session.full_config)
-
-        async def _resolve_tools():
-            return await resolve_tools_async(
+        memories, tool_results = await asyncio.gather(
+            build_memory_context_async(perception, session.executed_strategy_ids,
+                                       config=session.full_config),
+            resolve_tools_async(
                 processed_text, perception, session.tool_registry,
                 session.cognition.config, input_metadata,
                 language=language,
-            )
-
-        memories, tool_results = await asyncio.gather(
-            _build_memory(),
-            _resolve_tools(),
+            ),
         )
 
         session.executed_strategy_ids.update(memories.get("strategy_ids", []))
@@ -690,13 +829,7 @@ async def run_cycle_async(user_input: str | dict, session: Session,
     has_tool_data = any(t["result"].success and t["result"].data for t in tool_results) if tool_results else False
     log("info", f"思考中...{'(云端)' if has_tool_data else '(本地)'}")
     think_result = await session.cognition.think_async(llm_input, perception, memories, use_cloud=has_tool_data)
-    final_response = think_result["final_response"]
-
-    if tool_results:
-        citations = _extract_citations(tool_results, language=language)
-        if citations:
-            final_response += "\n\n" + citations
-            think_result["final_response"] = final_response
+    final_response = _finalize_response(think_result, tool_results, language)
 
     _save_turn_data(session, perception, think_result, memories, memories_used_at,
                     user_input_at, raw_user_input, final_response, tool_results, input_metadata, L)

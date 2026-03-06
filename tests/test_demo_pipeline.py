@@ -1,4 +1,4 @@
-"""End-to-end pipeline test: feed demo JSON → perceive → save → sleep.
+"""Integration test: end-to-end pipeline — feed demo JSON → perceive → save → sleep.
 
 Usage:
     python tests/test_demo_pipeline.py [demo.json path] [--sessions N]

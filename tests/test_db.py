@@ -1,4 +1,6 @@
-"""Verify database connection and schema.
+"""Integration test: verify database connection and schema.
+
+Requires a running PostgreSQL with the JKRiver schema created.
 
 Usage:
     python -m pytest tests/test_db.py -v

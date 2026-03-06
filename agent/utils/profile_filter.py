@@ -1,7 +1,11 @@
 
+import logging
+
 from datetime import timedelta
 from agent.utils.time_context import get_now
 from agent.config.prompts import get_labels
+
+logger = logging.getLogger(__name__)
 
 
 def prepare_profile(profile, query_text=None, config=None,
@@ -34,7 +38,7 @@ def prepare_profile(profile, query_text=None, config=None,
             )
             vector_ranked_ids = [r["source_id"] for r in results]
         except Exception:
-            pass
+            logger.warning("vector search for profile failed", exc_info=True)
 
     id_to_entry = {p["id"]: p for p in active if p.get("id")}
 

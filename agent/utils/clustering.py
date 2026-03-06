@@ -1,6 +1,7 @@
 
 import hashlib
 import json
+import logging
 import math
 import random
 
@@ -9,6 +10,8 @@ from agent.storage import get_db_connection
 from agent.utils.embedding import cosine_similarity
 from agent.utils.llm_client import call_llm
 from agent.config.prompts import get_prompt, get_labels
+
+logger = logging.getLogger(__name__)
 
 
 def _vec_add(a: list[float], b: list[float]) -> list[float]:
@@ -181,8 +184,9 @@ def _get_last_embeddings_hash() -> str | None:
                 )
                 row = cur.fetchone()
                 return row[0] if row else None
-            except Exception:
+            except Exception as e:
                 conn.rollback()
+                logger.debug("cluster table query failed: %s", e)
                 return None
     finally:
         conn.close()
@@ -194,8 +198,9 @@ def _save_clusters(clusters_data: list[dict], embeddings_hash: str):
         with conn.cursor() as cur:
             try:
                 cur.execute("DELETE FROM memory_clusters")
-            except Exception:
+            except Exception as e:
                 conn.rollback()
+                logger.debug("cluster table delete failed, creating: %s", e)
                 cur.execute(
                     "CREATE TABLE IF NOT EXISTS memory_clusters ("
                     "  id SERIAL PRIMARY KEY,"
@@ -267,7 +272,7 @@ def _generate_cluster_themes(clusters_info: list[dict], config: dict) -> list[di
         if isinstance(themes, list):
             return themes
     except Exception:
-        pass
+        logger.warning("theme parse failed: %s", raw[:200])
     return []
 
 
@@ -330,7 +335,7 @@ def cluster_memories(config: dict):
         for cd in clusters_data:
             cd["theme"] = theme_map.get(cd["cluster_index"], "")
     except Exception:
-        pass
+        logger.warning("cluster theme generation failed", exc_info=True)
 
     _save_clusters(clusters_data, embeddings_hash)
 

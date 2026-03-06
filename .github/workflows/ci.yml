@@ -13,6 +13,21 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: Riverse
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -23,8 +38,24 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Init database schema
+        run: psql -f agent/schema.sql
+        env:
+          PGHOST: localhost
+          PGUSER: postgres
+          PGPASSWORD: postgres
+          PGDATABASE: Riverse
+
+      - name: Create settings.yaml for tests
+        run: |
+          cp settings.yaml.default settings.yaml
+          sed -i '/^    host: "localhost"/a\    password: "postgres"' settings.yaml
+
       - name: Test imports
         run: python tests/test_imports.py
 
       - name: Unit tests
         run: python tests/test_unit.py
+
+      - name: Storage tests
+        run: python tests/test_storage.py

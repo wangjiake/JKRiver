@@ -7,5 +7,5 @@ pyyaml~=6.0
 requests~=2.32
 httpx~=0.28
 python-telegram-bot~=22.0
-discord.py~=2.4
+discord.py~=2.7
 edge-tts~=7.0

@@ -48,7 +48,7 @@ def build_verify_messages(
         {"role": "user", "content": (
             f"[system_time: {get_now().strftime('%Y-%m-%dT%H:%M')}]\n"
             f"{L['memory']}：\n{verify_memory}\n"
-            f"{session_context if session_context else L['current_session'] + '：\n' + L['none']}\n"
+            f"{session_context if session_context else L['current_session'] + '：' + chr(10) + L['none']}\n"
             f"{L['user_asks']}：{user_input}\n"
             f"{L['ai_reply']}：{response}\n\n"
             f"{L['output']}："

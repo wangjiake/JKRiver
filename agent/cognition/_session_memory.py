@@ -69,7 +69,7 @@ class SessionMemory:
         turn_index = len(self._turns) - 1
 
         # embed for recall (best-effort, run in thread to avoid blocking)
-        await asyncio.to_thread(self._try_embed, turn_index, assistant_summary)
+        await asyncio.to_thread(self._try_embed, turn_index, user_summary)
 
         # compress if needed
         await self._maybe_compress_async()

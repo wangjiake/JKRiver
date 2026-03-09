@@ -114,24 +114,13 @@ Riverse 是一个运行在你自己机器上的个人 AI Agent。它记住每一
 ```bash
 git clone https://github.com/wangjiake/JKRiver.git
 cd JKRiver/docker
-cp .env.example .env
-```
-
-编辑 `.env` — 设置 API Key：
-
-```env
-OPENAI_API_KEY=sk-your-key-here
-```
-
-```bash
+cp .env.example .env       # 编辑 .env — 填入 API 密钥
 docker compose up -d
 ```
 
-搞定。Web 面板 `http://localhost:2345`，API 地址 `http://localhost:8400/docs`。
+Web 面板 `http://localhost:2345`，API 地址 `http://localhost:8400/docs`。
 
-> **导入聊天记录：** 将 ChatGPT / Claude / Gemini 的导出文件放入 `docker/data/ChatGPT/`、`docker/data/Claude/` 或 `docker/data/Gemini/`，重启即可导入。
->
-> 如需 Telegram/Discord Bot，在 `.env` 中设置 `TELEGRAM_BOT_TOKEN` 或 `DISCORD_BOT_TOKEN` 后重启。
+完整 Docker 指南（聊天机器人、数据导入、Demo、配置说明）：**[docker/README.md](docker/README.md)**
 
 ---
 

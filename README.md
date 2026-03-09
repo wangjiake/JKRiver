@@ -114,24 +114,13 @@ The fastest way to get started. No Python or PostgreSQL installation needed.
 ```bash
 git clone https://github.com/wangjiake/JKRiver.git
 cd JKRiver/docker
-cp .env.example .env
-```
-
-Edit `.env` — set your API key:
-
-```env
-OPENAI_API_KEY=sk-your-key-here
-```
-
-```bash
+cp .env.example .env       # Edit .env — add your API key
 docker compose up -d
 ```
 
-Done. Web Dashboard at `http://localhost:2345`, API at `http://localhost:8400/docs`.
+Web Dashboard at `http://localhost:2345`, API at `http://localhost:8400/docs`.
 
-> **Import your chat history:** Drop your ChatGPT / Claude / Gemini export files into `docker/data/ChatGPT/`, `docker/data/Claude/`, or `docker/data/Gemini/` and restart.
->
-> For Telegram/Discord bots, set `TELEGRAM_BOT_TOKEN` or `DISCORD_BOT_TOKEN` in `.env` and restart.
+Full Docker guide (chat bots, data import, demo, configuration): **[docker/README.md](docker/README.md)**
 
 ---
 

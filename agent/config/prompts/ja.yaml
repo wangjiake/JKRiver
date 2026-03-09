@@ -700,6 +700,23 @@ meta.failure_keywords:
   - "判断できません"
   - "確信が持てません"
 
+session_memory.summarize_system: |
+  あなたは会話要約器です。会話履歴を簡潔なセッション要約に圧縮し、重要な情報を保持してください。
+
+session_memory.summarize: |
+  既存の要約：
+  {existing_summary}
+
+  新しい会話ターン：
+  {new_turns}
+
+  既存の要約と新しいターンを統合し、更新された要約を出力してください。
+  要件：
+  - 重要なトピック、ユーザーの好み、重要な事実を保持
+  - 繰り返しや重要でない雑談を削除
+  - 300文字以内
+  - 要約テキストのみを出力し、それ以外は不要
+
 context.labels:
   user: "ユーザー"
   assistant: "アシスタント"
@@ -914,6 +931,8 @@ context.labels:
   mention_again_reason: "再度言及"
   citation_header_default: "参考元"
   verification_pass: "PASS"
+  session_summary: "【セッション要約】"
+  session_recalled: "【関連コンテキスト】"
 
 errors.tools:
   tool_not_found: "ツール '{name}' は存在しません"

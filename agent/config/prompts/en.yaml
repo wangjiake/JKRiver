@@ -700,6 +700,23 @@ meta.failure_keywords:
   - "I'm not able to"
   - "I can't be certain"
 
+session_memory.summarize_system: |
+  You are a conversation summarizer. Your task is to compress conversation history into a concise session summary, preserving key information.
+
+session_memory.summarize: |
+  Existing summary:
+  {existing_summary}
+
+  New conversation turns:
+  {new_turns}
+
+  Merge the existing summary with the new turns and output an updated summary.
+  Requirements:
+  - Preserve important topics, user preferences, and key facts
+  - Remove repetitive and unimportant chit-chat
+  - 300 words or fewer
+  - Output only the summary text, nothing else
+
 context.labels:
   user: "User"
   assistant: "Assistant"
@@ -914,6 +931,8 @@ context.labels:
   mention_again_reason: "mentioned again"
   citation_header_default: "Sources"
   verification_pass: "PASS"
+  session_summary: "[Session Summary]"
+  session_recalled: "[Recalled Context]"
 
 errors.tools:
   tool_not_found: "Tool '{name}' does not exist"

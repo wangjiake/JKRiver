@@ -3,6 +3,7 @@
 __all__ = ["CognitionEngine"]
 
 import asyncio
+from datetime import datetime
 
 from agent.utils.llm_client import call_llm_async, is_llm_error
 from agent.utils.time_context import get_now
@@ -13,11 +14,12 @@ from agent.cognition._perceive import (
 )
 from agent.cognition._think import (
     build_think_messages, build_verify_messages,
-    parse_verify_raw, finish_think_result,
+    parse_verify_raw, finish_think_result, summarize_response,
 )
 from agent.cognition._trajectory import (
     build_trajectory_context, finish_trajectory_result,
 )
+from agent.cognition._session_memory import SessionMemory
 
 
 class CognitionEngine:
@@ -25,7 +27,7 @@ class CognitionEngine:
         self.config = config.get("llm", {})
         self.cloud_configs = config.get("cloud_llm_configs", [])
         self.language = config.get("language", "en")
-        self.chat_history: list[dict] = []
+        self.session_memory = SessionMemory(config, self.config, self.language)
         esc = config.get("cloud_llm", {}).get("escalation", {})
         self._escalation_auto = esc.get("auto", False)
         self._escalation_keywords = get_failure_keywords(
@@ -51,7 +53,7 @@ class CognitionEngine:
 
     async def perceive_async(self, user_input: str, available_tools=None) -> dict:
         messages = build_perceive_messages(
-            user_input, available_tools, self.chat_history, self.language)
+            user_input, available_tools, self.session_memory.get_recent_turns(3), self.language)
         raw = (await call_llm_async(messages, self.config)).strip()
         return process_perceive_raw(raw, user_input, self.language)
 
@@ -64,16 +66,20 @@ class CognitionEngine:
 
     async def _verify_async(self, user_input: str, perception: dict,
                 memory_text: str, response: str,
-                chat_history: list[dict] | None = None) -> str:
+                session_context: str = "") -> str:
         messages = build_verify_messages(
-            user_input, perception, memory_text, response, chat_history, self.language)
+            user_input, perception, memory_text, response, session_context, self.language)
         raw = (await call_llm_async(messages, self.config)).strip()
         return parse_verify_raw(raw)
 
     async def think_async(self, user_input: str, perception: dict,
-              memories: dict, use_cloud: bool = False) -> dict:
+              memories: dict, use_cloud: bool = False,
+              user_input_at: datetime | None = None) -> dict:
+        query_text = perception.get("ai_summary", user_input)
+        session_context = await asyncio.to_thread(
+            self.session_memory.build_context, query_text)
         messages = build_think_messages(
-            user_input, perception, memories, self.chat_history, self.language)
+            user_input, perception, memories, session_context, self.language)
         memory_text = memories.get("memory_text", "")
 
         if use_cloud and self.cloud_configs:
@@ -86,7 +92,7 @@ class CognitionEngine:
 
         if perception.get("category") == "personal":
             verification_result = await self._verify_async(
-                user_input, perception, memory_text, raw_response, self.chat_history)
+                user_input, perception, memory_text, raw_response, session_context)
             verification_at = get_now()
             if verification_result.startswith("FAIL"):
                 fail_reason = verification_result.split(":", 1)[-1].split("：", 1)[-1].strip()
@@ -105,8 +111,15 @@ class CognitionEngine:
             verification_at = get_now()
             final_response_at = verification_at
 
-        return finish_think_result(
+        result = finish_think_result(
             raw_response, raw_response_at, user_input, perception,
             memory_text, verification_result, verification_at,
-            final_response, final_response_at,
-            self.chat_history, self.language)
+            final_response, final_response_at, self.language)
+
+        # Add turn to session memory (replaces old chat_history.append)
+        user_summary = perception.get("ai_summary", user_input)
+        assistant_summary = summarize_response(final_response)
+        await self.session_memory.add_turn_async(
+            user_summary, assistant_summary, user_input_at=user_input_at)
+
+        return result

@@ -178,6 +178,18 @@ tts:
     max_chars: 500                      # 超过此长度截断 | Truncate if longer | この長さを超えると切り捨て
 
 
+# ─── 会话记忆 | Session Memory | セッションメモリ ──────────
+#  会话内上下文管理：摘要压缩 + 向量召回 + Token 预算
+#  In-session context management: summary compression + vector recall + token budget
+#  セッション内コンテキスト管理：要約圧縮 + ベクトル検索 + トークン予算
+session_memory:
+    char_budget: 3000                   # 会话上下文总字符预算 | Total character budget | 合計文字バジェット
+    keep_recent: 5                      # 保留完整的最近轮次数 | Recent turns to keep | 保持する最近のターン数
+    summary_ratio: 0.4                  # 摘要占预算的比例 | Summary budget ratio | 要約のバジェット比率
+    recall_max: 3                       # 向量召回最大条数 | Max vector recall items | ベクトル検索最大件数
+    recall_min_score: 0.45              # 召回最低相似度 | Min recall similarity | 最小類似度スコア
+
+
 # ─── 语义搜索 | Embedding Search | セマンティック検索 ──────
 #  用向量搜索增强 AI 的记忆检索能力（需要 Ollama 运行 bge-m3 模型）
 #  Enhance AI memory retrieval with vector search (requires Ollama with bge-m3)

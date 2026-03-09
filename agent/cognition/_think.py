@@ -8,7 +8,7 @@ def build_think_messages(
     user_input: str,
     perception: dict,
     memories: dict,
-    chat_history: list[dict],
+    session_context: str,
     language: str,
 ) -> list[dict]:
     """Build LLM messages for the think step."""
@@ -21,15 +21,10 @@ def build_think_messages(
             "content": memory_text,
         })
 
-    if chat_history:
-        L = get_labels("context.labels", language)
-        history_lines = []
-        for turn in chat_history:
-            history_lines.append(f"{L['user']}：{turn['user_summary']}")
-            history_lines.append(f"{L['assistant']}：{turn['assistant_summary']}")
+    if session_context:
         messages.append({
             "role": "system",
-            "content": f"{L['current_session']}：\n" + "\n".join(history_lines),
+            "content": session_context,
         })
 
     messages.append({"role": "user", "content": f"[system_time: {get_now().strftime('%Y-%m-%dT%H:%M')}]\n{user_input}"})
@@ -41,27 +36,19 @@ def build_verify_messages(
     perception: dict,
     memory_text: str,
     response: str,
-    chat_history: list[dict] | None,
+    session_context: str,
     language: str,
 ) -> list[dict]:
     """Build LLM messages for the verification step."""
     L = get_labels("context.labels", language)
     verify_memory = strip_internal_sections(memory_text, language=language)
 
-    session_context = ""
-    if chat_history:
-        lines = []
-        for turn in chat_history:
-            lines.append(f"{L['user']}：{turn['user_summary']}")
-            lines.append(f"{L['assistant']}：{turn['assistant_summary']}")
-        session_context = "\n".join(lines)
-
     return [
         {"role": "system", "content": get_prompt("cognition.verify_system", language)},
         {"role": "user", "content": (
             f"[system_time: {get_now().strftime('%Y-%m-%dT%H:%M')}]\n"
             f"{L['memory']}：\n{verify_memory}\n"
-            f"{L['current_session']}：\n{session_context if session_context else L['none']}\n"
+            f"{session_context if session_context else L['current_session'] + '：\n' + L['none']}\n"
             f"{L['user_asks']}：{user_input}\n"
             f"{L['ai_reply']}：{response}\n\n"
             f"{L['output']}："
@@ -143,19 +130,13 @@ def finish_think_result(
     verification_at,
     final_response,
     final_response_at,
-    chat_history: list[dict],
     language: str,
 ) -> dict:
-    """Build final think result dict and append to chat_history (in-place)."""
+    """Build final think result dict."""
     thinking_notes = make_thinking_notes(
         perception, memory_text, raw_response, verification_result, final_response, language
     )
     thinking_notes_at = get_now()
-
-    chat_history.append({
-        "user_summary": perception.get("ai_summary", user_input),
-        "assistant_summary": summarize_response(final_response),
-    })
 
     return {
         "raw_response": raw_response,

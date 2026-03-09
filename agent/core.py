@@ -35,6 +35,7 @@ class Session:
         self.created_at = get_now()
         self.full_config = config
         self.cognition = CognitionEngine(config)
+        self.cognition.session_memory.session_id = self.id
         self.executed_strategy_ids: set = set()
         tools_enabled = config.get("tools", {}).get("enabled", True)
         self.tool_registry = ToolRegistry(config, enabled=tools_enabled)
@@ -689,7 +690,9 @@ async def run_cycle_async(user_input: str | dict, session: Session,
 
     has_tool_data = any(t["result"].success and t["result"].data for t in tool_results) if tool_results else False
     log("info", f"思考中...{'(云端)' if has_tool_data else '(本地)'}")
-    think_result = await session.cognition.think_async(llm_input, perception, memories, use_cloud=has_tool_data)
+    think_result = await session.cognition.think_async(
+        llm_input, perception, memories, use_cloud=has_tool_data,
+        user_input_at=user_input_at)
     final_response = _finalize_response(think_result, tool_results, language)
 
     if not is_llm_error(final_response):

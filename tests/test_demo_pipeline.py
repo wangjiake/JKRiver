@@ -137,10 +137,7 @@ def run_pipeline(demo_path, max_sessions=None):
                 perceive_fail += 1
             print(f"    category={perception.get('category')} intent={perception.get('intent','')[:40]}")
 
-            engine.chat_history.append({
-                "user_summary": user_input[:100],
-                "assistant_summary": assistant_reply[:100],
-            })
+            engine.session_memory.add_turn(user_input[:100], assistant_reply[:100])
 
             save_raw_conversation(
                 session_id=session_id,

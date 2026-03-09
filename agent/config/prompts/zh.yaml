@@ -701,6 +701,22 @@ meta.failure_keywords:
   - "我没有能力"
   - "我不能确定"
 
+session_memory.summarize_system: |
+  你是对话摘要器。你的任务是将对话历史压缩成简洁的会话摘要，保留关键信息。
+
+session_memory.summarize: |
+  已有摘要：
+  {existing_summary}
+
+  新增对话轮次：
+  {new_turns}
+
+  请将已有摘要和新增轮次合并，输出更新后的摘要。要求：
+  - 保留重要的话题、用户偏好、关键事实
+  - 删除重复和不重要的闲聊内容
+  - 300字以内
+  - 只输出摘要文本，不要其他文字
+
 context.labels:
   user: "用户"
   assistant: "助手"
@@ -915,6 +931,8 @@ context.labels:
   mention_again_reason: "再次提及"
   citation_header_default: "参考来源"
   verification_pass: "通过"
+  session_summary: "【会话摘要】"
+  session_recalled: "【相关上下文】"
 
 errors.tools:
   tool_not_found: "工具 '{name}' 不存在"

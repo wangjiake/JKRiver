@@ -58,10 +58,10 @@ def generate_trajectory_summary(current_profile: list[dict],
     if prev_trajectory:
         prev_text = (
             f"{L['prev_trajectory']}：\n"
-            f"  {L['phase']}: {prev_trajectory['life_phase']}\n"
-            f"  {L['characteristics']}: {prev_trajectory['phase_characteristics']}\n"
-            f"  {L['direction']}: {prev_trajectory['trajectory_direction']}\n"
-            f"  {L['stability']}: {prev_trajectory['stability_assessment']}\n"
+            f"  {L['phase']}: {prev_trajectory.get('life_phase', '')}\n"
+            f"  {L['characteristics']}: {prev_trajectory.get('phase_characteristics', '')}\n"
+            f"  {L['direction']}: {prev_trajectory.get('trajectory_direction', '')}\n"
+            f"  {L['stability']}: {prev_trajectory.get('stability_assessment', '')}\n"
             f"  {L['recent_momentum']}: {prev_trajectory.get('recent_momentum', '')}\n"
             f"  {L['summary']}: {prev_trajectory.get('full_summary', '')}\n"
         )

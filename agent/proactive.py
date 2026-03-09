@@ -65,11 +65,11 @@ class ProactiveScanner:
         self.llm_config = config.get("llm", {})
         self.triggers_cfg = self.proactive_cfg.get("triggers", {})
 
-    def scan(self, chat_id: int) -> dict | None:
+    def scan(self, chat_id: int, session_prefix: str = "tg_") -> dict | None:
         if not self._check_rate_limits(chat_id):
             return None
 
-        triggers = self._gather_triggers(chat_id)
+        triggers = self._gather_triggers(chat_id, session_prefix=session_prefix)
         if not triggers:
             logger.debug(_log("no_triggers", self.language), chat_id)
             return None
@@ -130,7 +130,7 @@ class ProactiveScanner:
         else:
             return current >= start or current <= end
 
-    def _gather_triggers(self, chat_id: int) -> list[dict]:
+    def _gather_triggers(self, chat_id: int, session_prefix: str = "tg_") -> list[dict]:
         triggers = []
         now = get_now()
 
@@ -195,7 +195,7 @@ class ProactiveScanner:
         idle_cfg = self.triggers_cfg.get("idle_checkin", {})
         if idle_cfg.get("enabled", True):
             idle_hours = idle_cfg.get("idle_hours", DEFAULT_IDLE_HOURS)
-            session_id = f"tg_{chat_id}"
+            session_id = f"{session_prefix}{chat_id}"
             last_time = get_last_interaction_time(session_id)
             if last_time:
                 gap_hours = (now - last_time).total_seconds() / 3600

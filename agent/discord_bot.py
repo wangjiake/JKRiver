@@ -230,7 +230,7 @@ async def proactive_loop():
                 continue
             dm = await user.create_dm()
 
-            result = await asyncio.to_thread(_proactive.scan, user_id)
+            result = await asyncio.to_thread(_proactive.scan, user_id, "dc_")
             if result and result.get("send") and result.get("message"):
                 for chunk in _split_dc_message(result["message"]):
                     await dm.send(chunk)

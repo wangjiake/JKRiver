@@ -242,7 +242,8 @@ def save_profile_fact(category: str, subject: str, value: str,
                         "SELECT id, evidence, mention_count FROM user_profile "
                         "WHERE category = %s AND subject = %s "
                         "AND LOWER(TRIM(value)) = LOWER(TRIM(%s)) "
-                        "AND end_time IS NULL AND human_end_time IS NULL LIMIT 1",
+                        "AND end_time IS NULL AND human_end_time IS NULL "
+                        "AND (rejected IS NULL OR rejected = false) LIMIT 1",
                         (existing["category"], existing["subject"], value),
                     )
                     exact_match = cur.fetchone()

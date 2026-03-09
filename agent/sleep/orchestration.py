@@ -24,6 +24,7 @@ from agent.storage import (
     load_fact_edges, delete_fact_edges_for,
 )
 from agent.storage._synonyms import is_significant_category
+from agent.sleep._parsing import LLMPipelineError
 from agent.sleep._maturity import _calculate_maturity_decay
 from agent.sleep._data_access import (
     get_unprocessed_conversations, mark_processed, _consolidate_profile,
@@ -43,6 +44,20 @@ from agent.sleep.trajectory import generate_trajectory_summary, extract_fact_edg
 logger = logging.getLogger(__name__)
 
 RECENT_PROFILE_LOOKBACK_DAYS = 90
+
+
+def _safe_int(val, default=None):
+    """Coerce LLM-returned value to int (handles str '42', float 42.0, etc.)."""
+    if isinstance(val, bool):
+        return default
+    if isinstance(val, int):
+        return val
+    if val is None:
+        return default
+    try:
+        return int(val)
+    except (ValueError, TypeError):
+        return default
 
 
 def run():
@@ -92,20 +107,31 @@ def _run_sleep_pipeline_inner(session_convs, config, language, L):
         session_convs=session_convs, config=config,
         language=language, L=L,
     )
-    _step_load_initial(state)
-    _step_extract_sessions(state)
-    _step_analyze_behavior(state)
-    _step_classify_and_integrate(state)
-    _step_cross_verify(state)
-    _step_resolve_disputes(state)
-    _step_extract_edges(state)
-    _step_expire_facts(state)
-    _step_maturity_decay(state)
-    _step_user_model(state)
-    _step_trajectory(state)
-    _step_consolidate(state)
-    _step_snapshot(state)
-    _step_finalize(state)
+    steps = [
+        ("load_initial", _step_load_initial),
+        ("extract_sessions", _step_extract_sessions),
+        ("analyze_behavior", _step_analyze_behavior),
+        ("classify_and_integrate", _step_classify_and_integrate),
+        ("cross_verify", _step_cross_verify),
+        ("resolve_disputes", _step_resolve_disputes),
+        ("extract_edges", _step_extract_edges),
+        ("expire_facts", _step_expire_facts),
+        ("maturity_decay", _step_maturity_decay),
+        ("user_model", _step_user_model),
+        ("trajectory", _step_trajectory),
+        ("consolidate", _step_consolidate),
+        ("snapshot", _step_snapshot),
+        ("finalize", _step_finalize),
+    ]
+    for step_name, step_fn in steps:
+        try:
+            step_fn(state)
+        except LLMPipelineError:
+            logger.error("Sleep pipeline aborted at step '%s': LLM unavailable", step_name)
+            raise
+        except Exception:
+            logger.error("Sleep pipeline failed at step '%s'", step_name, exc_info=True)
+            raise
 
 
 # ── Step functions ─────────────────────────────────────────
@@ -276,7 +302,8 @@ def _step_classify_and_integrate(state: _PipelineState):
     obs_query = _obs_query(state)
 
     def _find_fact(fid) -> dict | None:
-        if not fid:
+        fid = _safe_int(fid)
+        if fid is None:
             return None
         for p in state.current_profile:
             if p.get("id") == fid:
@@ -309,7 +336,8 @@ def _step_classify_and_integrate(state: _PipelineState):
         trajectory=state.trajectory,
     )
 
-    classified_indices = {c.get("obs_index") for c in classifications if c.get("obs_index") is not None}
+    classified_indices = {_safe_int(c.get("obs_index")) for c in classifications if c.get("obs_index") is not None}
+    classified_indices.discard(None)
     all_indices = set(range(len(state.all_observations)))
     missing_indices = all_indices - classified_indices
     if missing_indices:
@@ -326,16 +354,16 @@ def _step_classify_and_integrate(state: _PipelineState):
 
     # Collect affected fact_ids for incremental cross_verify / resolve_disputes
     for s in supports:
-        fid = s.get("fact_id")
-        if fid:
+        fid = _safe_int(s.get("fact_id"))
+        if fid is not None:
             state.affected_fact_ids.add(fid)
     for c in contradictions:
-        fid = c.get("fact_id")
-        if fid:
+        fid = _safe_int(c.get("fact_id"))
+        if fid is not None:
             state.affected_fact_ids.add(fid)
     for ea in evidence_against_list:
-        fid = ea.get("fact_id")
-        if fid:
+        fid = _safe_int(ea.get("fact_id"))
+        if fid is not None:
             state.affected_fact_ids.add(fid)
 
     for s in supports:
@@ -491,7 +519,7 @@ def _step_cross_verify(state: _PipelineState):
 
     judgments = cross_verify_suspected_facts(suspected_facts, state.config,
                                              trajectory=state.trajectory)
-    judgment_map = {j["fact_id"]: j for j in judgments}
+    judgment_map = {_safe_int(j["fact_id"]): j for j in judgments if _safe_int(j.get("fact_id")) is not None}
 
     for f in suspected_facts:
         j = judgment_map.get(f["id"])

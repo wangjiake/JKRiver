@@ -5,6 +5,7 @@ import logging
 from datetime import datetime
 
 from agent.config.prompts import get_labels, get_prompt
+from agent.utils.llm_client import is_llm_error
 from agent.utils.time_context import get_now
 
 logger = logging.getLogger(__name__)
@@ -172,7 +173,7 @@ class SessionMemory:
             ]
             result = await call_llm_async(messages, self._llm_config)
             result = result.strip()
-            if result:
+            if result and not is_llm_error(result):
                 self._summary = result
                 self._summary_covers = compress_end
                 logger.info("Session memory compressed %d turns (total covered: %d)",

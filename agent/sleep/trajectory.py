@@ -12,6 +12,20 @@ from agent.storage import (
 from agent.sleep._parsing import _parse_json_array, _parse_json_object
 
 
+def _safe_int(val, default=None):
+    """Coerce LLM-returned value to int."""
+    if isinstance(val, bool):
+        return default
+    if isinstance(val, int):
+        return val
+    if val is None:
+        return default
+    try:
+        return int(val)
+    except (ValueError, TypeError):
+        return default
+
+
 def generate_trajectory_summary(current_profile: list[dict],
                                 config: dict,
                                 new_observations: list[dict] | None = None) -> dict:
@@ -140,17 +154,20 @@ def extract_fact_edges(affected_fact_ids: set[int], current_profile: list[dict],
     for e in edges:
         if not isinstance(e, dict):
             continue
-        src = e.get("source_id")
-        tgt = e.get("target_id")
+        src = _safe_int(e.get("source_id"))
+        tgt = _safe_int(e.get("target_id"))
         etype = e.get("edge_type", "")
-        if not src or not tgt or not etype or src == tgt:
+        if src is None or tgt is None or not etype or src == tgt:
             continue
         if src not in valid_ids or tgt not in valid_ids:
             continue
         if etype not in ("causes", "related_to", "contradicts", "temporal_sequence", "supports", "part_of"):
             continue
         desc = e.get("description", "")
-        conf = min(1.0, max(0.0, float(e.get("confidence", 0.8))))
+        try:
+            conf = min(1.0, max(0.0, float(e.get("confidence", 0.8))))
+        except (ValueError, TypeError):
+            conf = 0.8
         save_fact_edge(src, tgt, etype, desc, conf)
         saved.append(e)
     return saved

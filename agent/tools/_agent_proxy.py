@@ -1,5 +1,6 @@
 
 import re
+import shlex
 import subprocess
 import requests
 
@@ -124,8 +125,9 @@ class AgentProxyTool(BaseTool):
         cmd = self._interpolate(template, params)
 
         try:
+            run_cmd = cmd if use_shell else shlex.split(cmd)
             result = subprocess.run(
-                cmd, shell=use_shell,
+                run_cmd, shell=use_shell,
                 capture_output=True, text=True,
                 timeout=timeout,
             )

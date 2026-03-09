@@ -81,7 +81,7 @@ def analyze_user_model(conversations: list[dict], config: dict,
     dialogue = ""
     for msg in conversations:
         dialogue += f"{L['user']}：{msg['user_input']}\n"
-        dialogue += f"{L['assistant']}：{msg['assistant_reply']}\n\n"
+        dialogue += f"{L['assistant']}：{msg.get('assistant_reply') or ''}\n\n"
 
     if not dialogue.strip():
         return []

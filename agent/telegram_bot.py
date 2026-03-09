@@ -209,7 +209,7 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     temp_dir = _tg_config.get("temp_dir", "tmp/telegram")
-    voice = update.message.voice
+    voice = update.message.voice or update.message.audio
     file = await context.bot.get_file(voice.file_id)
     file_path = os.path.join(temp_dir, f"{voice.file_unique_id}.ogg")
 

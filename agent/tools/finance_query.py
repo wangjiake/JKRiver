@@ -39,9 +39,15 @@ class FinanceQueryTool(BaseTool):
 
     def execute(self, params: dict) -> ToolResult:
         TL = get_labels("tools.labels", self.config.get("language", "en"))
-        year = int(params["year"]) if params.get("year") else None
-        month = int(params["month"]) if params.get("month") else None
         merchant = params.get("merchant") or None
+
+        try:
+            year = int(params["year"]) if params.get("year") else None
+            month = int(params["month"]) if params.get("month") else None
+        except (ValueError, TypeError):
+            EL = get_labels("errors.tools", self.config.get("language", "en"))
+            return ToolResult(success=False, data="",
+                              error=EL.get("invalid_date_param", "Invalid year/month parameter"))
 
         try:
             rows = load_finance_transactions(

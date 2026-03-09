@@ -26,7 +26,7 @@ def build_trajectory_context(
         known_keywords.update(p.get("field", "").split())
         known_keywords.add(p.get("category", ""))
     for h in hypotheses:
-        known_keywords.update(h.get("claim", "").split())
+        known_keywords.update(h.get("value", "").split())
         known_keywords.update(h.get("subject", "").split())
         known_keywords.add(h.get("category", ""))
     known_keywords = {k for k in known_keywords if len(k) >= 2}

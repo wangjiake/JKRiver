@@ -57,6 +57,9 @@ def build_verify_messages(
 
 
 def parse_verify_raw(raw: str) -> str:
+    from agent.utils.llm_client import is_llm_error
+    if is_llm_error(raw):
+        return "SKIP"
     if raw.startswith("FAIL:") or raw.startswith("FAIL："):
         return raw
     return "PASS"

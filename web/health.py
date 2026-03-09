@@ -187,7 +187,7 @@ def api_health_sync():
             count = 0
             for grp in body.get("measuregrps", []):
                 grpid = grp["grpid"]
-                measured_at = datetime.fromtimestamp(grp["date"])
+                measured_at = datetime.fromtimestamp(grp["date"], tz=timezone.utc)
                 source = grp.get("attrib")
                 for m in grp.get("measures", []):
                     mtype = m["type"]

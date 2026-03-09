@@ -1,7 +1,8 @@
 
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from agent.utils.time_context import get_now
 from agent.utils.llm_client import call_llm
@@ -93,7 +94,13 @@ class ProactiveScanner:
         quiet = self.proactive_cfg.get("quiet_hours", {})
         quiet_start = quiet.get("start", "23:00")
         quiet_end = quiet.get("end", "08:00")
-        current_time_str = now.strftime("%H:%M")
+        user_tz_name = self.config.get("timezone", "UTC")
+        try:
+            user_tz = ZoneInfo(user_tz_name)
+        except Exception:
+            user_tz = timezone.utc
+        local_now = now.astimezone(user_tz)
+        current_time_str = local_now.strftime("%H:%M")
         if self._in_quiet_hours(current_time_str, quiet_start, quiet_end):
             logger.debug(_log("quiet_hours", self.language), chat_id)
             return False
@@ -108,10 +115,7 @@ class ProactiveScanner:
         min_gap = self.proactive_cfg.get("min_gap_minutes", DEFAULT_MIN_GAP_MINUTES)
         if logs_today:
             last_sent = logs_today[0]["sent_at"]
-            if hasattr(last_sent, 'tzinfo') and last_sent.tzinfo:
-                last_sent = last_sent.replace(tzinfo=None)
-            now_naive = now.replace(tzinfo=None) if hasattr(now, 'tzinfo') and now.tzinfo else now
-            gap = (now_naive - last_sent).total_seconds() / 60
+            gap = (now - last_sent).total_seconds() / 60
             if gap < min_gap:
                 logger.debug(_log("gap_too_short", self.language),
                              chat_id, gap, min_gap)
@@ -143,7 +147,6 @@ class ProactiveScanner:
                 if log.get("trigger_type") == "event_followup"
             }
 
-            now_naive = now.replace(tzinfo=None) if hasattr(now, 'tzinfo') and now.tzinfo else now
             for evt in events:
                 importance = evt.get("importance", 0)
                 if importance < min_importance:
@@ -151,8 +154,7 @@ class ProactiveScanner:
                 created = evt.get("created_at")
                 if not created:
                     continue
-                created_naive = created.replace(tzinfo=None) if hasattr(created, 'tzinfo') and created.tzinfo else created
-                age_hours = (now_naive - created_naive).total_seconds() / 3600
+                age_hours = (now - created).total_seconds() / 3600
                 if age_hours < followup_after:
                     continue
                 if age_hours > max_age * 24:
@@ -196,9 +198,7 @@ class ProactiveScanner:
             session_id = f"tg_{chat_id}"
             last_time = get_last_interaction_time(session_id)
             if last_time:
-                last_naive = last_time.replace(tzinfo=None) if hasattr(last_time, 'tzinfo') and last_time.tzinfo else last_time
-                now_naive = now.replace(tzinfo=None) if hasattr(now, 'tzinfo') and now.tzinfo else now
-                gap_hours = (now_naive - last_naive).total_seconds() / 3600
+                gap_hours = (now - last_time).total_seconds() / 3600
                 if gap_hours >= idle_hours:
                     recent_idle = load_proactive_log(chat_id, since_hours=idle_hours)
                     already_sent = any(

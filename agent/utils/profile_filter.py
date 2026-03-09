@@ -59,8 +59,6 @@ def prepare_profile(profile, query_text=None, config=None,
         if p.get("layer") == "confirmed":
             score += 3
         updated = p.get("updated_at")
-        if updated and updated.tzinfo is not None:
-            updated = updated.replace(tzinfo=None)
         if updated and updated >= thirty_days_ago:
             score += 2
         mc = p.get("mention_count") or 0

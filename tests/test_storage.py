@@ -10,7 +10,7 @@ Usage:
 
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -163,7 +163,7 @@ class TestProfileFacts(_DBTestBase):
         assert fact["value"] == "广州"
 
     def test_get_expired_facts(self):
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
         fid = save_profile_fact("位置", "居住地", "深圳",
                                decay_days=1, start_time=now - timedelta(days=10))
         expired = get_expired_facts(reference_time=now)

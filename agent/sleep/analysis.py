@@ -248,7 +248,7 @@ def cross_verify_suspected_facts(suspected_facts: list[dict], config: dict,
         subj_summaries = load_summaries_by_observation_subject(subject=subj)
         all_subj = subj_summaries.get("before", [])
         all_subj = [s for s in all_subj
-                     if s.get('user_input_at') and s['user_input_at'].replace(tzinfo=None) >= three_months_ago]
+                     if s.get('user_input_at') and s['user_input_at'] >= three_months_ago]
         if all_subj:
             obs_context += f"\n[{cat}] {subj} {L['related_summaries']}：\n"
             for s in all_subj[-30:]:

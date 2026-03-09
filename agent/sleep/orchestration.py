@@ -296,7 +296,7 @@ def _step_classify_and_integrate(state: _PipelineState):
             p for p in state.current_profile
             if p.get("subject") in obs_subjects
             or p.get("category") in obs_categories
-            or (p.get("updated_at") and p["updated_at"].replace(tzinfo=None) >= three_months_ago)
+            or (p.get("updated_at") and p["updated_at"] >= three_months_ago)
         ]
     else:
         classify_profile, _ = prepare_profile(
@@ -592,9 +592,7 @@ def _step_maturity_decay(state: _PipelineState):
         updated = f.get("updated_at")
         if not start or not updated:
             continue
-        f_naive = start.replace(tzinfo=None) if hasattr(start, 'tzinfo') and start.tzinfo else start
-        l_naive = updated.replace(tzinfo=None) if hasattr(updated, 'tzinfo') and updated.tzinfo else updated
-        span_days = (l_naive - f_naive).days
+        span_days = (updated - start).days
         ev = f.get("evidence", [])
         evidence_count = len(ev) if isinstance(ev, list) else 0
         current_decay = f.get("decay_days") or 90

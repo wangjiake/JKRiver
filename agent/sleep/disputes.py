@@ -34,7 +34,7 @@ def _preprocess_disputes(disputed_pairs: list[dict], language: str = "en") -> tu
             })
             continue
 
-        dispute_age = (now - new_start.replace(tzinfo=None)).days if new_start else 0
+        dispute_age = (now - new_start).days if new_start else 0
         if dispute_age > 90:
             if new_mc > old_mc:
                 rule_results.append({

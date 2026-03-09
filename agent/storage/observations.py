@@ -77,9 +77,7 @@ def load_observations_by_time_range(pivot_time, keywords: set | None = None,
         if not obs_time:
             before.append(o)
             continue
-        obs_naive = obs_time.replace(tzinfo=None) if hasattr(obs_time, 'tzinfo') and obs_time.tzinfo else obs_time
-        pivot_naive = pivot_time.replace(tzinfo=None) if hasattr(pivot_time, 'tzinfo') and pivot_time.tzinfo else pivot_time
-        if obs_naive < pivot_naive:
+        if obs_time < pivot_time:
             before.append(o)
         else:
             after.append(o)

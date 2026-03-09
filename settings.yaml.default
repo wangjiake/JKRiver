@@ -11,6 +11,13 @@
 language: "en"
 
 
+# ─── 时区 | Timezone | タイムゾーン ──────────────────────────
+#  用于静默时段等需要本地时间的功能 | Used for quiet hours and other local-time features | 静音時間帯などローカル時間が必要な機能に使用
+#  IANA 格式，例如 Asia/Shanghai, America/New_York, Asia/Tokyo
+#  IANA format, e.g. Asia/Shanghai, America/New_York, Asia/Tokyo
+timezone: "Asia/Tokyo"
+
+
 # ─── 数据库 | Database | データベース ────────────────────────
 #  PostgreSQL 连接信息，需要先安装并启动 PostgreSQL
 #  PostgreSQL connection info. Install and start PostgreSQL first

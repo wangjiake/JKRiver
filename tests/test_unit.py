@@ -273,7 +273,7 @@ class TestSignificantCategory:
 # ═══════════════════════════════════════════════════════════
 
 from agent.utils.profile_filter import prepare_profile, format_profile_text
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 def _make_fact(id, category="兴趣", subject="test", value="val",
@@ -286,8 +286,8 @@ def _make_fact(id, category="兴趣", subject="test", value="val",
         "value": value,
         "layer": layer,
         "mention_count": mention_count,
-        "updated_at": updated_at or datetime(2025, 1, 1),
-        "start_time": datetime(2025, 1, 1),
+        "updated_at": updated_at or datetime(2025, 1, 1, tzinfo=timezone.utc),
+        "start_time": datetime(2025, 1, 1, tzinfo=timezone.utc),
         "superseded_by": superseded_by,
         "source_type": "stated",
         "evidence": [],
@@ -319,9 +319,9 @@ class TestPrepareProfile:
         assert top[0]["id"] == 2
 
     def test_recent_updated_ranked_higher(self):
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
         facts = [
-            _make_fact(1, updated_at=datetime(2020, 1, 1)),
+            _make_fact(1, updated_at=datetime(2020, 1, 1, tzinfo=timezone.utc)),
             _make_fact(2, updated_at=now - timedelta(days=5)),
         ]
         top, _ = prepare_profile(facts, max_entries=10, language="en")
@@ -768,7 +768,7 @@ def _make_dispute_pair(old_id=1, new_id=2, old_mc=1, new_mc=1,
             "id": old_id,
             "value": "old_val",
             "mention_count": old_mc,
-            "start_time": old_start or datetime(2025, 1, 1),
+            "start_time": old_start or datetime(2025, 1, 1, tzinfo=timezone.utc),
             "layer": "suspected",
             "category": "位置",
             "subject": "居住地",
@@ -777,7 +777,7 @@ def _make_dispute_pair(old_id=1, new_id=2, old_mc=1, new_mc=1,
             "id": new_id,
             "value": "new_val",
             "mention_count": new_mc,
-            "start_time": new_start or datetime(2025, 6, 1),
+            "start_time": new_start or datetime(2025, 6, 1, tzinfo=timezone.utc),
             "layer": "suspected",
             "category": "位置",
             "subject": "居住地",
@@ -788,7 +788,7 @@ def _make_dispute_pair(old_id=1, new_id=2, old_mc=1, new_mc=1,
 class TestPreprocessDisputes:
     @patch("agent.sleep.disputes.get_now")
     def test_new_mention_ge2_accept_new(self, mock_now):
-        mock_now.return_value = datetime(2025, 7, 1)
+        mock_now.return_value = datetime(2025, 7, 1, tzinfo=timezone.utc)
         pairs = [_make_dispute_pair(new_mc=3)]
         rules, llm = _preprocess_disputes(pairs)
         assert len(rules) == 1
@@ -797,10 +797,10 @@ class TestPreprocessDisputes:
 
     @patch("agent.sleep.disputes.get_now")
     def test_old_90days_new_mention_higher_accept(self, mock_now):
-        mock_now.return_value = datetime(2025, 10, 1)
+        mock_now.return_value = datetime(2025, 10, 1, tzinfo=timezone.utc)
         pairs = [_make_dispute_pair(
             old_mc=2, new_mc=5,
-            new_start=datetime(2025, 6, 1),
+            new_start=datetime(2025, 6, 1, tzinfo=timezone.utc),
         )]
         rules, llm = _preprocess_disputes(pairs)
         assert len(rules) == 1
@@ -808,11 +808,11 @@ class TestPreprocessDisputes:
 
     @patch("agent.sleep.disputes.get_now")
     def test_old_90days_old_mention_higher_reject(self, mock_now):
-        mock_now.return_value = datetime(2025, 10, 1)
+        mock_now.return_value = datetime(2025, 10, 1, tzinfo=timezone.utc)
         # new_mc=1 so we bypass the first rule (new_mc>=2 → accept)
         pairs = [_make_dispute_pair(
             old_mc=10, new_mc=1,
-            new_start=datetime(2025, 6, 1),
+            new_start=datetime(2025, 6, 1, tzinfo=timezone.utc),
         )]
         rules, llm = _preprocess_disputes(pairs)
         assert len(rules) == 1
@@ -820,7 +820,7 @@ class TestPreprocessDisputes:
 
     @patch("agent.sleep.disputes.get_now")
     def test_recent_low_mention_goes_to_llm(self, mock_now):
-        mock_now.return_value = datetime(2025, 7, 1)
+        mock_now.return_value = datetime(2025, 7, 1, tzinfo=timezone.utc)
         pairs = [_make_dispute_pair(new_mc=1)]
         rules, llm = _preprocess_disputes(pairs)
         assert rules == []
@@ -828,18 +828,18 @@ class TestPreprocessDisputes:
 
     @patch("agent.sleep.disputes.get_now")
     def test_empty_input(self, mock_now):
-        mock_now.return_value = datetime(2025, 7, 1)
+        mock_now.return_value = datetime(2025, 7, 1, tzinfo=timezone.utc)
         rules, llm = _preprocess_disputes([])
         assert rules == []
         assert llm == []
 
     @patch("agent.sleep.disputes.get_now")
     def test_mixed_scenario(self, mock_now):
-        mock_now.return_value = datetime(2025, 10, 1)
+        mock_now.return_value = datetime(2025, 10, 1, tzinfo=timezone.utc)
         pairs = [
             _make_dispute_pair(old_id=1, new_id=2, new_mc=3),  # rule: accept
             _make_dispute_pair(old_id=3, new_id=4, new_mc=1,   # llm candidate
-                               new_start=datetime(2025, 9, 1)),
+                               new_start=datetime(2025, 9, 1, tzinfo=timezone.utc)),
         ]
         rules, llm = _preprocess_disputes(pairs)
         assert len(rules) == 1

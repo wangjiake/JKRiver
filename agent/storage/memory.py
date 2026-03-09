@@ -79,9 +79,7 @@ def load_summaries_by_observation_subject(subject: str, pivot_time=None) -> dict
         if not s_time:
             before.append(s)
             continue
-        s_naive = s_time.replace(tzinfo=None) if hasattr(s_time, "tzinfo") and s_time.tzinfo else s_time
-        p_naive = pivot_time.replace(tzinfo=None) if hasattr(pivot_time, "tzinfo") and pivot_time.tzinfo else pivot_time
-        if s_naive < p_naive:
+        if s_time < pivot_time:
             before.append(s)
         else:
             after.append(s)

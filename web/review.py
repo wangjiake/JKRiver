@@ -46,6 +46,8 @@ def api_review_profile():
             if human_end_time:
                 try:
                     het = datetime.fromisoformat(human_end_time)
+                    if het.tzinfo is None:
+                        het = het.replace(tzinfo=timezone.utc)
                 except (ValueError, TypeError):
                     return jsonify({"error": "Invalid time format"}), 400
             else:

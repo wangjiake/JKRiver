@@ -1,6 +1,6 @@
 import json
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from psycopg2.extras import RealDictCursor
 from agent.utils.time_context import get_now
@@ -105,7 +105,7 @@ def parse_smcc_email(email_body: str) -> dict | None:
     currency = "JPY" if currency_raw in ("円", "JPY") else currency_raw.upper()
 
     try:
-        txn_date = datetime.strptime(date_str, "%Y/%m/%d")
+        txn_date = datetime.strptime(date_str, "%Y/%m/%d").replace(tzinfo=timezone.utc)
     except ValueError:
         return None
 

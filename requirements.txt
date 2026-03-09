@@ -8,4 +8,4 @@ requests~=2.32
 httpx~=0.28
 python-telegram-bot~=22.0
 discord.py~=2.4
-edge-tts~=7.0
+edge-tts~=7.2

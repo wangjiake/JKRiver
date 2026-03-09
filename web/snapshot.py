@@ -1,5 +1,5 @@
 
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from flask import Blueprint, jsonify, request
 from psycopg2.extras import RealDictCursor
 from web._helpers import get_conn, _serialize
@@ -16,11 +16,11 @@ def api_snapshot():
         year, mon = month.split("-")
         year, mon = int(year), int(mon)
         if mon == 12:
-            next_month = datetime(year + 1, 1, 1)
+            next_month = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
         else:
-            next_month = datetime(year, mon + 1, 1)
+            next_month = datetime(year, mon + 1, 1, tzinfo=timezone.utc)
         month_end = next_month - timedelta(seconds=1)
-        month_start = datetime(year, mon, 1)
+        month_start = datetime(year, mon, 1, tzinfo=timezone.utc)
     except Exception:
         return jsonify({"error": "Invalid month format, expected YYYY-MM"}), 400
 

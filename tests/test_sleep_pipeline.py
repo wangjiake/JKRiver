@@ -10,7 +10,7 @@ Usage:
 
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import patch, MagicMock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -81,8 +81,8 @@ def _make_fact(id, category="位置", subject="居住地", value="深圳",
         "mention_count": 1,
         "source_type": "stated",
         "evidence": [],
-        "start_time": datetime(2025, 1, 1),
-        "updated_at": datetime(2025, 1, 1),
+        "start_time": datetime(2025, 1, 1, tzinfo=timezone.utc),
+        "updated_at": datetime(2025, 1, 1, tzinfo=timezone.utc),
         "superseded_by": None,
         **kwargs,
     }
@@ -216,7 +216,7 @@ class TestStepExtractSessions(_DBTestBase):
         state = _make_state(session_convs={
             "test-sess": [
                 {"id": 1, "user_input": "hi", "assistant_reply": "hello",
-                 "user_input_at": datetime(2025, 6, 1), "intent": "greeting"},
+                 "user_input_at": datetime(2025, 6, 1, tzinfo=timezone.utc), "intent": "greeting"},
             ],
         })
         state.existing_profile = []
@@ -251,9 +251,9 @@ class TestStepClassify(_DBTestBase):
         state.current_profile = load_full_current_profile(exclude_superseded=True)
         state.all_observations = [
             {"type": "statement", "content": "I am an engineer",
-             "subject": "work", "_conv_time": datetime(2025, 6, 1)},
+             "subject": "work", "_conv_time": datetime(2025, 6, 1, tzinfo=timezone.utc)},
         ]
-        state.all_convs = [{"user_input_at": datetime(2025, 6, 1)}]
+        state.all_convs = [{"user_input_at": datetime(2025, 6, 1, tzinfo=timezone.utc)}]
 
         from agent.sleep.orchestration import _step_classify_and_integrate
         _step_classify_and_integrate(state)
@@ -275,9 +275,9 @@ class TestStepClassify(_DBTestBase):
         state.current_profile = load_full_current_profile(exclude_superseded=True)
         state.all_observations = [
             {"type": "statement", "content": "Still in Shenzhen",
-             "subject": "location", "_conv_time": datetime(2025, 6, 1)},
+             "subject": "location", "_conv_time": datetime(2025, 6, 1, tzinfo=timezone.utc)},
         ]
-        state.all_convs = [{"user_input_at": datetime(2025, 6, 1)}]
+        state.all_convs = [{"user_input_at": datetime(2025, 6, 1, tzinfo=timezone.utc)}]
 
         from agent.sleep.orchestration import _step_classify_and_integrate
         _step_classify_and_integrate(state)
@@ -296,7 +296,7 @@ class TestStepCrossVerify(_DBTestBase):
         ]
 
         state = _make_state()
-        state.latest_conv_time = datetime(2025, 6, 1)
+        state.latest_conv_time = datetime(2025, 6, 1, tzinfo=timezone.utc)
 
         from agent.sleep.orchestration import _step_cross_verify
         _step_cross_verify(state)
@@ -321,7 +321,7 @@ class TestStepResolveDisputes(_DBTestBase):
         ]
 
         state = _make_state()
-        state.latest_conv_time = datetime(2025, 6, 1)
+        state.latest_conv_time = datetime(2025, 6, 1, tzinfo=timezone.utc)
         state.current_profile = load_full_current_profile(exclude_superseded=True)
 
         from agent.sleep.orchestration import _step_resolve_disputes

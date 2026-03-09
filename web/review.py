@@ -1,5 +1,5 @@
 
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from flask import Blueprint, jsonify, request
 from psycopg2.extras import RealDictCursor
 from web._helpers import get_conn, _serialize, _log_review
@@ -49,7 +49,7 @@ def api_review_profile():
                 except (ValueError, TypeError):
                     return jsonify({"error": "Invalid time format"}), 400
             else:
-                het = datetime.now()
+                het = datetime.now(timezone.utc)
             cur.execute(
                 "UPDATE user_profile SET human_end_time = %s, note = %s WHERE id = %s",
                 (het, note or row["note"], fact_id),

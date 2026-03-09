@@ -936,11 +936,11 @@ class TestFormatProfileForLlm:
         profile = [
             {"id": 1, "category": "位置", "subject": "城市", "value": "北京",
              "layer": "suspected", "mention_count": 5, "source_type": "stated",
-             "start_time": datetime(2025, 1, 1), "updated_at": datetime(2025, 1, 1),
+             "start_time": datetime(2025, 1, 1, tzinfo=timezone.utc), "updated_at": datetime(2025, 1, 1, tzinfo=timezone.utc),
              "evidence": [], "superseded_by": None, "supersedes": None},
             {"id": 2, "category": "职业", "subject": "工作", "value": "工程师",
              "layer": "confirmed", "mention_count": 1, "source_type": "stated",
-             "start_time": datetime(2025, 1, 1), "updated_at": datetime(2025, 1, 1),
+             "start_time": datetime(2025, 1, 1, tzinfo=timezone.utc), "updated_at": datetime(2025, 1, 1, tzinfo=timezone.utc),
              "evidence": [], "superseded_by": None, "supersedes": None},
         ]
         text = _format_profile_for_llm(profile, language="zh")
@@ -955,7 +955,7 @@ class TestFormatProfileForLlm:
             profile.append({
                 "id": i, "category": "兴趣", "subject": f"s{i}", "value": f"v{i}",
                 "layer": "suspected", "mention_count": 1, "source_type": "stated",
-                "start_time": datetime(2025, 1, 1), "updated_at": datetime(2025, 1, 1),
+                "start_time": datetime(2025, 1, 1, tzinfo=timezone.utc), "updated_at": datetime(2025, 1, 1, tzinfo=timezone.utc),
                 "evidence": [], "superseded_by": None, "supersedes": None,
             })
         text = _format_profile_for_llm(profile, language="zh", max_items=5)
@@ -966,7 +966,7 @@ class TestFormatProfileForLlm:
         profile = [{
             "id": 1, "category": "位置", "subject": "城市", "value": "北京",
             "layer": "suspected", "mention_count": 1, "source_type": "stated",
-            "start_time": datetime(2025, 1, 1), "updated_at": datetime(2025, 1, 1),
+            "start_time": datetime(2025, 1, 1, tzinfo=timezone.utc), "updated_at": datetime(2025, 1, 1, tzinfo=timezone.utc),
             "evidence": [], "superseded_by": 2, "supersedes": None,
         }]
         text = _format_profile_for_llm(profile, language="zh")
@@ -976,13 +976,13 @@ class TestFormatProfileForLlm:
         profile = [{
             "id": 1, "category": "位置", "subject": "城市", "value": "上海",
             "layer": "confirmed", "mention_count": 3, "source_type": "stated",
-            "start_time": datetime(2024, 1, 1), "updated_at": datetime(2025, 1, 1),
+            "start_time": datetime(2024, 1, 1, tzinfo=timezone.utc), "updated_at": datetime(2025, 1, 1, tzinfo=timezone.utc),
             "evidence": [], "superseded_by": None, "supersedes": None,
         }]
         timeline = [{
             "category": "位置", "subject": "城市", "value": "广州",
-            "start_time": datetime(2023, 1, 1),
-            "end_time": datetime(2024, 1, 1),
+            "start_time": datetime(2023, 1, 1, tzinfo=timezone.utc),
+            "end_time": datetime(2024, 1, 1, tzinfo=timezone.utc),
             "human_end_time": None,
             "rejected": False,
         }]
@@ -994,12 +994,12 @@ class TestFormatProfileForLlm:
         profile = [{
             "id": 1, "category": "位置", "subject": "城市", "value": "上海",
             "layer": "confirmed", "mention_count": 3, "source_type": "stated",
-            "start_time": datetime(2024, 1, 1), "updated_at": datetime(2025, 1, 1),
+            "start_time": datetime(2024, 1, 1, tzinfo=timezone.utc), "updated_at": datetime(2025, 1, 1, tzinfo=timezone.utc),
             "evidence": [], "superseded_by": None, "supersedes": None,
         }]
         timeline = [{
             "category": "位置", "subject": "城市", "value": "错误城市",
-            "start_time": datetime(2023, 1, 1),
+            "start_time": datetime(2023, 1, 1, tzinfo=timezone.utc),
             "end_time": None,
             "human_end_time": None,
             "rejected": True,

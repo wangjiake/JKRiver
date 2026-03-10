@@ -2,7 +2,7 @@
 import os
 import asyncio
 import logging
-import mimetypes
+
 
 import discord
 from discord.ext import commands, tasks

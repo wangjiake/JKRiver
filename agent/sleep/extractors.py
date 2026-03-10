@@ -80,8 +80,6 @@ def extract_observations_and_tags(conversations: list[dict], config: dict,
     tags = [t for t in result.get("tags", []) if isinstance(t, dict) and t.get("tag")]
     rels = [r for r in result.get("relationships", []) if isinstance(r, dict) and r.get("relation")]
 
-    if total_user_msgs > 0 and len(obs) < total_user_msgs:
-        pass
 
     return {"observations": obs, "tags": tags, "relationships": rels}
 
@@ -266,8 +264,6 @@ def create_new_facts(new_observations: list[dict],
         {"role": "system", "content": prompt},
         {"role": "user", "content": user_content},
     ]
-    if signal_block:
-        pass
     raw = call_llm(messages, llm_config)
     return _parse_json_array(raw)
 

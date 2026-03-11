@@ -12,12 +12,8 @@ import json
 from datetime import datetime, timedelta
 from psycopg2.extras import RealDictCursor
 from agent.utils.time_context import get_now
-from agent.config import load_config
-from agent.config.prompts import get_labels
 from ._db import get_db_connection
 
-def _lang() -> str:
-    return load_config().get("language", "en")
 from ._synonyms import _get_category_synonyms, _get_subject_synonyms
 
 
@@ -214,7 +210,7 @@ def save_profile_fact(category: str, subject: str, value: str,
     now = start_time
     if evidence is None:
         evidence = []
-    if not decay_days or decay_days <= 0:
+    if decay_days is None or decay_days <= 0:
         decay_days = 365
     expires_at = now + timedelta(days=decay_days)
 

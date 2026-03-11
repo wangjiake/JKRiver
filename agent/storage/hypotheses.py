@@ -69,7 +69,7 @@ def save_hypothesis(category: str, subject: str, claim: str,
     if evidence_for is None:
         evidence_for = []
     now = start_time if start_time else get_now()
-    if not decay_days or decay_days <= 0:
+    if decay_days is None or decay_days <= 0:
         decay_days = 365
     expires_at = now + timedelta(days=decay_days)
     conn = get_db_connection()

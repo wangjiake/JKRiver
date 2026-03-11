@@ -369,8 +369,8 @@ def _step_classify_and_integrate(state: _PipelineState):
     for s in supports:
         fact = _find_fact(s.get("fact_id"))
         if fact:
-            _obs_idx = s.get("obs_index")
-            _obs_time = state.all_observations[_obs_idx].get("_conv_time") if isinstance(_obs_idx, int) and 0 <= _obs_idx < len(state.all_observations) else state.latest_conv_time
+            _obs_idx = _safe_int(s.get("obs_index"))
+            _obs_time = state.all_observations[_obs_idx].get("_conv_time") if _obs_idx is not None and 0 <= _obs_idx < len(state.all_observations) else state.latest_conv_time
             add_evidence(fact["id"], {"reason": s.get("reason", "")},
                          reference_time=_obs_time)
             save_profile_fact(
@@ -385,16 +385,16 @@ def _step_classify_and_integrate(state: _PipelineState):
     for ea in evidence_against_list:
         fact = _find_fact(ea.get("fact_id"))
         if fact:
-            _ea_idx = ea.get("obs_index")
-            _ea_time = state.all_observations[_ea_idx].get("_conv_time") if isinstance(_ea_idx, int) and 0 <= _ea_idx < len(state.all_observations) else state.latest_conv_time
+            _ea_idx = _safe_int(ea.get("obs_index"))
+            _ea_time = state.all_observations[_ea_idx].get("_conv_time") if _ea_idx is not None and 0 <= _ea_idx < len(state.all_observations) else state.latest_conv_time
             add_evidence(fact["id"], {"reason": f"{state.L['counter_evidence_tag']} {ea.get('reason', '')}"},
                          reference_time=_ea_time)
 
     if new_obs_cls:
         new_obs_data = []
         for c in new_obs_cls:
-            idx = c.get("obs_index")
-            if isinstance(idx, int) and 0 <= idx < len(state.all_observations):
+            idx = _safe_int(c.get("obs_index"))
+            if idx is not None and 0 <= idx < len(state.all_observations):
                 new_obs_data.append(state.all_observations[idx])
 
         if new_obs_data:
@@ -449,15 +449,15 @@ def _step_classify_and_integrate(state: _PipelineState):
             new_val = c.get("new_value")
             if not fact or not new_val:
                 continue
-            _obs_idx = c.get("obs_index")
-            _obs_time = state.all_observations[_obs_idx].get("_conv_time") if isinstance(_obs_idx, int) and 0 <= _obs_idx < len(state.all_observations) else state.latest_conv_time
+            _obs_idx = _safe_int(c.get("obs_index"))
+            _obs_time = state.all_observations[_obs_idx].get("_conv_time") if _obs_idx is not None and 0 <= _obs_idx < len(state.all_observations) else state.latest_conv_time
             if new_val.strip().lower() == (fact.get("value") or "").strip().lower():
                 add_evidence(fact["id"], {"reason": c.get("reason", state.L["mention_again_reason"])},
                              reference_time=_obs_time)
                 continue
             if new_val.startswith(state.L["dirty_value_prefix"]) or len(new_val) > 40:
                 continue
-            _obs = state.all_observations[_obs_idx] if isinstance(_obs_idx, int) and 0 <= _obs_idx < len(state.all_observations) else {}
+            _obs = state.all_observations[_obs_idx] if _obs_idx is not None and 0 <= _obs_idx < len(state.all_observations) else {}
             _evidence_entry = {"reason": c.get("reason", "")}
             if _obs.get("content"):
                 _evidence_entry["observation"] = _obs["content"]

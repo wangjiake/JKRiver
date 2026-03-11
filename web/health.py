@@ -258,7 +258,7 @@ def api_health_sync():
                     deep_sleep_seconds=sleep_data.get("deepsleepduration"),
                     light_sleep_seconds=sleep_data.get("lightsleepduration"),
                     rem_sleep_seconds=sleep_data.get("remsleepduration"),
-                    awake_seconds=sleep_data.get("wakeupcount"),
+                    awake_seconds=sleep_data.get("wakeupduration"),
                     wakeup_count=sleep_data.get("nb_wakeup") or sleep_data.get("wakeupcount"),
                     sleep_score=sleep_data.get("sleep_score"),
                     hr_average=sleep_data.get("hr_average"),

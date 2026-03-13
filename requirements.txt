@@ -6,6 +6,6 @@ pydantic~=2.12
 pyyaml~=6.0
 requests~=2.32
 httpx~=0.28
-python-telegram-bot~=22.0
+python-telegram-bot~=22.6
 discord.py~=2.7
 edge-tts~=7.2

@@ -109,16 +109,27 @@ Conversation flows in ──→ Erosion ──→ Sedimentation ──→ Shapes
 
 ### Option A: Docker Compose (Recommended)
 
-The fastest way to get started. No Python or PostgreSQL installation needed.
+The fastest way to get started. No Python, PostgreSQL, or configuration file needed.
 
 ```bash
-git clone https://github.com/wangjiake/JKRiver.git
-cd JKRiver/docker
-cp .env.example .env       # Edit .env — add your API key
-docker compose up -d
+# 1. Get the compose file
+mkdir jkriver && cd jkriver
+curl -O https://raw.githubusercontent.com/wangjiake/JKRiver/main/docker/docker-compose.yaml
+
+# 2. Start everything
+docker compose pull && docker compose up -d
+
+# 3. Get your access token (generated automatically on first start)
+docker logs jkriver-jkriver-1 2>&1 | grep "ACCESS_TOKEN="
 ```
 
-Web Dashboard at `http://localhost:2345`, API at `http://localhost:8400/docs`.
+Open `http://localhost:1234` in your browser, enter the access token, then go to **System** to set your API key. That's it.
+
+| Service | URL | What it does |
+|---------|-----|--------------|
+| **JKRiver** | http://localhost:1234 | Web chat + system config |
+| **RiverHistory** | http://localhost:2345 | Profile viewer |
+| **API Docs** | http://localhost:8400/docs | REST API reference |
 
 Full Docker guide (chat bots, data import, demo, configuration): **[docker/README.md](docker/README.md)**
 
@@ -215,7 +226,7 @@ Test data is included in `tests/data/`. No external dependencies needed.
 
 ## Security Notice
 
-Riverse is designed as a **single-user, local-first** application. The REST API and Web Dashboard have **no built-in authentication** — do not expose them to the public internet. If you need remote access, place them behind a reverse proxy (e.g. Nginx, Caddy) with authentication, or use an SSH tunnel.
+Riverse is designed as a **single-user, local-first** application. The Web Dashboard is protected by the **access token** generated on first startup. However, the REST API (`port 8400`) has no authentication — do not expose it to the public internet. If you need remote access, place it behind a reverse proxy (e.g. Nginx, Caddy) with authentication, or use an SSH tunnel.
 
 ---
 

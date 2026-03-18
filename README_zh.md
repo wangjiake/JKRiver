@@ -109,16 +109,27 @@ Riverse 是一个运行在你自己机器上的个人 AI Agent。它记住每一
 
 ### 方式一：Docker Compose（推荐）
 
-最快上手方式，不需要安装 Python 和 PostgreSQL。
+最快上手方式，无需安装 Python、PostgreSQL 或编辑任何配置文件。
 
 ```bash
-git clone https://github.com/wangjiake/JKRiver.git
-cd JKRiver/docker
-cp .env.example .env       # 编辑 .env — 填入 API 密钥
-docker compose up -d
+# 1. 获取 compose 文件
+mkdir jkriver && cd jkriver
+curl -O https://raw.githubusercontent.com/wangjiake/JKRiver/main/docker/docker-compose.yaml
+
+# 2. 启动所有服务
+docker compose pull && docker compose up -d
+
+# 3. 获取访问 Token（首次启动时自动生成）
+docker logs jkriver-jkriver-1 2>&1 | grep "ACCESS_TOKEN="
 ```
 
-Web 面板 `http://localhost:2345`，API 地址 `http://localhost:8400/docs`。
+在浏览器打开 `http://localhost:1234`，输入 Token 后进入 **System** 页面填写 API Key 即可。
+
+| 服务 | 地址 | 用途 |
+|------|------|------|
+| **JKRiver** | http://localhost:1234 | Web 聊天 + 系统配置 |
+| **RiverHistory** | http://localhost:2345 | 用户画像查看 |
+| **API 文档** | http://localhost:8400/docs | REST API 参考 |
 
 完整 Docker 指南（聊天机器人、数据导入、Demo、配置说明）：**[docker/README.md](docker/README.md)**
 
@@ -215,7 +226,7 @@ python tests/test_demo_pipeline.py --clean
 
 ## 安全提示
 
-Riverse 设计为**单用户本地运行**的应用。REST API 和 Web 面板**没有内置认证**，请勿将其暴露到公网。如需远程访问，请通过反向代理（如 Nginx、Caddy）添加认证，或使用 SSH 隧道。
+Riverse 设计为**单用户本地运行**的应用。Web 面板通过首次启动时自动生成的 **Access Token** 保护。但 REST API（端口 8400）没有认证保护，请勿将其暴露到公网。如需远程访问，请通过反向代理（如 Nginx、Caddy）添加认证，或使用 SSH 隧道。
 
 ---
 

@@ -15,6 +15,7 @@ from agent.storage import (
     load_relationships,
     load_memory_snapshot,
     load_fact_edges,
+    get_db_connection,
 )
 from agent.utils.profile_filter import format_profile_text
 from agent.tools import ToolRegistry
@@ -51,7 +52,38 @@ class SessionManager:
             return self._sessions[session_id]
         session = Session(self.config, session_id)
         self._sessions[session.id] = session
+        if session_id:
+            self._load_history_into_session(session, session_id)
         return session
+
+    def _load_history_into_session(self, session: Session, session_id: str,
+                                   limit: int = 10) -> None:
+        """Load the last N turns of an existing session into session memory."""
+        try:
+            conn = get_db_connection()
+            try:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "SELECT user_input, assistant_reply, user_input_at "
+                        "FROM raw_conversations "
+                        "WHERE session_id = %s "
+                        "ORDER BY user_input_at DESC LIMIT %s",
+                        (session_id, limit),
+                    )
+                    rows = cur.fetchall()
+            finally:
+                conn.close()
+
+            # Rows are DESC, reverse to get chronological order
+            for user_input, assistant_reply, user_input_at in reversed(rows):
+                session.cognition.session_memory.add_turn(
+                    user_summary=user_input,
+                    assistant_summary=assistant_reply,
+                    user_input_at=user_input_at,
+                )
+        except Exception:
+            # Non-fatal: session still works, just without history
+            logger.warning("Failed to load history for session %s", session_id, exc_info=True)
 
     def get(self, session_id: str) -> Session | None:
         return self._sessions.get(session_id)

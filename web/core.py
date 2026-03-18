@@ -1,5 +1,5 @@
 
-from flask import Blueprint, render_template, jsonify, send_from_directory
+from flask import Blueprint, render_template, jsonify, redirect, send_from_directory, url_for
 from web._helpers import get_conn, _serialize, IMG_DIR, DB_NAME
 
 core_bp = Blueprint("core", __name__)
@@ -12,6 +12,11 @@ def serve_img(filename):
 
 @core_bp.route("/")
 def index():
+    return redirect(url_for("chat.chat"))
+
+
+@core_bp.route("/profile")
+def profile():
     return render_template("profile.html", db_name=DB_NAME)
 
 

@@ -150,6 +150,7 @@ tools:
 #  Chat with AI via Telegram. Create a bot with @BotFather to get the token
 #  Telegram 経由で AI とチャット。@BotFather で Bot を作成してトークンを取得
 telegram:
+    enabled: false                      # 启用 Telegram Bot | Enable Telegram Bot | Telegram Bot を有効化
     bot_token: ""                       # Bot token，留空则不启动 | Leave empty to disable | 空なら無効
     temp_dir: "tmp/telegram"
     allowed_user_ids: []                # 允许的用户 ID，留空=所有人 | Allowed user IDs, empty=everyone | 許可するユーザーID、空=全員
@@ -160,6 +161,7 @@ telegram:
 #  Chat with AI via Discord. Create a bot in Discord Developer Portal
 #  Discord 経由で AI とチャット。Discord Developer Portal で Bot を作成
 discord:
+    enabled: false                      # 启用 Discord Bot | Enable Discord Bot | Discord Bot を有効化
     bot_token: ""                       # Bot token，留空则不启动 | Leave empty to disable | 空なら無効
     temp_dir: "tmp/discord"
     allowed_user_ids: []

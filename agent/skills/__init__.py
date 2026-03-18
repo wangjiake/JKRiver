@@ -44,8 +44,27 @@ class SkillRegistry:
         if not os.path.isdir(skills_dir):
             return
 
+        lang = self.config.get("language", "en")
+        lang_file = os.path.join(skills_dir, f"skills_{lang}.yaml")
+        if not os.path.exists(lang_file):
+            lang_file = os.path.join(skills_dir, "skills_en.yaml")
+
+        if os.path.exists(lang_file):
+            try:
+                with open(lang_file, "r", encoding="utf-8") as f:
+                    data = yaml.safe_load(f)
+                for item in (data or {}).get("skills", []):
+                    if not item or not item.get("name"):
+                        continue
+                    self._skills.append(Skill(item))
+                return
+            except Exception:
+                pass
+
         for filename in sorted(os.listdir(skills_dir)):
             if not filename.endswith((".yaml", ".yml")):
+                continue
+            if filename.startswith("skills_"):
                 continue
 
             filepath = os.path.join(skills_dir, filename)
@@ -60,14 +79,14 @@ class SkillRegistry:
                 skill = Skill(data)
                 if skill.enabled:
                     self._skills.append(skill)
-            except Exception as e:
+            except Exception:
                 pass
 
     def get_keyword_skills(self) -> list[Skill]:
-        return [s for s in self._skills if s.trigger_type == "keyword"]
+        return [s for s in self._skills if s.trigger_type == "keyword" and s.enabled]
 
     def get_schedule_skills(self) -> list[Skill]:
-        return [s for s in self._skills if s.trigger_type == "schedule"]
+        return [s for s in self._skills if s.trigger_type == "schedule" and s.enabled]
 
     def match_keywords(self, user_input: str) -> list[Skill]:
         if not user_input:

@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     environment:
       POSTGRES_DB: Riverse
       POSTGRES_USER: postgres
@@ -49,6 +49,7 @@ services:
         condition: service_healthy
     environment:
       LANGUAGE: ${LANGUAGE:-en}
+      TIMEZONE: ${TIMEZONE:-Asia/Tokyo}
       LLM_PROVIDER: ${LLM_PROVIDER:-openai}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_API_BASE: ${OPENAI_API_BASE:-https://api.openai.com}
@@ -58,15 +59,20 @@ services:
       DB_NAME: Riverse
       DB_USER: postgres
       DB_HOST: postgres
+      ACCESS_TOKEN: ${ACCESS_TOKEN:-}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       TELEGRAM_ALLOWED_USERS: ${TELEGRAM_ALLOWED_USERS:-}
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
       SLEEP_MODE: ${SLEEP_MODE:-cron}
       SLEEP_CRON_HOUR: ${SLEEP_CRON_HOUR:-0}
     ports:
+      - "1234:1234"
       - "8400:8400"
+    volumes:
+      - jkriver_settings:/app/settings_volume
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
 volumes:
   pgdata:
+  jkriver_settings:

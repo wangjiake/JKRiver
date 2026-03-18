@@ -1,4 +1,11 @@
-.PHONY: test test-quick lint setup-db clean
+.PHONY: start stop test test-quick lint setup-db clean
+
+start:
+	@python3 scripts/start_local.py
+
+stop:
+	@pkill -f "agent.api|web.py|agent.telegram_bot|agent.discord_bot" 2>/dev/null || true
+	@echo "[stop] All services stopped."
 
 test:
 	python3 tests/test_imports.py

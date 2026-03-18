@@ -181,6 +181,7 @@ cognition.verify_system: |
   - No → Output: PASS
 
   The following cases are all PASS — do not block:
+  - ★ Highest priority: whatever the user said in this turn, if the AI goes along with it → always PASS, even if it contradicts memory. Memory is the past; what the user says now is the new reality.
   - AI uses information from memory (e.g., 'I remember you like yoga') → PASS
   - AI references information the user just said → PASS
   - AI asks follow-up questions, challenges, or confirms what the user said → PASS
@@ -297,7 +298,11 @@ sleep.classify_observations: |
   - User says "quit my job", "changed jobs" → contradict (corresponding occupation profile)
   - User says "broke up" → evidence_against (corresponding relationship profile)
   - Plans/wishes ("want to go", "planning to learn") → irrelevant, don't create profile entries
-  - new_value must be a short attribute value (city name/job title), not a sentence
+  - new_value must be a short attribute value (city name/job title/nationality), not a sentence
+  - ★ Key: if an observation only says "changed"/"updated"/"switched" without specifying the new specific value, use evidence_against instead of contradict
+    Example: "user changed nationality" → evidence_against (no specific new nationality), wait for a later observation with the actual value
+    Example: "user is now American" → contradict, new_value="American"
+  - new_value must NEVER be a state description ("changed", "updated", "modified", "switched") — it must be a real attribute value
 
   Birthplace vs. residence city (important! these are two different categories — do not confuse them):
   - category="birthplace" ("from XX", "hometown is XX", "originally from XX") is a permanent anchor — moving/changing cities never counts as contradict for birthplace
@@ -933,6 +938,8 @@ context.labels:
   verification_pass: "PASS"
   session_summary: "[Session Summary]"
   session_recalled: "[Recalled Context]"
+  image_not_supported: "Sorry, image recognition is not configured. Please set up tools.image_describe in settings.yaml."
+  voice_not_supported: "Sorry, voice transcription is not configured. Please set up tools.voice_transcribe in settings.yaml."
 
 errors.tools:
   tool_not_found: "Tool '{name}' does not exist"

@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chat — {{ db_name }}</title>
+<link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
+<link rel="icon" type="image/x-icon" href="/img/favicon.ico" sizes="48x48">
+<link rel="icon" type="image/png" href="/img/favicon-96x96.png" sizes="96x96">
+<link rel="apple-touch-icon" sizes="180x180" href="/img/apple-touch-icon.png">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; background: #0f1117; color: #e1e4e8; height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+
+/* Header */
+.header { background: linear-gradient(135deg, #1a1f36 0%, #252a40 100%); padding: 14px 24px; border-bottom: 1px solid #2d3348; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+.header-left { display: flex; align-items: center; gap: 10px; }
+.header h1 { font-size: 20px; font-weight: 600; color: #fff; }
+.header .subtitle { font-size: 12px; color: #8b92a5; margin-top: 2px; }
+.header-right { display: flex; gap: 8px; align-items: center; }
+.nav-link { padding: 5px 12px; background: #252a40; border: 1px solid #2d3348; border-radius: 4px; color: #8b92a5; text-decoration: none; font-size: 12px; }
+.nav-link:hover { color: #58a6ff; border-color: #58a6ff; }
+.icon-btn { width: 30px; height: 30px; background: #252a40; border: 1px solid #2d3348; border-radius: 4px; color: #8b92a5; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+.icon-btn:hover { color: #58a6ff; border-color: #58a6ff; }
+.icon-btn.active { color: #58a6ff; border-color: #58a6ff; background: #1f2740; }
+.lang-switch { display: flex; gap: 4px; }
+.lang-btn { padding: 4px 10px; background: #252a40; border: 1px solid #2d3348; border-radius: 4px; color: #8b92a5; cursor: pointer; font-size: 12px; }
+.lang-btn:hover { color: #c9d1d9; border-color: #444c5e; }
+.lang-btn.active { color: #58a6ff; border-color: #58a6ff; background: #1f2740; }
+
+/* Hamburger */
+.hamburger { display: flex; flex-direction: column; gap: 4px; cursor: pointer; padding: 4px; background: none; border: none; flex-shrink: 0; }
+.hamburger span { display: block; width: 20px; height: 2px; background: #8b92a5; border-radius: 2px; transition: background 0.2s; }
+.hamburger:hover span { background: #c9d1d9; }
+
+/* Status */
+.status-bar { padding: 5px 24px; background: #161822; border-bottom: 1px solid #2d3348; font-size: 12px; color: #6e7681; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; background: #6e7681; flex-shrink: 0; transition: background 0.3s; }
+.status-dot.connected { background: #3fb950; }
+.status-dot.error { background: #f85149; }
+.status-dot.sleeping { background: #d29922; animation: blink 1s ease-in-out infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* Layout */
+.body { display: flex; flex: 1; min-height: 0; position: relative; }
+
+/* Overlay */
+.sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; }
+.sidebar-overlay.visible { display: block; }
+
+/* History sidebar — desktop: inline collapsible */
+.history-sidebar { width: 220px; background: #161822; border-right: 1px solid #2d3348; display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; transition: width 0.25s ease; }
+.history-sidebar.collapsed { width: 0; }
+.history-sidebar-header { padding: 12px 16px; font-size: 11px; color: #8b92a5; text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid #2d3348; display: flex; justify-content: space-between; align-items: center; white-space: nowrap; }
+.new-chat-btn { padding: 3px 9px; background: #1f3a6e; border: 1px solid #2d4f8e; border-radius: 4px; color: #58a6ff; font-size: 11px; cursor: pointer; }
+.new-chat-btn:hover { background: #24426e; }
+.history-list { flex: 1; overflow-y: auto; }
+.history-list::-webkit-scrollbar { width: 4px; }
+.history-list::-webkit-scrollbar-thumb { background: #2d3348; border-radius: 2px; }
+.history-item { padding: 10px 16px; cursor: pointer; border-bottom: 1px solid #1c2033; transition: background 0.12s; }
+.history-item:hover { background: #1c2033; }
+.history-item.active { background: #1f2740; border-left: 3px solid #58a6ff; padding-left: 13px; }
+.history-item-preview { font-size: 13px; color: #c9d1d9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.history-item-meta { font-size: 11px; color: #6e7681; margin-top: 3px; display: flex; justify-content: space-between; }
+.history-empty { padding: 20px 16px; font-size: 12px; color: #4d5566; text-align: center; }
+
+/* Messages */
+.messages-wrap { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.messages { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; }
+.messages::-webkit-scrollbar { width: 5px; }
+.messages::-webkit-scrollbar-track { background: transparent; }
+.messages::-webkit-scrollbar-thumb { background: #2d3348; border-radius: 3px; }
+
+/* Bubbles */
+.msg { display: flex; flex-direction: column; max-width: 72%; }
+.msg.user { align-self: flex-end; align-items: flex-end; }
+.msg.agent { align-self: flex-start; align-items: flex-start; }
+.bubble { padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+.msg.user .bubble { background: #1f3a6e; border: 1px solid #2d4f8e; color: #c9d1d9; border-bottom-right-radius: 3px; }
+.msg.agent .bubble { background: #1c2033; border: 1px solid #2d3348; color: #e1e4e8; border-bottom-left-radius: 3px; }
+.msg-meta { font-size: 11px; color: #6e7681; margin-top: 3px; display: flex; gap: 6px; }
+.meta-tag { background: #252a40; padding: 1px 7px; border-radius: 10px; }
+.msg-time { font-size: 10px; color: #4d5566; margin-top: 2px; }
+.history-divider { text-align: center; font-size: 11px; color: #4d5566; padding: 8px 0; border-bottom: 1px solid #2d3348; margin-bottom: 4px; }
+.msg-image { max-width: 220px; max-height: 220px; border-radius: 8px; display: block; margin-bottom: 4px; border: 1px solid #2d3348; }
+
+/* Thinking */
+.thinking { display: flex; gap: 4px; align-items: center; padding: 10px 14px; }
+.thinking span { width: 7px; height: 7px; border-radius: 50%; background: #444c5e; animation: pulse 1.2s ease-in-out infinite; }
+.thinking span:nth-child(2) { animation-delay: 0.2s; }
+.thinking span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes pulse { 0%,80%,100%{opacity:0.3;transform:scale(0.8)} 40%{opacity:1;transform:scale(1)} }
+
+/* Input */
+.input-area { padding: 12px 24px 18px; background: #161822; border-top: 1px solid #2d3348; flex-shrink: 0; }
+.attachment-preview { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding: 6px 10px; background: #1c2033; border: 1px solid #2d3348; border-radius: 8px; }
+.attachment-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; }
+.attachment-name { flex: 1; font-size: 12px; color: #8b92a5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.attachment-remove { background: none; border: none; color: #6e7681; cursor: pointer; font-size: 16px; padding: 0 2px; line-height: 1; }
+.attachment-remove:hover { color: #f85149; }
+.input-row { display: flex; gap: 6px; align-items: flex-end; }
+.input-icon-btn { width: 36px; height: 42px; background: #1c2033; border: 1px solid #2d3348; border-radius: 8px; color: #6e7681; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; transition: all 0.15s; }
+.input-icon-btn:hover { color: #c9d1d9; border-color: #444c5e; }
+.input-icon-btn.recording { color: #f85149; border-color: #f85149; background: #2a0d0d; animation: blink 0.8s ease-in-out infinite; }
+textarea { flex: 1; background: #1c2033; border: 1px solid #2d3348; border-radius: 8px; color: #e1e4e8; font-family: inherit; font-size: 14px; padding: 9px 13px; resize: none; outline: none; line-height: 1.5; min-height: 42px; max-height: 140px; }
+textarea:focus { border-color: #444c5e; }
+textarea::placeholder { color: #4d5566; }
+textarea:disabled { opacity: 0.4; }
+button.send { background: #1f3a6e; border: 1px solid #2d4f8e; border-radius: 8px; color: #58a6ff; padding: 9px 16px; font-size: 13px; cursor: pointer; height: 42px; flex-shrink: 0; }
+button.send:hover:not(:disabled) { background: #24426e; }
+button.send:disabled { opacity: 0.4; cursor: not-allowed; }
+.hint { font-size: 11px; color: #4d5566; margin-top: 6px; }
+
+/* Settings Panel */
+.settings-panel { width: 0; background: #161822; border-left: 1px solid #2d3348; display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; transition: width 0.2s ease; }
+.settings-panel.open { width: 340px; overflow-y: auto; }
+.settings-panel::-webkit-scrollbar { width: 4px; }
+.settings-panel::-webkit-scrollbar-thumb { background: #2d3348; border-radius: 2px; }
+.settings-inner { width: 340px; }
+.settings-header { padding: 18px 24px 14px; font-size: 14px; font-weight: 600; color: #c9d1d9; border-bottom: 1px solid #2d3348; }
+.settings-section { padding: 20px 24px; border-bottom: 1px solid #1c2033; }
+.settings-section h4 { font-size: 11px; color: #8b92a5; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 14px; }
+.toggle-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.toggle-label { font-size: 14px; color: #c9d1d9; }
+.toggle-sub { font-size: 12px; color: #6e7681; margin-top: 3px; }
+.toggle { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; inset: 0; background: #2d3348; border-radius: 22px; cursor: pointer; transition: background 0.2s; }
+.toggle-slider::before { content: ''; position: absolute; width: 16px; height: 16px; left: 3px; bottom: 3px; background: #8b92a5; border-radius: 50%; transition: transform 0.2s, background 0.2s; }
+.toggle input:checked + .toggle-slider { background: #1f3a6e; }
+.toggle input:checked + .toggle-slider::before { transform: translateX(18px); background: #58a6ff; }
+.schedule-mode { display: flex; margin-bottom: 14px; border: 1px solid #2d3348; border-radius: 6px; overflow: hidden; }
+.mode-btn { flex: 1; padding: 7px 0; background: #1c2033; border: none; color: #8b92a5; font-size: 12px; cursor: pointer; transition: all 0.15s; }
+.mode-btn.active { background: #1f2740; color: #58a6ff; }
+.schedule-config { margin-bottom: 4px; }
+.config-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.config-row label { font-size: 12px; color: #8b92a5; white-space: nowrap; }
+.config-input { flex: 1; background: #1c2033; border: 1px solid #2d3348; border-radius: 5px; color: #e1e4e8; font-size: 13px; padding: 6px 10px; outline: none; }
+.config-input:focus { border-color: #444c5e; }
+input[type="number"].config-input { -moz-appearance: textfield; }
+input[type="number"].config-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+.sleep-btn { width: 100%; padding: 10px; background: #1c2033; border: 1px solid #2d3348; border-radius: 6px; color: #c9d1d9; font-size: 13px; cursor: pointer; margin-top: 12px; transition: all 0.15s; }
+.sleep-btn:hover:not(:disabled) { border-color: #d29922; color: #d29922; }
+.sleep-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.sleep-btn.running { border-color: #d29922; color: #d29922; }
+.sleep-btn.success { border-color: #3fb950; color: #3fb950; }
+.sleep-status { margin-top: 12px; padding: 10px 14px; border-radius: 6px; font-size: 13px; display: none; line-height: 1.5; }
+.sleep-status.running { background: #2a2010; border: 1px solid #d29922; color: #d29922; display: block; }
+.sleep-status.success { background: #0d2118; border: 1px solid #3fb950; color: #3fb950; display: block; }
+.sleep-status.error { background: #2a0d0d; border: 1px solid #f85149; color: #f85149; display: block; }
+.session-info { padding: 20px 24px; }
+.session-info h4 { font-size: 11px; color: #8b92a5; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; }
+.session-id { font-size: 11px; color: #4d5566; font-family: monospace; word-break: break-all; margin-top: 4px; background: #1c2033; padding: 8px 10px; border-radius: 6px; border: 1px solid #2d3348; }
+.new-session-btn { width: 100%; margin-top: 12px; padding: 9px; background: transparent; border: 1px solid #2d3348; border-radius: 6px; color: #6e7681; font-size: 13px; cursor: pointer; transition: all 0.15s; }
+.new-session-btn:hover { border-color: #f85149; color: #f85149; }
+
+/* ── Mobile ─────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .nav-link { display: none; }
+  .lang-switch { gap: 2px; }
+  .lang-btn { padding: 4px 7px; font-size: 11px; }
+  .header { padding: 10px 16px; }
+  .header h1 { font-size: 17px; }
+  .status-bar { padding: 4px 16px; }
+
+  /* Sidebar: fixed overlay drawer on mobile */
+  .history-sidebar {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: 280px !important;
+    z-index: 101;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+  }
+  .history-sidebar.open { transform: translateX(0); }
+
+  .messages { padding: 14px 12px; }
+  .msg { max-width: 88%; }
+  .input-area { padding: 10px 12px 12px; }
+  .hint { display: none; }
+
+  /* Settings: full-width on mobile */
+  .settings-panel {
+    position: fixed;
+    top: 0; right: 0; bottom: 0;
+    width: 0;
+    z-index: 101;
+    transition: width 0.25s ease;
+  }
+  .settings-panel.open { width: 100%; overflow-y: auto; }
+  .settings-inner { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+<input type="file" id="imageInput" accept="image/*" style="display:none" onchange="onImageSelected(this)">
+
+<div class="header">
+  <div class="header-left">
+    <button class="hamburger" id="hamburgerBtn" onclick="toggleSidebar()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+    <div>
+      <h1 data-i18n="title">Chat</h1>
+      <div class="subtitle">{{ db_name }}</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <a href="/profile" class="nav-link" data-i18n="nav_profile">Profile</a>
+    <a href="/system" class="nav-link">System</a>
+    <div class="lang-switch">
+      <button class="lang-btn" onclick="setLang('zh')">中文</button>
+      <button class="lang-btn" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" onclick="setLang('ja')">日本語</button>
+    </div>
+    <button class="icon-btn" id="settingsBtn" onclick="toggleSettings()" title="Settings">⚙</button>
+  </div>
+</div>
+
+<div class="status-bar">
+  <div class="status-dot" id="statusDot"></div>
+  <span id="statusText" data-i18n="connecting">Connecting...</span>
+</div>
+
+<div class="body">
+  <div class="history-sidebar" id="historySidebar">
+    <div class="history-sidebar-header">
+      <span data-i18n="history_title">History</span>
+      <button class="new-chat-btn" onclick="newSession()" data-i18n="new_chat">+ New</button>
+    </div>
+    <div class="history-list" id="historyList"></div>
+  </div>
+
+  <div class="messages-wrap">
+    <div class="messages" id="messages"></div>
+    <div class="input-area">
+      <div class="attachment-preview" id="attachmentPreview" style="display:none">
+        <img class="attachment-thumb" id="attachmentThumb" src="" alt="">
+        <span class="attachment-name" id="attachmentName"></span>
+        <button class="attachment-remove" onclick="clearAttachment()">✕</button>
+      </div>
+      <div class="input-row">
+        <button class="input-icon-btn" id="imageInputBtn" onclick="triggerImagePicker()" data-i18n-title="attach_title" title="Attach image">🖼</button>
+        <textarea id="input" data-i18n-placeholder="placeholder" placeholder="Type a message..." rows="1" disabled></textarea>
+        <button class="input-icon-btn" id="voiceBtn" onclick="toggleVoice()" data-i18n-title="voice_title" title="Voice input">🎤</button>
+        <button class="send" id="sendBtn" disabled onclick="sendMessage()" data-i18n="send">Send</button>
+      </div>
+      <div class="hint" data-i18n="hint">Enter to send · Shift+Enter for new line</div>
+    </div>
+  </div>
+
+  <div class="settings-panel" id="settingsPanel">
+    <div class="settings-inner">
+      <div class="settings-header" data-i18n="settings_title">Settings</div>
+      <div class="settings-section">
+        <h4 data-i18n="section_sleep">Sleep</h4>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label" data-i18n="auto_sleep">Auto Sleep</div>
+            <div class="toggle-sub" id="autoSleepSub"></div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="autoSleepToggle" onchange="onAutoSleepChange()">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div id="scheduleConfig" style="display:none;">
+          <div class="schedule-mode">
+            <button class="mode-btn active" id="modeInterval" onclick="setScheduleMode('interval')" data-i18n="mode_interval">Interval</button>
+            <button class="mode-btn" id="modeDaily" onclick="setScheduleMode('daily')" data-i18n="mode_daily">Daily</button>
+          </div>
+          <div class="schedule-config" id="intervalConfig">
+            <div class="config-row">
+              <label data-i18n="every_label">Every</label>
+              <input type="number" class="config-input" id="intervalHours" min="1" max="24" value="1" onchange="saveScheduleConfig()">
+              <label data-i18n="hours_label">hours</label>
+            </div>
+          </div>
+          <div class="schedule-config" id="dailyConfig" style="display:none;">
+            <div class="config-row">
+              <label data-i18n="at_label">At</label>
+              <input type="time" class="config-input" id="dailyTime" value="02:00" onchange="saveScheduleConfig()">
+            </div>
+          </div>
+        </div>
+        <button class="sleep-btn" id="sleepBtn" onclick="runSleep()" data-i18n="sleep_btn">Run Sleep Now</button>
+        <div class="sleep-status" id="sleepStatus"></div>
+      </div>
+      <div class="session-info">
+        <h4 data-i18n="section_session">Session</h4>
+        <div style="font-size:12px;color:#6e7681;" data-i18n="session_label">Current session ID</div>
+        <div class="session-id" id="sessionIdDisplay">—</div>
+        <button class="new-session-btn" onclick="newSession()" data-i18n="new_session">New Session</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_PORT = 8400;
+const STORAGE_KEY = 'jkriver_session_id';
+const TOKEN_COOKIE = 'jkriver_token';
+
+function getDeviceToken() {
+    const match = document.cookie.match(/(?:^|;\s*)jkriver_token=([^;]*)/);
+    return match ? decodeURIComponent(match[1]) : '';
+}
+
+function localISOTime() {
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const off = -now.getTimezoneOffset();
+    const sign = off >= 0 ? '+' : '-';
+    const hh = pad(Math.floor(Math.abs(off) / 60));
+    const mm = pad(Math.abs(off) % 60);
+    return `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}${sign}${hh}:${mm}`;
+}
+
+function authHeaders(extra) {
+    const token = getDeviceToken();
+    const h = { 'Content-Type': 'application/json', ...(extra || {}) };
+    if (token) h['X-Device-Token'] = token;
+    return h;
+}
+const AUTO_SLEEP_KEY = 'jkriver_auto_sleep';
+const SLEEP_MODE_KEY = 'jkriver_sleep_mode';
+const SLEEP_INTERVAL_KEY = 'jkriver_sleep_hours';
+const SLEEP_TIME_KEY = 'jkriver_sleep_time';
+const LANG_KEY = 'jkriver_lang';
+const SIDEBAR_KEY = 'jkriver_sidebar_open';
+
+let ws = null;
+let sessionId = localStorage.getItem(STORAGE_KEY) || null;
+let waiting = false;
+let autoSleepTimer = null;
+let settingsOpen = false;
+let sidebarOpen = false;
+let pendingImage = null; // { file, dataUrl }
+let recognition = null;
+let isRecording = false;
+
+// ── i18n ──────────────────────────────────────────────────────────────
+const I18N = {
+  zh: {
+    title: 'Chat', nav_profile: '画像', settings_title: '设置',
+    section_sleep: '睡眠', auto_sleep: '定时睡眠',
+    mode_interval: '间隔', mode_daily: '定时',
+    every_label: '每', hours_label: '小时运行一次',
+    at_label: '每天', daily_suffix: '执行',
+    sleep_btn: '立即执行睡眠', sleep_running: '⏳ 记忆整合中…', sleep_success: '✓ 记忆整合完成', sleep_error: '✗ 睡眠失败，请查看日志',
+    sleep_running_btn: '睡眠中…', sleep_success_btn: '完成 ✓',
+    section_session: '会话', session_label: '当前会话 ID', new_session: '新建会话',
+    connecting: '连接中…', connected: '已连接', disconnected: '已断开 — 刷新页面重连',
+    sleeping_status: '睡眠运行中…',
+    history_divider: '— 上次会话 {n} 条消息 —',
+    placeholder: '输入消息…', send: '发送',
+    hint: 'Enter 发送 · Shift+Enter 换行',
+    next_interval: '下次运行：{m} 分钟后',
+    next_daily: '下次运行：今天 {time}',
+    next_daily_tomorrow: '下次运行：明天 {time}',
+    history_title: '历史会话', new_chat: '+ 新建',
+    history_empty: '暂无历史会话', turns_unit: '条',
+    attach_title: '附加图片', voice_title: '语音输入',
+    voice_no_support: '浏览器不支持语音输入',
+    uploading: '上传中…',
+  },
+  en: {
+    title: 'Chat', nav_profile: 'Profile', settings_title: 'Settings',
+    section_sleep: 'Sleep', auto_sleep: 'Auto Sleep',
+    mode_interval: 'Interval', mode_daily: 'Daily',
+    every_label: 'Every', hours_label: 'hour(s)',
+    at_label: 'At', daily_suffix: '',
+    sleep_btn: 'Run Sleep Now', sleep_running: '⏳ Memory consolidation running…', sleep_success: '✓ Memory consolidation complete', sleep_error: '✗ Sleep failed — check API logs',
+    sleep_running_btn: 'Sleeping…', sleep_success_btn: 'Complete ✓',
+    section_session: 'Session', session_label: 'Current session ID', new_session: 'New Session',
+    connecting: 'Connecting…', connected: 'Connected', disconnected: 'Disconnected — reload to reconnect',
+    sleeping_status: 'Sleep running…',
+    history_divider: '— {n} messages from previous session —',
+    placeholder: 'Type a message…', send: 'Send',
+    hint: 'Enter to send · Shift+Enter for new line',
+    next_interval: 'Next run in {m} min',
+    next_daily: 'Next: today at {time}',
+    next_daily_tomorrow: 'Next: tomorrow at {time}',
+    history_title: 'History', new_chat: '+ New',
+    history_empty: 'No history yet', turns_unit: 'msgs',
+    attach_title: 'Attach image', voice_title: 'Voice input',
+    voice_no_support: 'Voice input not supported in this browser',
+    uploading: 'Uploading…',
+  },
+  ja: {
+    title: 'チャット', nav_profile: 'プロフィール', settings_title: '設定',
+    section_sleep: 'スリープ', auto_sleep: '自動スリープ',
+    mode_interval: '間隔', mode_daily: '毎日',
+    every_label: '毎', hours_label: '時間ごと',
+    at_label: '毎日', daily_suffix: 'に実行',
+    sleep_btn: '今すぐスリープ実行', sleep_running: '⏳ 記憶統合中…', sleep_success: '✓ 記憶統合完了', sleep_error: '✗ スリープ失敗 — ログを確認',
+    sleep_running_btn: 'スリープ中…', sleep_success_btn: '完了 ✓',
+    section_session: 'セッション', session_label: '現在のセッション ID', new_session: '新しいセッション',
+    connecting: '接続中…', connected: '接続済み', disconnected: '切断 — リロードして再接続',
+    sleeping_status: 'スリープ実行中…',
+    history_divider: '— 前回セッション {n} 件のメッセージ —',
+    placeholder: 'メッセージを入力…', send: '送信',
+    hint: 'Enter で送信 · Shift+Enter で改行',
+    next_interval: '次回実行：{m} 分後',
+    next_daily: '次回：本日 {time}',
+    next_daily_tomorrow: '次回：明日 {time}',
+    history_title: '履歴', new_chat: '+ 新規',
+    history_empty: '履歴がありません', turns_unit: '件',
+    attach_title: '画像を添付', voice_title: '音声入力',
+    voice_no_support: 'このブラウザは音声入力に対応していません',
+    uploading: 'アップロード中…',
+  },
+};
+
+function detectLang() {
+  const saved = localStorage.getItem(LANG_KEY);
+  if (saved && I18N[saved]) return saved;
+  const lang = (navigator.language || 'en').toLowerCase();
+  if (lang.startsWith('zh')) return 'zh';
+  if (lang.startsWith('ja')) return 'ja';
+  return 'en';
+}
+let currentLang = detectLang();
+
+function t(key, params) {
+  let s = (I18N[currentLang] || I18N.en)[key] || key;
+  if (params) { for (const [k, v] of Object.entries(params)) s = s.replace(`{${k}}`, v); }
+  return s;
+}
+
+function setLang(lang) {
+  currentLang = lang;
+  localStorage.setItem(LANG_KEY, lang);
+  const labels = { zh: '中文', en: 'EN', ja: '日本語' };
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent.trim() === labels[lang]));
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    if (I18N[lang][key]) el.textContent = I18N[lang][key];
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.dataset.i18nPlaceholder;
+    if (I18N[lang][key]) el.placeholder = I18N[lang][key];
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    const key = el.dataset.i18nTitle;
+    if (I18N[lang][key]) el.title = I18N[lang][key];
+  });
+  const dot = document.getElementById('statusDot');
+  if (dot.classList.contains('connected')) setStatus('connected', t('connected'));
+  else if (dot.classList.contains('error')) setStatus('error', t('disconnected'));
+  updateNextRunLabel();
+}
+
+// ── Sidebar ────────────────────────────────────────────────────────────
+function isMobile() { return window.innerWidth <= 768; }
+
+function toggleSidebar() {
+  if (isMobile()) {
+    sidebarOpen = !sidebarOpen;
+    document.getElementById('historySidebar').classList.toggle('open', sidebarOpen);
+    document.getElementById('sidebarOverlay').classList.toggle('visible', sidebarOpen);
+  } else {
+    // Desktop: collapse/expand inline
+    const sidebar = document.getElementById('historySidebar');
+    const collapsed = sidebar.classList.toggle('collapsed');
+    localStorage.setItem(SIDEBAR_KEY, collapsed ? '0' : '1');
+  }
+}
+
+function closeSidebar() {
+  sidebarOpen = false;
+  document.getElementById('historySidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('visible');
+}
+
+// ── Image attachment ───────────────────────────────────────────────────
+function triggerImagePicker() {
+  document.getElementById('imageInput').click();
+}
+
+function onImageSelected(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    pendingImage = { file, dataUrl: e.target.result };
+    document.getElementById('attachmentThumb').src = e.target.result;
+    document.getElementById('attachmentName').textContent = file.name;
+    document.getElementById('attachmentPreview').style.display = 'flex';
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function clearAttachment() {
+  pendingImage = null;
+  document.getElementById('attachmentPreview').style.display = 'none';
+  document.getElementById('attachmentThumb').src = '';
+}
+
+// ── Voice input ────────────────────────────────────────────────────────
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+function toggleVoice() {
+  if (!SpeechRecognition) { alert(t('voice_no_support')); return; }
+  if (isRecording) {
+    stopVoice();
+  } else {
+    startVoice();
+  }
+}
+
+function startVoice() {
+  recognition = new SpeechRecognition();
+  const langMap = { zh: 'zh-CN', en: 'en-US', ja: 'ja-JP' };
+  recognition.lang = langMap[currentLang] || 'zh-CN';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  recognition.onresult = (e) => {
+    const text = e.results[0][0].transcript;
+    const input = document.getElementById('input');
+    input.value = (input.value ? input.value + ' ' : '') + text;
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+  };
+  recognition.onend = () => stopVoice();
+  recognition.onerror = () => stopVoice();
+
+  recognition.start();
+  isRecording = true;
+  document.getElementById('voiceBtn').classList.add('recording');
+}
+
+function stopVoice() {
+  if (recognition) { try { recognition.stop(); } catch(e) {} recognition = null; }
+  isRecording = false;
+  document.getElementById('voiceBtn').classList.remove('recording');
+}
+
+// ── Send message ───────────────────────────────────────────────────────
+async function sendMessage() {
+  const input = document.getElementById('input');
+  const text = input.value.trim();
+  if ((!text && !pendingImage) || waiting) return;
+
+  if (pendingImage) {
+    await sendImageMessage(text);
+    return;
+  }
+
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  appendMessage('user', text, '', '');
+  ws.send(JSON.stringify({ message: text, client_time: localISOTime() }));
+  input.value = '';
+  input.style.height = 'auto';
+  waiting = true;
+  document.getElementById('sendBtn').disabled = true;
+  showThinking();
+}
+
+async function sendImageMessage(caption) {
+  const input = document.getElementById('input');
+  const file = pendingImage.file;
+  const dataUrl = pendingImage.dataUrl;
+
+  // Show user message with image
+  appendImageMessage('user', dataUrl, caption);
+  input.value = '';
+  input.style.height = 'auto';
+  clearAttachment();
+  waiting = true;
+  document.getElementById('sendBtn').disabled = true;
+  showThinking();
+
+  try {
+    // Upload file
+    const formData = new FormData();
+    formData.append('file', file);
+    const uploadHeaders = {};
+    const tok = getDeviceToken();
+    if (tok) uploadHeaders['X-Device-Token'] = tok;
+    const upRes = await fetch(`http://${location.hostname}:${API_PORT}/upload`, {
+      method: 'POST', body: formData, headers: uploadHeaders,
+    });
+    if (!upRes.ok) throw new Error('Upload failed');
+    const { file_path } = await upRes.json();
+
+    // Send via REST /chat
+    const chatRes = await fetch(`http://${location.hostname}:${API_PORT}/chat`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({
+        message: caption,
+        session_id: sessionId,
+        input_type: 'image',
+        file_path,
+        client_time: localISOTime(),
+      }),
+    });
+    if (!chatRes.ok) throw new Error('Chat failed');
+    const result = await chatRes.json();
+    removeThinking();
+    waiting = false;
+    document.getElementById('sendBtn').disabled = false;
+    appendMessage('agent', result.response, result.category, result.intent);
+  } catch(e) {
+    removeThinking();
+    waiting = false;
+    document.getElementById('sendBtn').disabled = false;
+    appendMessage('agent', '⚠ ' + e.message, 'error', '');
+  }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────
+async function init() {
+  setLang(currentLang);
+  // Restore sidebar state on desktop
+  if (!isMobile()) {
+    const saved = localStorage.getItem(SIDEBAR_KEY);
+    if (saved === '0') document.getElementById('historySidebar').classList.add('collapsed');
+  }
+  // Hide voice button if browser doesn't support Web Speech API
+  if (!window.SpeechRecognition && !window.webkitSpeechRecognition) {
+    document.getElementById('voiceBtn').style.display = 'none';
+  }
+  // Check backend capabilities and hide unsupported buttons
+  try {
+    const res = await fetch(`http://${location.hostname}:${API_PORT}/capabilities`, { headers: authHeaders() });
+    if (res.ok) {
+      const cap = await res.json();
+      if (!cap.image) document.getElementById('imageInputBtn').style.display = 'none';
+      // voice button: hide if neither browser nor backend supports it
+      if (!cap.voice && !window.SpeechRecognition && !window.webkitSpeechRecognition) {
+        document.getElementById('voiceBtn').style.display = 'none';
+      }
+    }
+  } catch {
+    // API unreachable — keep buttons visible, errors handled at send time
+  }
+  loadAutoSleepSetting();
+  await loadSessionList();
+  if (sessionId) await loadHistory(sessionId);
+  connect();
+}
+
+// ── Session list ──────────────────────────────────────────────────────
+async function loadSessionList() {
+  try {
+    const res = await fetch(`http://${location.hostname}:${API_PORT}/sessions`, { headers: authHeaders() });
+    if (!res.ok) return;
+    renderSessionList(await res.json());
+  } catch(e) { console.warn('Failed to load session list', e); }
+}
+
+function renderSessionList(sessions) {
+  const list = document.getElementById('historyList');
+  if (!sessions.length) {
+    list.innerHTML = `<div class="history-empty">${t('history_empty')}</div>`;
+    return;
+  }
+  list.innerHTML = sessions.map(s => {
+    const date = s.last_at ? formatDate(s.last_at) : '';
+    const preview = s.preview || s.session_id.slice(0, 8) + '…';
+    const isActive = s.session_id === sessionId;
+    return `<div class="history-item${isActive ? ' active' : ''}" onclick="switchSession('${s.session_id}')">
+      <div class="history-item-preview">${escHtml(preview)}</div>
+      <div class="history-item-meta"><span>${date}</span><span>${s.turns} ${t('turns_unit')}</span></div>
+    </div>`;
+  }).join('');
+}
+
+function formatDate(iso) {
+  const d = new Date(iso), now = new Date();
+  const diffDays = Math.floor((now - d) / 86400000);
+  if (diffDays === 0) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  if (diffDays === 1) return currentLang === 'zh' ? '昨天' : currentLang === 'ja' ? '昨日' : 'Yesterday';
+  if (diffDays < 7) return `${diffDays}${currentLang === 'zh' ? '天前' : currentLang === 'ja' ? '日前' : 'd ago'}`;
+  return `${d.getMonth()+1}/${d.getDate()}`;
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function switchSession(sid) {
+  if (sid === sessionId) { closeSidebar(); return; }
+  if (ws) ws.close();
+  sessionId = sid;
+  localStorage.setItem(STORAGE_KEY, sid);
+  document.getElementById('messages').innerHTML = '';
+  document.getElementById('input').disabled = true;
+  document.getElementById('sendBtn').disabled = true;
+  document.querySelectorAll('.history-item').forEach(el =>
+    el.classList.toggle('active', el.onclick.toString().includes(`'${sid}'`)));
+  closeSidebar();
+  await loadHistory(sid);
+  connect();
+}
+
+// ── WebSocket ─────────────────────────────────────────────────────────
+function connect() {
+  const tok = getDeviceToken();
+  const tokenParam = tok ? `&token=${encodeURIComponent(tok)}` : '';
+  const url = sessionId
+    ? `ws://${location.hostname}:${API_PORT}/ws/chat?session_id=${sessionId}${tokenParam}`
+    : `ws://${location.hostname}:${API_PORT}/ws/chat${tok ? '?token=' + encodeURIComponent(tok) : ''}`;
+  ws = new WebSocket(url);
+  ws.onopen = () => setStatus('connected', t('connected'));
+  ws.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+    if (data.type === 'session_created') {
+      sessionId = data.session_id;
+      localStorage.setItem(STORAGE_KEY, sessionId);
+      document.getElementById('sessionIdDisplay').textContent = sessionId;
+      document.getElementById('input').disabled = false;
+      document.getElementById('sendBtn').disabled = false;
+      document.getElementById('input').focus();
+      loadSessionList();
+      return;
+    }
+    removeThinking();
+    waiting = false;
+    document.getElementById('sendBtn').disabled = false;
+    if (data.type === 'response') appendMessage('agent', data.response, data.category, data.intent);
+    else if (data.type === 'error') appendMessage('agent', '⚠ ' + data.detail, 'error', '');
+  };
+  ws.onclose = () => {
+    setStatus('error', t('disconnected'));
+    document.getElementById('input').disabled = true;
+    document.getElementById('sendBtn').disabled = true;
+  };
+  ws.onerror = () => setStatus('error', t('disconnected'));
+}
+
+// ── History ───────────────────────────────────────────────────────────
+async function loadHistory(sid) {
+  try {
+    const res = await fetch(`http://${location.hostname}:${API_PORT}/session/${sid}/history`, { headers: authHeaders() });
+    if (!res.ok) return;
+    const history = await res.json();
+    if (!history.length) return;
+    const container = document.getElementById('messages');
+    const div = document.createElement('div');
+    div.className = 'history-divider';
+    div.textContent = t('history_divider', { n: history.length });
+    container.appendChild(div);
+    history.forEach(item => {
+      appendMessage('user', item.user, '', '', item.at, true);
+      appendMessage('agent', item.agent, '', '', item.at, true);
+    });
+  } catch(e) { console.warn('Failed to load history', e); }
+}
+
+// ── Messages ──────────────────────────────────────────────────────────
+function appendMessage(role, text, category, intent, at) {
+  const container = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.textContent = text;
+  div.appendChild(bubble);
+  if (role === 'agent' && (category || intent)) {
+    const meta = document.createElement('div');
+    meta.className = 'msg-meta';
+    if (category) meta.innerHTML += `<span class="meta-tag">${category}</span>`;
+    if (intent)   meta.innerHTML += `<span class="meta-tag">${intent}</span>`;
+    div.appendChild(meta);
+  }
+  if (at) {
+    const time = document.createElement('div');
+    time.className = 'msg-time';
+    time.textContent = new Date(at).toLocaleString();
+    div.appendChild(time);
+  }
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function appendImageMessage(role, dataUrl, caption) {
+  const container = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  const img = document.createElement('img');
+  img.src = dataUrl;
+  img.className = 'msg-image';
+  bubble.appendChild(img);
+  if (caption) {
+    const p = document.createElement('div');
+    p.textContent = caption;
+    bubble.appendChild(p);
+  }
+  div.appendChild(bubble);
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function showThinking() {
+  const container = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg agent';
+  div.id = 'thinking';
+  div.innerHTML = '<div class="bubble thinking"><span></span><span></span><span></span></div>';
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+function removeThinking() { const el = document.getElementById('thinking'); if (el) el.remove(); }
+
+// ── Status ────────────────────────────────────────────────────────────
+function setStatus(state, text) {
+  document.getElementById('statusDot').className = 'status-dot' + (state ? ' ' + state : '');
+  document.getElementById('statusText').textContent = text;
+}
+
+// ── Settings ──────────────────────────────────────────────────────────
+function toggleSettings() {
+  settingsOpen = !settingsOpen;
+  document.getElementById('settingsPanel').classList.toggle('open', settingsOpen);
+  document.getElementById('settingsBtn').classList.toggle('active', settingsOpen);
+  if (settingsOpen) closeSidebar();
+}
+
+// ── Sleep ─────────────────────────────────────────────────────────────
+async function runSleep() {
+  const btn = document.getElementById('sleepBtn');
+  const status = document.getElementById('sleepStatus');
+  btn.disabled = true; btn.className = 'sleep-btn running'; btn.textContent = t('sleep_running_btn');
+  status.className = 'sleep-status running'; status.textContent = t('sleep_running');
+  setStatus('sleeping', t('sleeping_status'));
+  try {
+    const res = await fetch(`http://${location.hostname}:${API_PORT}/sleep`, { method: 'POST', headers: authHeaders() });
+    if (res.ok) {
+      btn.className = 'sleep-btn success'; btn.textContent = t('sleep_success_btn');
+      status.className = 'sleep-status success'; status.textContent = t('sleep_success');
+      setStatus('connected', t('connected'));
+      setTimeout(() => { btn.className = 'sleep-btn'; btn.textContent = t('sleep_btn'); btn.disabled = false; status.className = 'sleep-status'; }, 4000);
+    } else { throw new Error(); }
+  } catch {
+    btn.className = 'sleep-btn'; btn.textContent = t('sleep_btn'); btn.disabled = false;
+    status.className = 'sleep-status error'; status.textContent = t('sleep_error');
+    setStatus('connected', t('connected'));
+  }
+}
+
+let scheduleMode = localStorage.getItem(SLEEP_MODE_KEY) || 'interval';
+function setScheduleMode(mode) {
+  scheduleMode = mode; localStorage.setItem(SLEEP_MODE_KEY, mode);
+  document.getElementById('modeInterval').classList.toggle('active', mode === 'interval');
+  document.getElementById('modeDaily').classList.toggle('active', mode === 'daily');
+  document.getElementById('intervalConfig').style.display = mode === 'interval' ? '' : 'none';
+  document.getElementById('dailyConfig').style.display = mode === 'daily' ? '' : 'none';
+  if (document.getElementById('autoSleepToggle').checked) startAutoSleep();
+}
+function saveScheduleConfig() {
+  localStorage.setItem(SLEEP_INTERVAL_KEY, document.getElementById('intervalHours').value);
+  localStorage.setItem(SLEEP_TIME_KEY, document.getElementById('dailyTime').value);
+  if (document.getElementById('autoSleepToggle').checked) startAutoSleep();
+}
+function loadAutoSleepSetting() {
+  const enabled = localStorage.getItem(AUTO_SLEEP_KEY) === 'true';
+  document.getElementById('autoSleepToggle').checked = enabled;
+  document.getElementById('intervalHours').value = localStorage.getItem(SLEEP_INTERVAL_KEY) || '1';
+  document.getElementById('dailyTime').value = localStorage.getItem(SLEEP_TIME_KEY) || '02:00';
+  setScheduleMode(scheduleMode);
+  document.getElementById('scheduleConfig').style.display = enabled ? '' : 'none';
+  updateNextRunLabel();
+  if (enabled) startAutoSleep();
+}
+function onAutoSleepChange() {
+  const enabled = document.getElementById('autoSleepToggle').checked;
+  localStorage.setItem(AUTO_SLEEP_KEY, enabled);
+  document.getElementById('scheduleConfig').style.display = enabled ? '' : 'none';
+  if (enabled) { startAutoSleep(); } else { clearTimeout(autoSleepTimer); autoSleepTimer = null; document.getElementById('autoSleepSub').textContent = ''; }
+}
+function startAutoSleep() {
+  clearTimeout(autoSleepTimer);
+  updateNextRunLabel();
+  autoSleepTimer = setTimeout(() => {
+    runSleep().then(() => { if (document.getElementById('autoSleepToggle').checked) startAutoSleep(); });
+  }, msUntilNextRun());
+}
+function msUntilNextRun() {
+  if (scheduleMode === 'interval') return (parseFloat(document.getElementById('intervalHours').value) || 1) * 3600000;
+  const [hh, mm] = (document.getElementById('dailyTime').value || '02:00').split(':').map(Number);
+  const now = new Date(), next = new Date(now);
+  next.setHours(hh, mm, 0, 0);
+  if (next <= now) next.setDate(next.getDate() + 1);
+  return next - now;
+}
+function updateNextRunLabel() {
+  const sub = document.getElementById('autoSleepSub');
+  if (!document.getElementById('autoSleepToggle').checked) { sub.textContent = ''; return; }
+  if (scheduleMode === 'interval') {
+    sub.textContent = t('next_interval', { m: Math.round((parseFloat(document.getElementById('intervalHours').value) || 1) * 60) });
+  } else {
+    const time = document.getElementById('dailyTime').value || '02:00';
+    const [hh, mm] = time.split(':').map(Number);
+    const now = new Date(), next = new Date(now);
+    next.setHours(hh, mm, 0, 0);
+    sub.textContent = t(next <= now ? 'next_daily_tomorrow' : 'next_daily', { time });
+  }
+}
+
+// ── Session ───────────────────────────────────────────────────────────
+function newSession() {
+  localStorage.removeItem(STORAGE_KEY); sessionId = null;
+  document.getElementById('messages').innerHTML = '';
+  document.getElementById('sessionIdDisplay').textContent = '—';
+  if (ws) ws.close();
+  closeSidebar(); connect(); loadSessionList();
+}
+
+// ── Input events ──────────────────────────────────────────────────────
+document.getElementById('input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+document.getElementById('input').addEventListener('input', function () {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 140) + 'px';
+});
+
+init();
+</script>
+</body>
+</html>

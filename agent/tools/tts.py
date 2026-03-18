@@ -5,7 +5,36 @@ import logging
 
 import edge_tts
 
+from agent.tools import BaseTool, ToolManifest, ToolResult
+
 logger = logging.getLogger(__name__)
+
+
+class TTSTool(BaseTool):
+
+    def __init__(self, config: dict):
+        self._config = config
+        self._tts_cfg = config.get("tts", {})
+        lang = config.get("language", "en")
+        self._desc = {
+            "zh": "将 AI 回复转换为语音播放（需要 Edge TTS）",
+            "en": "Convert AI replies to speech (requires Edge TTS)",
+            "ja": "AI の返答を音声に変換（Edge TTS が必要）",
+        }.get(lang, "Convert AI replies to speech (requires Edge TTS)")
+
+    def manifest(self) -> ToolManifest:
+        return ToolManifest(
+            name="tts",
+            description=self._desc,
+            parameters={},
+            examples=[],
+        )
+
+    def is_available(self) -> bool:
+        return self._tts_cfg.get("enabled", False)
+
+    def execute(self, params: dict) -> ToolResult:
+        return ToolResult(success=False, data="", error="TTS is called internally, not via execute()")
 
 def _detect_voice(text: str, voices: dict) -> str:
     chinese_count = sum(1 for c in text if '\u4e00' <= c <= '\u9fff')

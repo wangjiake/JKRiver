@@ -96,12 +96,20 @@ class CognitionEngine:
             verification_at = get_now()
             if verification_result.startswith("FAIL"):
                 fail_reason = verification_result.split(":", 1)[-1].split("：", 1)[-1].strip()
-                messages.append({"role": "assistant", "content": raw_response})
-                messages.append({"role": "user", "content":
-                    get_prompt("cognition.regenerate_message", self.language, fail_reason=fail_reason)
-                })
-                final_response = await call_llm_async(messages, self.config)
-                final_response_at = get_now()
+                # If the flagged info comes from what the user just said, the AI is
+                # correctly "going along" (顺) — do not override with regeneration.
+                user_words = [w for w in user_input.split() if len(w) > 1]
+                flagged_from_user = any(w in fail_reason for w in user_words)
+                if flagged_from_user:
+                    final_response = raw_response
+                    final_response_at = verification_at
+                else:
+                    messages.append({"role": "assistant", "content": raw_response})
+                    messages.append({"role": "user", "content":
+                        get_prompt("cognition.regenerate_message", self.language, fail_reason=fail_reason)
+                    })
+                    final_response = await call_llm_async(messages, self.config)
+                    final_response_at = get_now()
             else:
                 final_response = raw_response
                 final_response_at = verification_at

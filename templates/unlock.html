@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Access Required</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    background: #0f1117;
+    color: #e1e4e8;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.card {
+    background: #161b22;
+    border: 1px solid #2d3348;
+    border-radius: 12px;
+    padding: 40px 36px;
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+.lock-icon {
+    font-size: 40px;
+    margin-bottom: 16px;
+}
+h1 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 8px;
+}
+p {
+    font-size: 14px;
+    color: #8b92a5;
+    margin-bottom: 28px;
+}
+input[type="text"] {
+    width: 100%;
+    padding: 12px 14px;
+    background: #0f1117;
+    border: 1px solid #2d3348;
+    border-radius: 8px;
+    color: #e1e4e8;
+    font-size: 14px;
+    font-family: monospace;
+    letter-spacing: 0.05em;
+    outline: none;
+    margin-bottom: 16px;
+    transition: border-color 0.2s;
+}
+input[type="text"]:focus {
+    border-color: #58a6ff;
+}
+button {
+    width: 100%;
+    padding: 12px;
+    background: #1f6feb;
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+button:hover { background: #388bfd; }
+.error {
+    margin-top: 16px;
+    padding: 10px 14px;
+    background: rgba(248, 81, 73, 0.1);
+    border: 1px solid rgba(248, 81, 73, 0.3);
+    border-radius: 6px;
+    color: #f85149;
+    font-size: 13px;
+}
+</style>
+</head>
+<body>
+<div class="card">
+    <div class="lock-icon">🔒</div>
+    <h1>Access Required</h1>
+    <p>Enter your access token to continue.</p>
+    <form method="POST" action="/unlock">
+        <input type="text" name="token" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" autofocus autocomplete="off" spellcheck="false">
+        <button type="submit">Enter</button>
+    </form>
+    {% if error %}
+    <div class="error">{{ error }}</div>
+    {% endif %}
+</div>
+</body>
+</html>

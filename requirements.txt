@@ -9,3 +9,5 @@ httpx~=0.28
 python-telegram-bot~=22.6
 discord.py~=2.7
 edge-tts~=7.2
+python-multipart~=0.0.20
+websockets~=14.0

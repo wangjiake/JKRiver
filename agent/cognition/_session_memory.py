@@ -88,7 +88,9 @@ class SessionMemory:
         recent = self._turns[-self.keep_recent:] if self.keep_recent else []
         recent_lines = []
         for t in recent:
-            recent_lines.append(f"{L['user']}：{t['user_summary']}")
+            ts = t.get("user_input_at")
+            date_str = f"[{ts.strftime('%Y-%m-%d')}] " if ts else ""
+            recent_lines.append(f"{date_str}{L['user']}：{t['user_summary']}")
             recent_lines.append(f"{L['assistant']}：{t['assistant_summary']}")
         recent_text = "\n".join(recent_lines)
 

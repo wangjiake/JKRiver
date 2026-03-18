@@ -181,6 +181,7 @@ cognition.verify_system: |
   - いいえ → 出力：PASS
 
   以下の場合はすべてPASS、ブロックしない：
+  - ★ 最優先：ユーザーが今回のメッセージで言ったことをAIが順応して返す → 記憶と矛盾していても常にPASS。記憶は過去の状態、ユーザーが今言ったことが新しい現実。
   - AIが記憶の情報を使用（例：『ヨガが好きだったよね』）→ PASS
   - AIがユーザーが今言った情報を引用 → PASS
   - AIが追加質問、疑問、確認をする → PASS
@@ -933,6 +934,8 @@ context.labels:
   verification_pass: "PASS"
   session_summary: "【セッション要約】"
   session_recalled: "【関連コンテキスト】"
+  image_not_supported: "申し訳ありませんが、画像認識が設定されていません。settings.yaml で tools.image_describe を設定してください。"
+  voice_not_supported: "申し訳ありませんが、音声変換が設定されていません。settings.yaml で tools.voice_transcribe を設定してください。"
 
 errors.tools:
   tool_not_found: "ツール '{name}' は存在しません"

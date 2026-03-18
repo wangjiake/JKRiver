@@ -181,6 +181,7 @@ cognition.verify_system: |
   - 否 → 输出：PASS
 
   以下情况都是PASS，不要拦截：
+  - ★ 最高优先级：用户本轮消息里说了什么，AI 顺着说 → 永远 PASS，哪怕与历史记忆矛盾。记忆是过去状态，用户现在说的是新情况。
   - AI使用记忆中的信息（如'我记得你喜欢瑜伽'）→ PASS（记忆中标记为[怀疑]或[核心]的画像都算有效记忆）
   - AI引用用户刚说的信息 → PASS
   - AI追问、质疑、确认用户的话 → PASS
@@ -298,7 +299,11 @@ sleep.classify_observations: |
   - 用户说"辞职了""换工作了" → contradict（对应职业画像）
   - 用户说"分手了" → evidence_against（对应感情画像）
   - 计划/愿望（"想去""打算学"）→ irrelevant，不创建画像
-  - new_value 必须是简短属性值（城市名/职位名），不是句子
+  - new_value 必须是简短属性值（城市名/职位名/国籍名），不是句子
+  - ★ 关键：如果观察只说"已更换""已改变""换了"但没有说明新的具体值，不要用 contradict，改用 evidence_against
+    例："用户换国籍了" → evidence_against（没有具体新国籍），等后续观察提供新值
+    例："用户现在是美国人了" → contradict，new_value="美国"
+  - new_value 绝不能是状态描述词（"已更换""已改变""已修改""更换了"等），必须是真实的属性值
 
   出生地 vs 居住城市（重要！这是两个不同 category，不能混淆）：
   - category="出生地"（"XX人""老家XX""家乡XX"）是永久锚点，搬家/换城市绝不算 contradict 出生地
@@ -933,6 +938,8 @@ context.labels:
   verification_pass: "通过"
   session_summary: "【会话摘要】"
   session_recalled: "【相关上下文】"
+  image_not_supported: "抱歉，图片识别功能未配置，请在 settings.yaml 中配置 tools.image_describe。"
+  voice_not_supported: "抱歉，语音转写功能未配置，请在 settings.yaml 中配置 tools.voice_transcribe。"
 
 errors.tools:
   tool_not_found: "工具 '{name}' 不存在"

@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="page-title">System — {{ db_name }}</title>
+<link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; background: #0f1117; color: #e1e4e8; min-height: 100vh; }
+
+.header { background: linear-gradient(135deg, #1a1f36 0%, #252a40 100%); padding: 14px 24px; border-bottom: 1px solid #2d3348; display: flex; justify-content: space-between; align-items: center; }
+.header h1 { font-size: 20px; font-weight: 600; color: #fff; }
+.header-right { display: flex; gap: 8px; align-items: center; }
+.nav-link { padding: 5px 12px; background: #252a40; border: 1px solid #2d3348; border-radius: 4px; color: #8b92a5; text-decoration: none; font-size: 12px; }
+.nav-link:hover { color: #58a6ff; border-color: #58a6ff; }
+.nav-link.active { color: #58a6ff; border-color: #58a6ff; background: #1f2740; }
+.lang-switch { display: flex; gap: 4px; }
+.lang-btn { padding: 4px 10px; background: #252a40; border: 1px solid #2d3348; border-radius: 4px; color: #8b92a5; cursor: pointer; font-size: 12px; }
+.lang-btn:hover { color: #c9d1d9; border-color: #444c5e; }
+.lang-btn.active { color: #58a6ff; border-color: #58a6ff; background: #1f2740; }
+
+.container { max-width: 1100px; margin: 0 auto; padding: 28px 24px; }
+
+.section { margin-bottom: 32px; }
+.section-title { font-size: 13px; font-weight: 600; color: #8b92a5; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.section-title::after { content: ''; flex: 1; height: 1px; background: #2d3348; }
+
+.info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.info-card { background: #161b22; border: 1px solid #2d3348; border-radius: 8px; padding: 14px 16px; }
+.info-card .label { font-size: 11px; color: #6e7681; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+.info-card .value { font-size: 14px; color: #e1e4e8; font-weight: 500; }
+.info-card .value.on { color: #3fb950; }
+.info-card .value.off { color: #6e7681; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.card { background: #161b22; border: 1px solid #2d3348; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.card.disabled { opacity: 0.45; }
+.card-header { display: flex; align-items: center; gap: 8px; }
+.card-name { font-size: 14px; font-weight: 600; color: #e1e4e8; flex: 1; }
+.badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.05em; flex-shrink: 0; }
+.badge-builtin { background: #1f3a5f; color: #58a6ff; }
+.badge-agent { background: #2d1f5f; color: #a78bfa; }
+.badge-mcp { background: #1f4a2d; color: #3fb950; }
+.badge-skill { background: #3d2a0a; color: #d29922; }
+.badge-on { background: #1a3a1a; color: #3fb950; }
+.badge-off { background: #2d2d2d; color: #6e7681; }
+.card-desc { font-size: 13px; color: #8b92a5; line-height: 1.5; }
+.card-examples { display: flex; flex-wrap: wrap; gap: 6px; }
+.example-tag { font-size: 11px; background: #1e222c; border: 1px solid #2d3348; border-radius: 4px; padding: 3px 8px; color: #8b92a5; }
+.card-meta { font-size: 11px; color: #6e7681; }
+.card-meta span { color: #8b92a5; }
+.empty { text-align: center; padding: 40px; color: #6e7681; font-size: 14px; background: #161b22; border: 1px dashed #2d3348; border-radius: 8px; }
+.loading { text-align: center; padding: 60px; color: #6e7681; }
+.restart-banner { position: sticky; top: 0; z-index: 100; background: #2d2000; border-bottom: 1px solid #d29922; padding: 10px 24px; display: flex; align-items: center; gap: 12px; font-size: 13px; color: #d29922; }
+.restart-banner .banner-msg { flex: 1; }
+.banner-btn { padding: 5px 14px; border-radius: 4px; border: 1px solid; cursor: pointer; font-size: 12px; font-weight: 600; }
+.banner-btn.restart { background: #d29922; border-color: #d29922; color: #0f1117; }
+.banner-btn.revert { background: transparent; border-color: #d29922; color: #d29922; }
+.banner-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.info-card.editable { cursor: pointer; transition: border-color 0.15s; }
+.info-card.editable:hover { border-color: #444c5e; }
+.info-card.editable:hover .edit-icon { opacity: 1; }
+.edit-icon { opacity: 0; font-size: 10px; color: #58a6ff; margin-left: 4px; transition: opacity 0.15s; }
+.info-card.editing { border-color: #58a6ff !important; background: #1a2030; }
+.edit-input { background: transparent; border: none; color: #e1e4e8; font-size: 14px; font-weight: 500; width: 100%; outline: none; padding: 0; }
+.edit-input option { background: #1a2030; color: #e1e4e8; }
+.edit-actions { display: flex; gap: 6px; margin-top: 6px; }
+.edit-btn { padding: 2px 10px; font-size: 11px; border-radius: 3px; border: 1px solid; cursor: pointer; font-weight: 600; }
+.edit-btn.confirm { background: #238636; border-color: #238636; color: #fff; }
+.edit-btn.cancel { background: transparent; border-color: #444c5e; color: #8b92a5; }
+.config-section { background: #161b22; border: 1px solid #2d3348; border-radius: 8px; overflow: hidden; align-self: start; }
+.config-section-header { padding: 12px 16px; display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+.config-section-header:hover { background: #1c2128; }
+.config-section-title { font-size: 13px; font-weight: 600; color: #e1e4e8; flex: 1; }
+.config-section-arrow { font-size: 10px; color: #6e7681; transition: transform 0.2s; }
+.config-section.open .config-section-arrow { transform: rotate(90deg); }
+.config-section-body { display: none; border-top: 1px solid #2d3348; }
+.config-section.open .config-section-body { display: block; }
+.config-field { display: flex; align-items: flex-start; padding: 8px 16px; border-bottom: 1px solid #21262d; gap: 12px; min-height: 36px; }
+.config-field:last-child { border-bottom: none; }
+.config-field-label { font-size: 11px; color: #6e7681; width: 130px; flex-shrink: 0; padding-top: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
+.config-field-value { font-size: 13px; color: #e1e4e8; flex: 1; }
+.config-field.editable .config-field-value { cursor: pointer; padding: 1px 4px; border-radius: 3px; }
+.config-field.editable:hover .config-field-value { background: #1e2a3a; color: #58a6ff; }
+.config-field.editing .config-field-value { background: #1e2a3a; }
+.config-field-hint { font-size: 10px; color: #6e7681; margin-top: 2px; }
+.config-field .edit-input { background: #0d1117; border: 1px solid #58a6ff; color: #e1e4e8; font-size: 13px; width: 100%; outline: none; padding: 2px 6px; border-radius: 3px; }
+.config-field .edit-input option { background: #0d1117; }
+.config-field .edit-actions { display: flex; gap: 4px; margin-top: 4px; }
+.delete-btn { background: transparent; border: none; cursor: pointer; color: #6e7681; font-size: 13px; padding: 1px 4px; border-radius: 3px; line-height: 1; flex-shrink: 0; opacity: 0; transition: opacity 0.15s, color 0.15s; }
+.card:hover .delete-btn { opacity: 1; }
+.delete-btn:hover { color: #f85149; background: #2d1a1a; }
+.cp-card { border-bottom: 1px solid #21262d; }
+.cp-card:last-child { border-bottom: none; }
+.cp-header { display: flex; align-items: center; gap: 8px; padding: 9px 16px; cursor: pointer; user-select: none; }
+.cp-header:hover { background: #1c2128; }
+.cp-name { font-size: 13px; font-weight: 600; color: #e1e4e8; }
+.cp-model { font-size: 12px; color: #6e7681; flex: 1; }
+.cp-arrow { font-size: 10px; color: #6e7681; transition: transform 0.2s; }
+.cp-card.open .cp-arrow { transform: rotate(90deg); }
+.cp-body { display: none; }
+.cp-card.open .cp-body { display: block; }
+.cp-add { padding: 10px 16px; border-top: 1px solid #2d3348; }
+.cp-add-form { display: none; margin-bottom: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
+.cp-add-form.hidden { display: none; }
+.cp-add-btn { width: 100%; background: transparent; border: 1px dashed #2d3348; color: #6e7681; padding: 5px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+.cp-add-btn:hover { border-color: #58a6ff; color: #58a6ff; }
+.choice-group { display: flex; gap: 4px; }
+.choice-btn { padding: 3px 14px; border-radius: 4px; border: 1px solid #2d3348; background: transparent; color: #8b92a5; cursor: pointer; font-size: 12px; font-weight: 500; transition: all 0.15s; }
+.choice-btn:hover:not(.active) { border-color: #444c5e; color: #c9d1d9; }
+.choice-btn.active { background: #1f2740; border-color: #58a6ff; color: #58a6ff; }
+</style>
+</head>
+<body>
+
+<div id="restart-banner" class="restart-banner" style="display:none">
+  <span class="banner-msg" id="banner-msg"></span>
+  <button class="banner-btn restart" id="btn-restart" onclick="doRestart()"></button>
+  <button class="banner-btn revert" id="btn-revert" onclick="doRevert()"></button>
+</div>
+<div class="header">
+  <h1 id="header-title">⚙ System — {{ db_name }}</h1>
+  <div class="header-right">
+    <div class="lang-switch">
+      <button class="lang-btn" onclick="setLang('zh')">中文</button>
+      <button class="lang-btn" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" onclick="setLang('ja')">日本語</button>
+    </div>
+    <a href="/chat" class="nav-link" id="nav-chat">Chat</a>
+    <a href="/profile" class="nav-link" id="nav-profile">Profile</a>
+    <a href="/system" class="nav-link active" id="nav-system">System</a>
+  </div>
+</div>
+
+<div class="container">
+  <div id="content"><div class="loading" id="loading-text">Loading...</div></div>
+</div>
+
+<script>
+const API_PORT = 8400;
+const LANG_KEY = 'jkriver_lang';
+const DB_NAME = {{ db_name | tojson }};
+
+const I18N = {
+  zh: {
+    nav_chat: 'Chat', nav_profile: '画像', nav_system: '系统',
+    loading: '加载中...', load_error: '无法加载系统信息：',
+    section_overview: '系统概览',
+    section_tools: '内置工具',
+    section_agents: '智能体',
+    section_skills: '技能',
+    section_mcp: 'MCP 服务',
+    empty_tools: '无内置工具', empty_agents: '无已配置 Agent',
+    empty_mcp: '无 MCP 服务',
+    label_language: '语言', label_llm_provider: 'LLM 提供商',
+    label_llm_model: 'LLM 模型', label_llm_api: 'LLM API',
+    label_llm_key: 'LLM 密钥', label_telegram_token: 'Telegram Token',
+    label_discord_token: 'Discord Token',
+    label_embedding: '向量搜索', label_embedding_model: '向量模型', label_cloud_llm: '云端升级链',
+    label_public_mode: '公网模式', label_proactive: '主动推送',
+    label_tts: '语音合成', label_telegram: 'Telegram Bot',
+    label_discord: 'Discord Bot', label_mcp: 'MCP',
+    label_params: '参数', label_keywords: '关键词',
+    label_schedule: '定时', label_command: '命令',
+    no_key: '未配置密钥',
+    edit_confirm: '确认', edit_cancel: '取消',
+    edit_placeholder: '输入新值', edit_placeholder_sensitive: '输入新密钥（留空则不修改）',
+    not_set: '未配置',
+    badge_builtin: '内置', badge_agent: '智能体', badge_skill: '技能',
+    banner_msg: '配置已修改，需要重启服务后生效', btn_restart: '立即重启', btn_revert: '撤销修改',
+    restarting: '正在重启...', reverting: '正在撤销...',
+    label_temperature: '温度', label_max_tokens: '最大Token', label_temp_dir: '临时目录',
+    label_allowed_ids: '允许的用户ID', label_voice_zh: '中文语音', label_voice_en: '英文语音',
+    label_max_chars: '最大字符数', label_api_base: 'API 地址',
+    label_interval: '推送间隔(分钟)', label_quiet_start: '免打扰开始', label_quiet_end: '免打扰结束',
+    label_max_per_day: '每日最大条数', label_min_gap: '最小间隔(分钟)', label_access_token: '访问令牌',
+    label_bot_token: 'Bot Token',
+    section_llm: 'LLM 主模型', section_telegram: 'Telegram Bot', section_discord: 'Discord Bot',
+    section_tts_config: '语音合成配置', section_embedding_config: '向量搜索配置',
+    section_proactive_config: '主动推送配置', section_public_config: '公网访问配置',
+    hint_allowed_ids: '留空=所有人，多个ID用逗号分隔',
+    confirm_delete: '确定要删除「{name}」吗？此操作不可撤销。',
+    delete_tip: '删除',
+    add_provider: '添加提供商', label_new_name: '名称', label_new_model: '模型', label_new_base: 'API 地址',
+    label_priority: '优先级', label_search: '网页搜索',
+    label_escalation_auto: '自动升级', label_escalation_feedback: '升级后通知',
+    label_escalation_min_length: '最短回复字数',
+    section_cloud_providers: '提供商配置', section_cloud_escalation: '升级策略',
+    provider_no_key: '未填写密钥',
+    label_timezone: '时区',
+    section_database: '数据库', label_db_name: '数据库名', label_db_user: '用户名', label_db_host: '主机',
+    section_session_memory: '会话记忆', label_char_budget: '上下文字符预算',
+    label_keep_recent: '保留最近轮次', label_summary_ratio: '摘要占比',
+    label_recall_max: '向量召回上限', label_recall_min_score: '最低召回相似度',
+    section_tools_config: '工具配置', label_tools_enabled: '工具总开关',
+    label_voice_model: '语音模型', label_voice_lang: '语音语言',
+    label_image_provider: '图像提供商', label_image_model: '图像模型',
+    label_file_max_size: '最大文件大小(字节)', label_shell_timeout: 'Shell 超时(秒)',
+    label_emb_top_k: '召回条数', label_emb_min_score: '最低相似度', label_emb_clustering: '聚类',
+    section_triggers: '触发器', label_followup: '事件跟进', label_followup_importance: '最低重要性',
+    label_followup_after: '跟进延迟(小时)', label_followup_max_age: '最大追溯(天)',
+    label_strategy: '画像策略触发', label_idle: '闲时关心', label_idle_hours: '触发闲置(小时)',
+  },
+  en: {
+    nav_chat: 'Chat', nav_profile: 'Profile', nav_system: 'System',
+    loading: 'Loading...', load_error: 'Failed to load system info: ',
+    section_overview: 'System Overview',
+    section_tools: 'Built-in Tools',
+    section_agents: 'Agents',
+    section_skills: 'Skills',
+    section_mcp: 'MCP Servers',
+    empty_tools: 'No built-in tools', empty_agents: 'No agents configured',
+    empty_mcp: 'No MCP servers',
+    label_language: 'Language', label_llm_provider: 'LLM Provider',
+    label_llm_model: 'LLM Model', label_llm_api: 'LLM API',
+    label_llm_key: 'LLM API Key', label_telegram_token: 'Telegram Token',
+    label_discord_token: 'Discord Token',
+    label_embedding: 'Embedding', label_embedding_model: 'Embedding Model', label_cloud_llm: 'Cloud LLM Escalation',
+    label_public_mode: 'Public Mode', label_proactive: 'Proactive Messages',
+    label_tts: 'TTS', label_telegram: 'Telegram Bot',
+    label_discord: 'Discord Bot', label_mcp: 'MCP',
+    label_params: 'Params', label_keywords: 'Keywords',
+    label_schedule: 'Schedule', label_command: 'Command',
+    no_key: 'no key configured',
+    edit_confirm: 'OK', edit_cancel: 'Cancel',
+    edit_placeholder: 'Enter new value', edit_placeholder_sensitive: 'Enter new key (leave empty to keep)',
+    not_set: 'not set',
+    badge_builtin: 'Built-in', badge_agent: 'Agent', badge_skill: 'Skill',
+    banner_msg: 'Config changed — restart required', btn_restart: 'Restart now', btn_revert: 'Revert',
+    restarting: 'Restarting...', reverting: 'Reverting...',
+    label_temperature: 'Temperature', label_max_tokens: 'Max Tokens', label_temp_dir: 'Temp Dir',
+    label_allowed_ids: 'Allowed User IDs', label_voice_zh: 'Chinese Voice', label_voice_en: 'English Voice',
+    label_max_chars: 'Max Chars', label_api_base: 'API Base',
+    label_interval: 'Interval (min)', label_quiet_start: 'Quiet Start', label_quiet_end: 'Quiet End',
+    label_max_per_day: 'Max/Day', label_min_gap: 'Min Gap (min)', label_access_token: 'Access Token',
+    label_bot_token: 'Bot Token',
+    section_llm: 'Primary LLM', section_telegram: 'Telegram Bot', section_discord: 'Discord Bot',
+    section_tts_config: 'TTS Config', section_embedding_config: 'Embedding Config',
+    section_proactive_config: 'Proactive Config', section_public_config: 'Public Access Config',
+    hint_allowed_ids: 'Empty=everyone, comma-separated IDs',
+    confirm_delete: 'Delete "{name}"? This cannot be undone.',
+    delete_tip: 'Delete',
+    add_provider: 'Add Provider', label_new_name: 'Name', label_new_model: 'Model', label_new_base: 'API Base',
+    label_priority: 'Priority', label_search: 'Web Search',
+    label_escalation_auto: 'Auto Escalate', label_escalation_feedback: 'Notify on Escalation',
+    label_escalation_min_length: 'Min Response Length',
+    section_cloud_providers: 'Providers', section_cloud_escalation: 'Escalation Policy',
+    provider_no_key: 'no key set',
+    label_timezone: 'Timezone',
+    section_database: 'Database', label_db_name: 'DB Name', label_db_user: 'User', label_db_host: 'Host',
+    section_session_memory: 'Session Memory', label_char_budget: 'Context Budget (chars)',
+    label_keep_recent: 'Keep Recent Turns', label_summary_ratio: 'Summary Ratio',
+    label_recall_max: 'Max Vector Recall', label_recall_min_score: 'Min Recall Score',
+    section_tools_config: 'Tools Config', label_tools_enabled: 'Tools Enabled',
+    label_voice_model: 'Voice Model', label_voice_lang: 'Voice Language',
+    label_image_provider: 'Image Provider', label_image_model: 'Image Model',
+    label_file_max_size: 'Max File Size (bytes)', label_shell_timeout: 'Shell Timeout (s)',
+    label_emb_top_k: 'Top K', label_emb_min_score: 'Min Score', label_emb_clustering: 'Clustering',
+    section_triggers: 'Triggers', label_followup: 'Event Follow-up', label_followup_importance: 'Min Importance',
+    label_followup_after: 'Follow-up After (hrs)', label_followup_max_age: 'Max Age (days)',
+    label_strategy: 'Profile Strategy', label_idle: 'Idle Check-in', label_idle_hours: 'Idle Hours',
+  },
+  ja: {
+    nav_chat: 'Chat', nav_profile: 'プロフィール', nav_system: 'システム',
+    loading: '読み込み中...', load_error: 'システム情報の読み込みに失敗: ',
+    section_overview: 'システム概要',
+    section_tools: '組み込みツール',
+    section_agents: 'エージェント',
+    section_skills: 'スキル',
+    section_mcp: 'MCPサーバー',
+    empty_tools: '組み込みツールなし', empty_agents: 'エージェント未設定',
+    empty_mcp: 'MCPサーバーなし',
+    label_language: '言語', label_llm_provider: 'LLMプロバイダー',
+    label_llm_model: 'LLMモデル', label_llm_api: 'LLM API',
+    label_llm_key: 'LLM APIキー', label_telegram_token: 'Telegram Token',
+    label_discord_token: 'Discord Token',
+    label_embedding: '埋め込み検索', label_embedding_model: '埋め込みモデル', label_cloud_llm: 'クラウドLLMエスカレーション',
+    label_public_mode: '公開モード', label_proactive: 'プロアクティブ通知',
+    label_tts: '音声合成', label_telegram: 'Telegram Bot',
+    label_discord: 'Discord Bot', label_mcp: 'MCP',
+    label_params: 'パラメータ', label_keywords: 'キーワード',
+    label_schedule: 'スケジュール', label_command: 'コマンド',
+    no_key: 'キー未設定',
+    edit_confirm: '確認', edit_cancel: 'キャンセル',
+    edit_placeholder: '新しい値を入力', edit_placeholder_sensitive: '新しいキーを入力（空欄で変更なし）',
+    not_set: '未設定',
+    badge_builtin: '組み込み', badge_agent: 'エージェント', badge_skill: 'スキル',
+    banner_msg: '設定が変更されました — 再起動が必要です', btn_restart: '今すぐ再起動', btn_revert: '元に戻す',
+    restarting: '再起動中...', reverting: '元に戻し中...',
+    label_temperature: '温度', label_max_tokens: '最大トークン', label_temp_dir: '一時ディレクトリ',
+    label_allowed_ids: '許可ユーザーID', label_voice_zh: '中国語音声', label_voice_en: '英語音声',
+    label_max_chars: '最大文字数', label_api_base: 'APIアドレス',
+    label_interval: '間隔(分)', label_quiet_start: '静寂開始', label_quiet_end: '静寂終了',
+    label_max_per_day: '1日最大数', label_min_gap: '最小間隔(分)', label_access_token: 'アクセストークン',
+    label_bot_token: 'Bot Token',
+    section_llm: 'メイン LLM', section_telegram: 'Telegram Bot', section_discord: 'Discord Bot',
+    section_tts_config: '音声合成設定', section_embedding_config: '埋め込み設定',
+    section_proactive_config: 'プロアクティブ設定', section_public_config: '公開アクセス設定',
+    hint_allowed_ids: '空=全員、カンマ区切りID',
+    confirm_delete: '「{name}」を削除しますか？この操作は元に戻せません。',
+    delete_tip: '削除',
+    add_provider: 'プロバイダー追加', label_new_name: '名前', label_new_model: 'モデル', label_new_base: 'APIアドレス',
+    label_priority: '優先度', label_search: 'ウェブ検索',
+    label_escalation_auto: '自動エスカレーション', label_escalation_feedback: 'エスカレーション後通知',
+    label_escalation_min_length: '最小回答文字数',
+    section_cloud_providers: 'プロバイダー設定', section_cloud_escalation: 'エスカレーションポリシー',
+    provider_no_key: 'キー未設定',
+    label_timezone: 'タイムゾーン',
+    section_database: 'データベース', label_db_name: 'DB名', label_db_user: 'ユーザー', label_db_host: 'ホスト',
+    section_session_memory: 'セッションメモリ', label_char_budget: 'コンテキスト予算(文字)',
+    label_keep_recent: '保持ターン数', label_summary_ratio: '要約比率',
+    label_recall_max: '最大ベクトル検索数', label_recall_min_score: '最小類似度スコア',
+    section_tools_config: 'ツール設定', label_tools_enabled: 'ツール有効',
+    label_voice_model: '音声モデル', label_voice_lang: '音声言語',
+    label_image_provider: '画像プロバイダー', label_image_model: '画像モデル',
+    label_file_max_size: '最大ファイルサイズ(bytes)', label_shell_timeout: 'Shellタイムアウト(秒)',
+    label_emb_top_k: '上位K件', label_emb_min_score: '最小スコア', label_emb_clustering: 'クラスタリング',
+    section_triggers: 'トリガー', label_followup: 'イベントフォロー', label_followup_importance: '最小重要度',
+    label_followup_after: 'フォロー後(時間)', label_followup_max_age: '最大日数',
+    label_strategy: 'プロフィール戦略', label_idle: 'アイドルチェック', label_idle_hours: 'アイドル時間(時)',
+  },
+};
+
+function detectLang() {
+  const saved = localStorage.getItem(LANG_KEY);
+  if (saved && I18N[saved]) return saved;
+  const br = navigator.language || '';
+  if (br.startsWith('zh')) return 'zh';
+  if (br.startsWith('ja')) return 'ja';
+  return 'en';
+}
+
+let currentLang = detectLang();
+let _data = null;
+
+function t(key) { return (I18N[currentLang] || I18N.en)[key] || key; }
+
+function setLang(lang) {
+  currentLang = lang;
+  localStorage.setItem(LANG_KEY, lang);
+  document.querySelectorAll('.lang-btn').forEach(b =>
+    b.classList.toggle('active', b.textContent === { zh:'中文', en:'EN', ja:'日本語' }[lang]));
+  document.getElementById('nav-chat').textContent = t('nav_chat');
+  document.getElementById('nav-profile').textContent = t('nav_profile');
+  document.getElementById('nav-system').textContent = t('nav_system');
+  const titleText = '⚙ ' + t('nav_system') + ' — ' + DB_NAME;
+  document.getElementById('header-title').textContent = titleText;
+  document.title = t('nav_system') + ' — ' + DB_NAME;
+  if (_data) render(_data);
+}
+
+function getDeviceToken() {
+  const m = document.cookie.match(/(?:^|;\s*)jkriver_token=([^;]*)/);
+  return m ? decodeURIComponent(m[1]) : '';
+}
+function authHeaders() {
+  const h = {};
+  const tk = getDeviceToken();
+  if (tk) h['X-Device-Token'] = tk;
+  return h;
+}
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function badge(type) {
+  const map = { builtin: 'badge-builtin', agent: 'badge-agent', mcp: 'badge-mcp', skill: 'badge-skill' };
+  const label = { builtin: t('badge_builtin'), agent: t('badge_agent'), mcp: 'MCP', skill: t('badge_skill') };
+  return `<span class="badge ${map[type] || 'badge-builtin'}">${label[type] || type}</span>`;
+}
+function statusBadge(enabled) {
+  return enabled
+    ? `<span class="badge badge-on">ON</span>`
+    : `<span class="badge badge-off">OFF</span>`;
+}
+function toggleBadge(type, name, enabled) {
+  const cls = enabled ? 'badge-on' : 'badge-off';
+  return `<span class="badge ${cls} toggle-badge" style="cursor:pointer" data-type="${escHtml(type)}" data-name="${escHtml(name)}" data-enabled="${enabled}" title="click to toggle">` +
+    (enabled ? 'ON' : 'OFF') + `</span>`;
+}
+
+
+function renderInfoCard(r) {
+  const onClass = r.on === true ? 'on' : r.on === false ? 'off' : '';
+  // Boolean toggle card (ON/OFF clickable)
+  if (r.toggle) {
+    const curOn = r.on;
+    return `
+    <div class="info-card editable" data-path="${escHtml(r.path)}" data-current="${curOn}" onclick="toggleConfig(this)">
+      <div class="label">${t(r.key)}<span class="edit-icon">✎</span></div>
+      <div class="value ${onClass}"><span>${escHtml(r.value)}</span></div>
+    </div>`;
+  }
+  // Read-only card
+  if (!r.editable) {
+    return `
+    <div class="info-card">
+      <div class="label">${t(r.key)}</div>
+      <div class="value ${onClass}">${escHtml(r.value)}</div>
+    </div>`;
+  }
+  // Text / dropdown / sensitive edit card
+  const optionsAttr = r.options ? ` data-options="${escHtml(JSON.stringify(r.options))}"` : '';
+  return `
+    <div class="info-card editable" data-path="${escHtml(r.path)}" data-sensitive="${r.sensitive ? 'true' : 'false'}" data-current="${escHtml(r.value)}"${optionsAttr} onclick="startEdit(this)">
+      <div class="label">${t(r.key)}<span class="edit-icon">✎</span></div>
+      <div class="value ${onClass}"><span>${escHtml(r.value) || '—'}</span></div>
+    </div>`;
+}
+
+function renderConfigField(f) {
+  if (f.choice) {
+    const btns = f.options.map(o =>
+      `<button class="choice-btn${String(f.value) === String(o) ? ' active' : ''}" data-value="${escHtml(o)}" onclick="selectChoice(this)">${escHtml(f.labels ? f.labels[o] : o)}</button>`
+    ).join('');
+    return `<div class="config-field" data-path="${escHtml(f.path)}" data-current="${escHtml(f.value)}">
+      <div class="config-field-label">${t(f.labelKey)}</div>
+      <div class="config-field-value"><div class="choice-group">${btns}</div></div>
+    </div>`;
+  }
+  if (f.separator) {
+    return `<div style="padding:6px 16px 4px; font-size:11px; font-weight:600; color:#58a6ff; background:#0d1520; border-bottom:1px solid #21262d; text-transform:uppercase; letter-spacing:0.06em">${escHtml(f.label)}</div>`;
+  }
+  if (f.toggle) {
+    const cls = f.on ? 'on' : 'off';
+    return `<div class="config-field editable" data-path="${escHtml(f.path)}" data-current="${f.on}" onclick="toggleConfig(this)">
+      <div class="config-field-label">${t(f.labelKey)}</div>
+      <div class="config-field-value ${cls}">${f.on ? 'ON' : 'OFF'}</div>
+    </div>`;
+  }
+  if (!f.path) {
+    return `<div class="config-field">
+      <div class="config-field-label">${t(f.labelKey)}</div>
+      <div class="config-field-value">${escHtml(f.value) || '—'}</div>
+    </div>`;
+  }
+  const optAttr = f.options ? ` data-options="${escHtml(JSON.stringify(f.options))}"` : '';
+  return `<div class="config-field editable" data-path="${escHtml(f.path)}" data-sensitive="${f.sensitive ? 'true' : 'false'}" data-current="${escHtml(f.value)}"${optAttr} onclick="startConfigEdit(this)">
+    <div class="config-field-label">${t(f.labelKey)}</div>
+    <div class="config-field-value">${escHtml(f.value) || '—'}${f.hint ? `<div class="config-field-hint">${t(f.hint)}</div>` : ''}</div>
+  </div>`;
+}
+
+function renderConfigSection(cfg) {
+  const open = cfg.open ? 'open' : '';
+  return `<div class="config-section ${open}" id="cs-${cfg.id}">
+    <div class="config-section-header" onclick="toggleSection('${cfg.id}')">
+      <div class="config-section-title">${t(cfg.titleKey)}</div>
+      ${cfg.statusBadge || ''}
+      <span class="config-section-arrow">&#9658;</span>
+    </div>
+    <div class="config-section-body">
+      ${cfg.fields.map(renderConfigField).join('')}
+    </div>
+  </div>`;
+}
+
+function toggleSection(id) {
+  document.getElementById('cs-' + id).classList.toggle('open');
+}
+
+function renderCloudSection(sys, cloudProviders) {
+  const providersHtml = (cloudProviders || []).map((p, idx) => {
+    const hasKey = !!p.api_key_masked;
+    const keyBadge = hasKey ? `<span class="badge badge-on" style="font-size:10px">KEY</span>`
+                            : `<span class="badge badge-off" style="font-size:10px">NO KEY</span>`;
+    const priBadge = `<span class="badge" style="background:#1e2030;color:#6e7681;font-size:10px">P${escHtml(p.priority)}</span>`;
+    const fields = [
+      { labelKey: 'label_llm_model',   value: p.model,                             path: `cloud_llm.providers.${idx}.model` },
+      { labelKey: 'label_llm_api',     value: p.api_base,                          path: `cloud_llm.providers.${idx}.api_base` },
+      { labelKey: 'label_llm_key',     value: p.api_key_masked || '—',             path: `cloud_llm.providers.${idx}.api_key`, sensitive: true },
+      { labelKey: 'label_temperature', value: p.temperature,                       path: `cloud_llm.providers.${idx}.temperature` },
+      { labelKey: 'label_max_tokens',  value: p.max_tokens,                        path: `cloud_llm.providers.${idx}.max_tokens` },
+      { labelKey: 'label_priority',    value: p.priority,                          path: `cloud_llm.providers.${idx}.priority` },
+      { labelKey: 'label_search',      toggle: true, on: p.search,                 path: `cloud_llm.providers.${idx}.search` },
+    ];
+    return `<div class="cp-card" id="cp-${idx}">
+      <div class="cp-header" onclick="toggleCp(${idx})">
+        <span class="cp-name">${escHtml(p.name)}</span>
+        <span class="cp-model">${escHtml(p.model)}</span>
+        ${keyBadge}${priBadge}
+        <button class="delete-btn" style="opacity:1" data-type="cloud_provider" data-name="${escHtml(p.name)}" title="${t('delete_tip')}">✕</button>
+        <span class="cp-arrow">&#9658;</span>
+      </div>
+      <div class="cp-body">${fields.map(renderConfigField).join('')}</div>
+    </div>`;
+  }).join('');
+
+  const addForm = `<div class="cp-add">
+    <div class="cp-add-form hidden" id="cp-add-form">
+      <input class="edit-input" id="cp-new-name"  placeholder="${t('label_new_name')}" style="flex:1;min-width:80px">
+      <input class="edit-input" id="cp-new-model" placeholder="${t('label_new_model')}" style="flex:1;min-width:120px">
+      <input class="edit-input" id="cp-new-base"  placeholder="${t('label_new_base')}" style="flex:2;min-width:180px">
+      <button class="edit-btn confirm" onclick="addCloudProvider()">${t('edit_confirm')}</button>
+      <button class="edit-btn cancel"  onclick="document.getElementById('cp-add-form').classList.add('hidden');document.getElementById('cp-add-btn').style.display=''">${t('edit_cancel')}</button>
+    </div>
+    <button class="cp-add-btn" id="cp-add-btn" onclick="this.style.display='none';document.getElementById('cp-add-form').classList.remove('hidden')">+ ${t('add_provider')}</button>
+  </div>`;
+
+  const sepStyle = `padding:6px 16px 4px;font-size:11px;font-weight:600;color:#58a6ff;background:#0d1520;border-bottom:1px solid #21262d;text-transform:uppercase;letter-spacing:0.06em`;
+  const escalation = [
+    renderConfigField({ labelKey: 'label_escalation_auto',       toggle: true, on: sys.cloud_llm_escalation_auto,     path: 'cloud_llm.escalation.auto' }),
+    renderConfigField({ labelKey: 'label_escalation_feedback',   toggle: true, on: sys.cloud_llm_escalation_feedback,  path: 'cloud_llm.escalation.feedback' }),
+    renderConfigField({ labelKey: 'label_escalation_min_length', value: sys.cloud_llm_escalation_min_length,           path: 'cloud_llm.escalation.min_response_length' }),
+  ].join('');
+
+  const enableToggle = renderConfigField({ labelKey: 'label_cloud_llm', toggle: true, on: sys.cloud_llm_enabled, path: 'cloud_llm.enabled' });
+
+  return `<div class="config-section" id="cs-cloud">
+    <div class="config-section-header" onclick="toggleSection('cloud')">
+      <div class="config-section-title">${t('label_cloud_llm')}</div>
+      ${statusBadge(sys.cloud_llm_enabled)}
+      <span class="config-section-arrow">&#9658;</span>
+    </div>
+    <div class="config-section-body">
+      ${enableToggle}
+      <div style="${sepStyle}">${t('section_cloud_providers')}</div>
+      ${providersHtml}
+      ${addForm}
+      <div style="${sepStyle}">${t('section_cloud_escalation')}</div>
+      ${escalation}
+    </div>
+  </div>`;
+}
+
+function renderSystem(sys, cloudProviders) {
+  const provider = sys.llm_provider || 'openai';
+
+  const topRows = [
+    { key: 'label_language', value: sys.language },
+    { key: 'label_timezone', value: sys.timezone, editable: true, path: 'timezone' },
+  ];
+
+  const sections = [
+    {
+      id: 'llm', titleKey: 'section_llm', open: false,
+      statusBadge: `<span class="badge badge-on" style="font-size:10px">${escHtml(sys.llm_model || provider)}</span>`,
+      fields: [
+        { labelKey: 'label_llm_provider', value: sys.llm_provider, path: 'llm_provider', choice: true, options: ['openai','local'], labels: { openai: '远端 API', local: '本地 Ollama' } },
+        { separator: true, label: '远端 API (openai)' },
+        { labelKey: 'label_llm_model',   value: sys.openai_model,          path: 'openai.model' },
+        { labelKey: 'label_llm_api',     value: sys.openai_api_base,       path: 'openai.api_base' },
+        { labelKey: 'label_llm_key',     value: sys.openai_api_key_masked || '—', path: 'openai.api_key', sensitive: true },
+        { labelKey: 'label_temperature', value: sys.openai_temperature,    path: 'openai.temperature' },
+        { labelKey: 'label_max_tokens',  value: sys.openai_max_tokens,     path: 'openai.max_tokens' },
+        { separator: true, label: '本地 Ollama (local)' },
+        { labelKey: 'label_llm_model',   value: sys.local_model,           path: 'local.model' },
+        { labelKey: 'label_llm_api',     value: sys.local_api_base,        path: 'local.api_base' },
+        { labelKey: 'label_temperature', value: sys.local_temperature,     path: 'local.temperature' },
+        { labelKey: 'label_max_tokens',  value: sys.local_max_tokens,      path: 'local.max_tokens' },
+      ],
+    },
+    {
+      id: 'telegram', titleKey: 'section_telegram',
+      statusBadge: statusBadge(sys.telegram_enabled),
+      fields: [
+        { labelKey: 'label_enabled',     toggle: true, on: sys.telegram_enabled,           path: 'telegram.enabled' },
+        { labelKey: 'label_bot_token',   value: sys.telegram_token_masked || '—', path: 'telegram.bot_token', sensitive: true },
+        { labelKey: 'label_allowed_ids', value: sys.telegram_allowed_ids || '—',  path: 'telegram.allowed_user_ids', hint: 'hint_allowed_ids' },
+        { labelKey: 'label_temp_dir',    value: sys.telegram_temp_dir,            path: 'telegram.temp_dir' },
+      ],
+    },
+    {
+      id: 'discord', titleKey: 'section_discord',
+      statusBadge: statusBadge(sys.discord_enabled),
+      fields: [
+        { labelKey: 'label_enabled',     toggle: true, on: sys.discord_enabled,            path: 'discord.enabled' },
+        { labelKey: 'label_bot_token',   value: sys.discord_token_masked || '—', path: 'discord.bot_token', sensitive: true },
+        { labelKey: 'label_allowed_ids', value: sys.discord_allowed_ids || '—',  path: 'discord.allowed_user_ids', hint: 'hint_allowed_ids' },
+        { labelKey: 'label_temp_dir',    value: sys.discord_temp_dir,            path: 'discord.temp_dir' },
+      ],
+    },
+    {
+      id: 'tts', titleKey: 'section_tts_config',
+      statusBadge: statusBadge(sys.tts_enabled),
+      fields: [
+        { labelKey: 'label_tts',       toggle: true, on: sys.tts_enabled, path: 'tts.enabled' },
+        { labelKey: 'label_voice_zh',  value: sys.tts_voice_zh,           path: 'tts.voices.zh' },
+        { labelKey: 'label_voice_en',  value: sys.tts_voice_en,           path: 'tts.voices.en' },
+        { labelKey: 'label_max_chars', value: sys.tts_max_chars,          path: 'tts.max_chars' },
+        { labelKey: 'label_temp_dir',  value: sys.tts_temp_dir,           path: 'tts.temp_dir' },
+      ],
+    },
+    {
+      id: 'embedding', titleKey: 'section_embedding_config',
+      statusBadge: statusBadge(sys.embedding_enabled),
+      fields: [
+        { labelKey: 'label_embedding',     toggle: true, on: sys.embedding_enabled, path: 'embedding.enabled' },
+        { labelKey: 'label_llm_model',     value: sys.embedding_model,              path: 'embedding.model' },
+        { labelKey: 'label_api_base',      value: sys.embedding_api_base,           path: 'embedding.api_base' },
+        { labelKey: 'label_emb_top_k',     value: sys.embedding_top_k,              path: 'embedding.search.top_k' },
+        { labelKey: 'label_emb_min_score', value: sys.embedding_min_score,          path: 'embedding.search.min_score' },
+        { labelKey: 'label_emb_clustering',toggle: true, on: sys.embedding_clustering, path: 'embedding.clustering.enabled' },
+      ],
+    },
+    {
+      id: 'proactive', titleKey: 'section_proactive_config',
+      statusBadge: statusBadge(sys.proactive_enabled),
+      fields: [
+        { labelKey: 'label_proactive',   toggle: true, on: sys.proactive_enabled, path: 'proactive.enabled' },
+        { labelKey: 'label_interval',    value: sys.proactive_interval,            path: 'proactive.scan_interval_minutes' },
+        { labelKey: 'label_quiet_start', value: sys.proactive_quiet_start,         path: 'proactive.quiet_hours.start' },
+        { labelKey: 'label_quiet_end',   value: sys.proactive_quiet_end,           path: 'proactive.quiet_hours.end' },
+        { labelKey: 'label_max_per_day', value: sys.proactive_max_per_day,         path: 'proactive.max_messages_per_day' },
+        { labelKey: 'label_min_gap',     value: sys.proactive_min_gap,             path: 'proactive.min_gap_minutes' },
+        { separator: true, label: t('section_triggers') },
+        { labelKey: 'label_followup',          toggle: true, on: sys.proactive_followup_enabled,  path: 'proactive.triggers.event_followup.enabled' },
+        { labelKey: 'label_followup_importance',value: sys.proactive_followup_min_importance,     path: 'proactive.triggers.event_followup.min_importance' },
+        { labelKey: 'label_followup_after',    value: sys.proactive_followup_after_hours,          path: 'proactive.triggers.event_followup.followup_after_hours' },
+        { labelKey: 'label_followup_max_age',  value: sys.proactive_followup_max_age,              path: 'proactive.triggers.event_followup.max_age_days' },
+        { labelKey: 'label_strategy',    toggle: true, on: sys.proactive_strategy_enabled,  path: 'proactive.triggers.strategy.enabled' },
+        { labelKey: 'label_idle',        toggle: true, on: sys.proactive_idle_enabled,      path: 'proactive.triggers.idle_checkin.enabled' },
+        { labelKey: 'label_idle_hours',  value: sys.proactive_idle_hours,                   path: 'proactive.triggers.idle_checkin.idle_hours' },
+      ],
+    },
+    {
+      id: 'session_memory', titleKey: 'section_session_memory',
+      statusBadge: '',
+      fields: [
+        { labelKey: 'label_char_budget',      value: sys.sm_char_budget,      path: 'session_memory.char_budget' },
+        { labelKey: 'label_keep_recent',      value: sys.sm_keep_recent,      path: 'session_memory.keep_recent' },
+        { labelKey: 'label_summary_ratio',    value: sys.sm_summary_ratio,    path: 'session_memory.summary_ratio' },
+        { labelKey: 'label_recall_max',       value: sys.sm_recall_max,       path: 'session_memory.recall_max' },
+        { labelKey: 'label_recall_min_score', value: sys.sm_recall_min_score, path: 'session_memory.recall_min_score' },
+      ],
+    },
+    {
+      id: 'tools_config', titleKey: 'section_tools_config',
+      statusBadge: statusBadge(sys.tools_enabled),
+      fields: [
+        { labelKey: 'label_tools_enabled', toggle: true, on: sys.tools_enabled, path: 'tools.enabled' },
+        { separator: true, label: 'voice_transcribe' },
+        { labelKey: 'label_voice_model', value: sys.voice_model,    path: 'tools.voice_transcribe.model' },
+        { labelKey: 'label_voice_lang',  value: sys.voice_language, path: 'tools.voice_transcribe.language' },
+        { separator: true, label: 'image_describe' },
+        { labelKey: 'label_image_provider', value: sys.image_provider, path: 'tools.image_describe.provider' },
+        { labelKey: 'label_image_model',    value: sys.image_model,    path: 'tools.image_describe.model' },
+        { separator: true, label: 'file_read' },
+        { labelKey: 'label_file_max_size', value: sys.file_read_max_size, path: 'tools.file_read.max_file_size' },
+        { separator: true, label: 'shell_exec' },
+        { labelKey: 'label_shell_timeout', value: sys.shell_timeout, path: 'tools.shell_exec.timeout' },
+      ],
+    },
+    {
+      id: 'public', titleKey: 'section_public_config',
+      statusBadge: statusBadge(sys.public_mode),
+      fields: [
+        { labelKey: 'label_public_mode',  toggle: true, on: sys.public_mode,             path: 'public_mode.enabled' },
+        { labelKey: 'label_access_token', value: sys.public_access_token_masked || '—',  path: 'public_mode.access_token', sensitive: true },
+      ],
+    },
+    { _html: renderCloudSection(sys, cloudProviders) },
+    {
+      id: 'database', titleKey: 'section_database',
+      statusBadge: '',
+      fields: [
+        { labelKey: 'label_db_name', value: sys.db_name },
+        { labelKey: 'label_db_user', value: sys.db_user },
+        { labelKey: 'label_db_host', value: sys.db_host },
+      ],
+    },
+    {
+      id: 'mcp', titleKey: 'section_mcp',
+      statusBadge: statusBadge(sys.mcp_enabled),
+      fields: [
+        { labelKey: 'label_mcp', toggle: true, on: sys.mcp_enabled, path: 'mcp.enabled' },
+      ],
+    },
+  ];
+
+  return `
+    <div class="info-grid" style="margin-bottom:14px">${topRows.map(renderInfoCard).join('')}</div>
+    <div class="cards">${sections.map(s => s._html ? s._html : renderConfigSection(s)).join('')}</div>`;
+}
+
+async function toggleConfig(el) {
+  if (el.classList.contains('editing')) return;
+  const path = el.dataset.path;
+  const currentOn = el.dataset.current === 'true';
+  const newOn = !currentOn;
+  el.style.opacity = '0.6';
+  el.style.pointerEvents = 'none';
+  try {
+    const res = await fetch(`http://${location.hostname}:${API_PORT}/system/config`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ path, value: String(newOn) }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    el.dataset.current = String(newOn);
+    const valueEl = el.querySelector('.value span, .config-field-value');
+    if (valueEl) {
+      valueEl.textContent = newOn ? 'ON' : 'OFF';
+      valueEl.className = (el.classList.contains('config-field') ? 'config-field-value' : 'value') + ` ${newOn ? 'on' : 'off'}`;
+    }
+    showBanner();
+  } catch(err) {
+    alert('Failed: ' + err.message);
+  } finally {
+    el.style.opacity = '';
+    el.style.pointerEvents = '';
+  }
+}
+
+function toggleCp(idx) {
+  const card = document.getElementById('cp-' + idx);
+  card.classList.toggle('open');
+}
+
+
+async function addCloudProvider() {
+  const name  = document.getElementById('cp-new-name').value.trim();
+  const model = document.getElementById('cp-new-model').value.trim();
+  const base  = document.getElementById('cp-new-base').value.trim();
+  if (!name || !model) { alert(t('label_new_name') + ' / ' + t('label_new_model') + ' required'); return; }
+  try {
+    const res = await fetch(`http://${location.hostname}:${API_PORT}/system/cloud_provider`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ name, model, api_base: base }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    showBanner(); load();
+  } catch(err) { alert('Failed: ' + err.message); }
+}
+
+async function selectChoice(btn) {
+  const field = btn.closest('.config-field');
+  const path = field.dataset.path;
+  const value = btn.dataset.value;
+  if (field.dataset.current === value) return;
+  field.querySelectorAll('.choice-btn').forEach(b => b.disabled = true);
+  try {
+    const res = await fetch(`http://${location.hostname}:${API_PORT}/system/config`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ path, value }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    field.dataset.current = value;
+    field.querySelectorAll('.choice-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.value === value);
+      b.disabled = false;
+    });
+    showBanner();
+  } catch(e) {
+    alert('Failed: ' + e.message);
+    field.querySelectorAll('.choice-btn').forEach(b => b.disabled = false);
+  }
+}
+
+function startConfigEdit(field) {
+  if (field.classList.contains('editing')) return;
+  field.classList.add('editing');
+  const path = field.dataset.path;
+  const sensitive = field.dataset.sensitive === 'true';
+  const current = field.dataset.current;
+  const options = field.dataset.options ? JSON.parse(field.dataset.options) : null;
+  const valueDiv = field.querySelector('.config-field-value');
+
+  let inputHtml;
+  if (options) {
+    inputHtml = `<select class="edit-input">${options.map(o => `<option value="${escHtml(o)}"${o===current?' selected':''}>${escHtml(o)}</option>`).join('')}</select>`;
+  } else if (sensitive) {
+    inputHtml = `<input class="edit-input" type="password" placeholder="${t('edit_placeholder_sensitive')}">`;
+  } else {
+    inputHtml = `<input class="edit-input" type="text" value="${escHtml(current)}">`;
+  }
+
+  valueDiv.innerHTML = inputHtml +
+    `<div class="edit-actions">
+      <button class="edit-btn confirm" onclick="confirmConfigEdit(event,this.closest('.config-field'))">${t('edit_confirm')}</button>
+      <button class="edit-btn cancel" onclick="cancelConfigEdit(event,this.closest('.config-field'))">${t('edit_cancel')}</button>
+    </div>`;
+
+  const inp = valueDiv.querySelector('.edit-input');
+  inp.focus();
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') confirmConfigEdit(e, field);
+    if (e.key === 'Escape') cancelConfigEdit(e, field);
+  });
+}
+
+async function confirmConfigEdit(e, field) {
+  e.stopPropagation();
+  const path = field.dataset.path;
+  const sensitive = field.dataset.sensitive === 'true';
+  const inp = field.querySelector('.edit-input');
+  const value = inp.value.trim();
+  if (sensitive && !value) { cancelConfigEdit(e, field); return; }
+  const btn = field.querySelector('.edit-btn.confirm');
+  btn.disabled = true;
+  try {
+    const res = await fetch(`http://${location.hostname}:${API_PORT}/system/config`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ path, value }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const display = sensitive ? _mask(value) : value;
+    field.dataset.current = sensitive ? display : value;
+    field.querySelector('.config-field-value').innerHTML = `${escHtml(display) || '—'}`;
+    field.classList.remove('editing');
+    showBanner();
+  } catch(err) {
+    alert('Failed: ' + err.message);
+    btn.disabled = false;
+  }
+}
+
+function cancelConfigEdit(e, field) {
+  e.stopPropagation();
+  const current = field.dataset.current;
+  field.querySelector('.config-field-value').innerHTML = `${escHtml(current) || '—'}`;
+  field.classList.remove('editing');
+}
+
+function startEdit(card) {
+  if (card.classList.contains('editing')) return;
+  card.classList.add('editing');
+  const path = card.dataset.path;
+  const sensitive = card.dataset.sensitive === 'true';
+  const current = card.dataset.current;
+  const options = card.dataset.options ? JSON.parse(card.dataset.options) : null;
+  const valueDiv = card.querySelector('.value');
+
+  let inputHtml;
+  if (options) {
+    inputHtml = `<select class="edit-input">${options.map(o => `<option value="${escHtml(o)}"${o===current?' selected':''}>${escHtml(o)}</option>`).join('')}</select>`;
+  } else if (sensitive) {
+    inputHtml = `<input class="edit-input" type="password" placeholder="${t('edit_placeholder_sensitive')}">`;
+  } else {
+    inputHtml = `<input class="edit-input" type="text" value="${escHtml(current)}">`;
+  }
+
+  valueDiv.innerHTML = inputHtml +
+    `<div class="edit-actions">
+      <button class="edit-btn confirm" onclick="confirmEdit(event,this.closest('.info-card'))">${t('edit_confirm')}</button>
+      <button class="edit-btn cancel" onclick="cancelEdit(event,this.closest('.info-card'))">${t('edit_cancel')}</button>
+    </div>`;
+
+  const inp = valueDiv.querySelector('.edit-input');
+  inp.focus();
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') confirmEdit(e, card);
+    if (e.key === 'Escape') cancelEdit(e, card);
+  });
+}
+
+async function confirmEdit(e, card) {
+  e.stopPropagation();
+  const path = card.dataset.path;
+  const sensitive = card.dataset.sensitive === 'true';
+  const inp = card.querySelector('.edit-input');
+  const value = inp.value.trim();
+  if (sensitive && !value) { cancelEdit(e, card); return; }
+
+  const btn = card.querySelector('.edit-btn.confirm');
+  btn.disabled = true;
+  try {
+    const res = await fetch(`http://${location.hostname}:${API_PORT}/system/config`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ path, value }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    // Update displayed value
+    const display = sensitive ? _mask(value) : value;
+    card.dataset.current = sensitive ? display : value;
+    card.querySelector('.value').innerHTML = `<span>${escHtml(display) || '—'}</span>`;
+    card.classList.remove('editing');
+    showBanner();
+  } catch(err) {
+    alert('Failed: ' + err.message);
+    btn.disabled = false;
+  }
+}
+
+function cancelEdit(e, card) {
+  e.stopPropagation();
+  const current = card.dataset.current;
+  const onClass = card.dataset.on === 'true' ? 'on' : card.dataset.on === 'false' ? 'off' : '';
+  card.querySelector('.value').innerHTML = `<span class="${onClass}">${escHtml(current) || '—'}</span>`;
+  card.classList.remove('editing');
+}
+
+function _mask(v) {
+  if (!v) return '';
+  if (v.length <= 8) return '••••';
+  return v.slice(0,6) + '••••' + v.slice(-4);
+}
+
+const _TOGGLEABLE_TOOLS = new Set(['shell_exec', 'file_read', 'tts']);
+
+function renderToolCard(tool) {
+  const examples = tool.examples && tool.examples.length
+    ? `<div class="card-examples">${tool.examples.map(e => `<span class="example-tag">${escHtml(e)}</span>`).join('')}</div>` : '';
+  const params = Object.keys(tool.parameters || {}).length
+    ? `<div class="card-meta">${t('label_params')}：<span>${Object.keys(tool.parameters).join(', ')}</span></div>` : '';
+  const eid = encodeURIComponent(tool.name);
+  const statusEl = _TOGGLEABLE_TOOLS.has(tool.name)
+    ? toggleBadge('tool', tool.name, tool.enabled)
+    : statusBadge(tool.enabled);
+  return `
+    <div class="card ${tool.enabled ? '' : 'disabled'}" id="card-tool-${eid}">
+      <div class="card-header">
+        <div class="card-name">${escHtml(tool.name)}</div>
+        ${badge(tool.type)}${statusEl}
+      </div>
+      ${tool.description ? `<div class="card-desc">${escHtml(tool.description)}</div>` : ''}
+      ${params}${examples}
+    </div>`;
+}
+
+function renderAgentCard(a) {
+  const examples = a.examples && a.examples.length
+    ? `<div class="card-examples">${a.examples.map(e => `<span class="example-tag">${escHtml(e)}</span>`).join('')}</div>` : '';
+  const eid = encodeURIComponent(a.name);
+  return `
+    <div class="card ${a.enabled ? '' : 'disabled'}" id="card-agent-${eid}">
+      <div class="card-header">
+        <div class="card-name">${escHtml(a.name)}</div>
+        ${badge('agent')}
+        <span class="badge" style="background:#1e2a1e;color:#6e8f6e;font-size:10px">${escHtml(a.type)}</span>
+        ${toggleBadge('agent', a.name, a.enabled)}
+        <button class="delete-btn" data-type="agent" data-name="${escHtml(a.name)}" title="${t('delete_tip')}">✕</button>
+      </div>
+      ${a.description ? `<div class="card-desc">${escHtml(a.description)}</div>` : ''}
+      ${examples}
+    </div>`;
+}
+
+function renderSkillCard(s) {
+  const trigger = s.trigger_type === 'keyword'
+    ? `${t('label_keywords')}：${s.keywords.slice(0,4).map(k => `<span class="example-tag">${escHtml(k)}</span>`).join('')}`
+    : `${t('label_schedule')}：<span class="example-tag">${escHtml(s.cron)}</span>`;
+  const eid = encodeURIComponent(s.name);
+  return `
+    <div class="card ${s.enabled ? '' : 'disabled'}" id="card-skill-${eid}">
+      <div class="card-header">
+        <div class="card-name">${escHtml(s.name)}</div>
+        ${badge('skill')}${toggleBadge('skill', s.name, s.enabled)}
+        <button class="delete-btn" data-type="skill" data-name="${escHtml(s.name)}" title="${t('delete_tip')}">✕</button>
+      </div>
+      ${s.description ? `<div class="card-desc">${escHtml(s.description)}</div>` : ''}
+      <div class="card-examples">${trigger}</div>
+    </div>`;
+}
+
+function renderMCPCard(srv) {
+  return `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-name">${escHtml(srv.name)}</div>
+        ${badge('mcp')}
+      </div>
+      <div class="card-meta">${t('label_command')}：<span>${escHtml(srv.command)} ${escHtml((srv.args||[]).join(' '))}</span></div>
+    </div>`;
+}
+
+function render(d) {
+  if (d.pending_restart) showBanner(); else hideBanner();
+  const tools = d.tools || [];
+  const builtin = tools.filter(t => t.type === 'builtin');
+  const mcpTools = tools.filter(t => t.type === 'mcp');
+  const agents = d.agents || [];
+  const skills = d.skills || [];
+  const mcpServers = d.mcp_servers || [];
+
+  document.getElementById('content').innerHTML = `
+    <div class="section">
+      <div class="section-title">${t('section_overview')}</div>
+      ${renderSystem(d.system, d.cloud_providers || [])}
+    </div>
+
+    <div class="section">
+      <div class="section-title">${t('section_tools')} (${builtin.filter(x=>x.enabled).length}/${builtin.length})</div>
+      ${builtin.length ? `<div class="cards">${builtin.map(renderToolCard).join('')}</div>` : `<div class="empty">${t('empty_tools')}</div>`}
+    </div>
+
+    <div class="section">
+      <div class="section-title">${t('section_agents')} (${agents.filter(a=>a.enabled).length}/${agents.length})</div>
+      ${agents.length ? `<div class="cards">${agents.map(renderAgentCard).join('')}</div>` : `<div class="empty">${t('empty_agents')}</div>`}
+    </div>
+
+    ${skills.length ? `
+    <div class="section">
+      <div class="section-title">${t('section_skills')} (${skills.length})</div>
+      <div class="cards">${skills.map(renderSkillCard).join('')}</div>
+    </div>` : ''}
+
+    ${mcpServers.length || mcpTools.length ? `
+    <div class="section">
+      <div class="section-title">${t('section_mcp')}</div>
+      ${mcpServers.length ? `<div class="cards">${mcpServers.map(renderMCPCard).join('')}</div>` : ''}
+      ${mcpTools.length ? `<div class="cards" style="margin-top:12px">${mcpTools.map(renderToolCard).join('')}</div>` : ''}
+    </div>` : ''}
+  `;
+}
+
+async function load() {
+  document.getElementById('loading-text').textContent = t('loading');
+  try {
+    const res = await fetch(`http://${location.hostname}:${API_PORT}/system`, { headers: authHeaders() });
+    if (!res.ok) throw new Error(res.status);
+    _data = await res.json();
+    render(_data);
+  } catch(e) {
+    document.getElementById('content').innerHTML = `<div class="empty">${t('load_error')}${e.message}</div>`;
+  }
+}
+
+function showBanner() {
+  const b = document.getElementById('restart-banner');
+  document.getElementById('banner-msg').textContent = t('banner_msg');
+  document.getElementById('btn-restart').textContent = t('btn_restart');
+  document.getElementById('btn-revert').textContent = t('btn_revert');
+  b.style.display = 'flex';
+}
+function hideBanner() {
+  document.getElementById('restart-banner').style.display = 'none';
+}
+
+async function doRestart() {
+  const btn = document.getElementById('btn-restart');
+  const revertBtn = document.getElementById('btn-revert');
+  btn.disabled = revertBtn.disabled = true;
+  btn.textContent = t('restarting');
+  try {
+    await fetch(`http://${location.hostname}:${API_PORT}/system/restart`, {
+      method: 'POST', headers: authHeaders(),
+    });
+    // Poll until API is back up
+    const poll = setInterval(async () => {
+      try {
+        const r = await fetch(`http://${location.hostname}:${API_PORT}/health`);
+        if (r.ok) { clearInterval(poll); hideBanner(); load(); }
+      } catch {}
+    }, 1000);
+  } catch(e) {
+    btn.disabled = revertBtn.disabled = false;
+    btn.textContent = t('btn_restart');
+    alert('Failed: ' + e.message);
+  }
+}
+
+async function doRevert() {
+  const btn = document.getElementById('btn-revert');
+  const restartBtn = document.getElementById('btn-restart');
+  btn.disabled = restartBtn.disabled = true;
+  btn.textContent = t('reverting');
+  try {
+    await fetch(`http://${location.hostname}:${API_PORT}/system/revert`, {
+      method: 'POST', headers: authHeaders(),
+    });
+    hideBanner();
+    load();
+  } catch(e) {
+    alert('Failed: ' + e.message);
+  } finally {
+    btn.disabled = restartBtn.disabled = false;
+    btn.textContent = t('btn_revert');
+  }
+}
+
+// Delete event delegation
+document.getElementById('content').addEventListener('click', async function(e) {
+  const btn = e.target.closest('.delete-btn');
+  if (!btn) return;
+  e.stopPropagation();
+  const type = btn.dataset.type;
+  const name = btn.dataset.name;
+  const msg = t('confirm_delete').replace('{name}', name);
+  if (!confirm(msg)) return;
+  btn.disabled = true;
+  btn.style.opacity = '0.4';
+  try {
+    const res = await fetch(`http://${location.hostname}:${API_PORT}/system/${type}/${encodeURIComponent(name)}`, {
+      method: 'DELETE', headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const json = await res.json();
+    if (type === 'cloud_provider') {
+      showBanner(); load();
+    } else {
+      const eid = encodeURIComponent(name);
+      const card = document.getElementById(`card-${type}-${eid}`);
+      if (card) card.remove();
+      if (json.pending_restart) showBanner();
+    }
+  } catch(err) {
+    alert('Failed: ' + err.message);
+    btn.disabled = false;
+    btn.style.opacity = '';
+  }
+});
+
+// Toggle event delegation
+document.getElementById('content').addEventListener('click', async function(e) {
+  const badge = e.target.closest('.toggle-badge');
+  if (!badge) return;
+  const type = badge.dataset.type;
+  const name = badge.dataset.name;
+  const currentEnabled = badge.dataset.enabled === 'true';
+  const newEnabled = !currentEnabled;
+  badge.style.opacity = '0.5';
+  badge.style.pointerEvents = 'none';
+  try {
+    const res = await fetch(`http://${location.hostname}:${API_PORT}/system/${type}/${encodeURIComponent(name)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ enabled: newEnabled }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const json = await res.json();
+    badge.dataset.enabled = String(newEnabled);
+    badge.textContent = newEnabled ? 'ON' : 'OFF';
+    badge.className = `badge ${newEnabled ? 'badge-on' : 'badge-off'} toggle-badge`;
+    const eid = encodeURIComponent(name);
+    const card = document.getElementById(`card-${type}-${eid}`);
+    if (card) card.classList.toggle('disabled', !newEnabled);
+    if (json.pending_restart) showBanner();
+  } catch(e) {
+    alert('Failed: ' + e.message);
+  } finally {
+    badge.style.opacity = '';
+    badge.style.pointerEvents = '';
+  }
+});
+
+// Init
+document.querySelectorAll('.lang-btn').forEach(b =>
+  b.classList.toggle('active', b.textContent === { zh:'中文', en:'EN', ja:'日本語' }[currentLang]));
+document.getElementById('nav-chat').textContent = t('nav_chat');
+document.getElementById('nav-profile').textContent = t('nav_profile');
+document.getElementById('nav-system').textContent = t('nav_system');
+const _titleText = '⚙ ' + t('nav_system') + ' — ' + DB_NAME;
+document.getElementById('header-title').textContent = _titleText;
+document.title = t('nav_system') + ' — ' + DB_NAME;
+load();
+</script>
+</body>
+</html>

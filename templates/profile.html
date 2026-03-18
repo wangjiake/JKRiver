@@ -172,9 +172,9 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; ba
     <div class="subtitle"><span data-i18n="db_label">数据库</span>: {{ db_name }}</div>
   </div>
   <div class="header-right">
-    <a href="/chat" class="nav-link">Chat</a>
-    <!-- <a href="/finance" class="nav-link" data-i18n="nav_finance">财务追踪</a> -->
-    <!-- <a href="/health" class="nav-link" data-i18n="nav_health">健康追踪</a> -->
+    <a href="/chat" class="nav-link" data-i18n="nav_chat">Chat</a>
+    <a href="/profile" class="nav-link active" data-i18n="nav_profile">Profile</a>
+    <a href="/system" class="nav-link" data-i18n="nav_system">System</a>
     <div class="lang-switch">
       <button class="lang-btn active" onclick="setLang('zh')">中文</button>
       <button class="lang-btn" onclick="setLang('en')">EN</button>
@@ -216,7 +216,7 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; ba
 // ══════════════════════════════════════
 const I18N = {
   zh: {
-    title: '用户画像', db_label: '数据库', nav_finance: '财务追踪', nav_health: '健康追踪',
+    title: '个人资料', db_label: '数据库', nav_chat: '聊天', nav_profile: '个人资料', nav_system: '系统', nav_finance: '财务追踪', nav_health: '健康追踪',
     stat_sessions: '已处理会话', stat_observations: '观察记录',
     stat_confirmed: '已确认', stat_suspected: '待确认',
     stat_closed: '历史变迁', stat_disputes: '未解决矛盾',
@@ -241,7 +241,7 @@ const I18N = {
     filter_active: '全部', filter_human_closed: '人工关闭', filter_rejected: '标记为错误',
   },
   en: {
-    title: 'User Profile', db_label: 'Database', nav_finance: 'Finance', nav_health: 'Health',
+    title: 'User Profile', db_label: 'Database', nav_chat: 'Chat', nav_profile: 'Profile', nav_system: 'System', nav_finance: 'Finance', nav_health: 'Health',
     stat_sessions: 'Sessions', stat_observations: 'Observations',
     stat_confirmed: 'Confirmed', stat_suspected: 'Suspected',
     stat_closed: 'History', stat_disputes: 'Disputes',
@@ -266,7 +266,7 @@ const I18N = {
     filter_active: 'All', filter_human_closed: 'Manually Closed', filter_rejected: 'Marked as Error',
   },
   ja: {
-    title: 'ユーザープロフィール', db_label: 'データベース', nav_finance: '家計簿', nav_health: '健康',
+    title: 'ユーザープロフィール', db_label: 'データベース', nav_chat: 'チャット', nav_profile: 'プロフィール', nav_system: 'システム', nav_finance: '家計簿', nav_health: '健康',
     stat_sessions: '処理済み会話', stat_observations: '観察記録',
     stat_confirmed: '確認済み', stat_suspected: '未確認',
     stat_closed: '変遷履歴', stat_disputes: '未解決矛盾',

@@ -122,14 +122,14 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; ba
 <div class="header">
   <h1 id="header-title">⚙ System — {{ db_name }}</h1>
   <div class="header-right">
+    <a href="/chat" class="nav-link" id="nav-chat">Chat</a>
+    <a href="/profile" class="nav-link" id="nav-profile">Profile</a>
+    <a href="/system" class="nav-link active" id="nav-system">System</a>
     <div class="lang-switch">
       <button class="lang-btn" onclick="setLang('zh')">中文</button>
       <button class="lang-btn" onclick="setLang('en')">EN</button>
       <button class="lang-btn" onclick="setLang('ja')">日本語</button>
     </div>
-    <a href="/chat" class="nav-link" id="nav-chat">Chat</a>
-    <a href="/profile" class="nav-link" id="nav-profile">Profile</a>
-    <a href="/system" class="nav-link active" id="nav-system">System</a>
   </div>
 </div>
 
@@ -144,7 +144,7 @@ const DB_NAME = {{ db_name | tojson }};
 
 const I18N = {
   zh: {
-    nav_chat: 'Chat', nav_profile: '画像', nav_system: '系统',
+    nav_chat: '聊天', nav_profile: '个人资料', nav_system: '系统',
     loading: '加载中...', load_error: '无法加载系统信息：',
     section_overview: '系统概览',
     section_tools: '内置工具',

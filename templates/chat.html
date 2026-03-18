@@ -217,8 +217,9 @@ input[type="number"].config-input::-webkit-inner-spin-button { -webkit-appearanc
     </div>
   </div>
   <div class="header-right">
+    <a href="/chat" class="nav-link active" data-i18n="nav_chat">Chat</a>
     <a href="/profile" class="nav-link" data-i18n="nav_profile">Profile</a>
-    <a href="/system" class="nav-link">System</a>
+    <a href="/system" class="nav-link" data-i18n="nav_system">System</a>
     <div class="lang-switch">
       <button class="lang-btn" onclick="setLang('zh')">中文</button>
       <button class="lang-btn" onclick="setLang('en')">EN</button>
@@ -358,7 +359,7 @@ let isRecording = false;
 // ── i18n ──────────────────────────────────────────────────────────────
 const I18N = {
   zh: {
-    title: 'Chat', nav_profile: '画像', settings_title: '设置',
+    title: 'Chat', nav_chat: '聊天', nav_profile: '个人资料', nav_system: '系统', settings_title: '设置',
     section_sleep: '睡眠', auto_sleep: '定时睡眠',
     mode_interval: '间隔', mode_daily: '定时',
     every_label: '每', hours_label: '小时运行一次',
@@ -381,7 +382,7 @@ const I18N = {
     uploading: '上传中…',
   },
   en: {
-    title: 'Chat', nav_profile: 'Profile', settings_title: 'Settings',
+    title: 'Chat', nav_chat: 'Chat', nav_profile: 'Profile', nav_system: 'System', settings_title: 'Settings',
     section_sleep: 'Sleep', auto_sleep: 'Auto Sleep',
     mode_interval: 'Interval', mode_daily: 'Daily',
     every_label: 'Every', hours_label: 'hour(s)',
@@ -404,7 +405,7 @@ const I18N = {
     uploading: 'Uploading…',
   },
   ja: {
-    title: 'チャット', nav_profile: 'プロフィール', settings_title: '設定',
+    title: 'チャット', nav_chat: 'チャット', nav_profile: 'プロフィール', nav_system: 'システム', settings_title: '設定',
     section_sleep: 'スリープ', auto_sleep: '自動スリープ',
     mode_interval: '間隔', mode_daily: '毎日',
     every_label: '毎', hours_label: '時間ごと',

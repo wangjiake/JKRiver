@@ -54,15 +54,24 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; ba
 .history-sidebar-header { padding: 12px 16px; font-size: 11px; color: #8b92a5; text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid #2d3348; display: flex; justify-content: space-between; align-items: center; white-space: nowrap; }
 .new-chat-btn { padding: 3px 9px; background: #1f3a6e; border: 1px solid #2d4f8e; border-radius: 4px; color: #58a6ff; font-size: 11px; cursor: pointer; }
 .new-chat-btn:hover { background: #24426e; }
+.history-search { padding: 8px 10px; border-bottom: 1px solid #2d3348; display: flex; gap: 5px; }
+.history-search input { flex: 1; background: #0f1117; border: 1px solid #2d3348; border-radius: 5px; color: #c9d1d9; font-size: 12px; padding: 5px 9px; outline: none; min-width: 0; }
+.history-search input::placeholder { color: #4d5566; }
+.history-search input:focus { border-color: #58a6ff; }
+.search-btn { background: #1f3a6e; border: 1px solid #2d4f8e; border-radius: 5px; color: #58a6ff; cursor: pointer; padding: 0 8px; font-size: 13px; flex-shrink: 0; }
+.search-btn:hover { background: #24426e; }
 .history-list { flex: 1; overflow-y: auto; }
 .history-list::-webkit-scrollbar { width: 4px; }
 .history-list::-webkit-scrollbar-thumb { background: #2d3348; border-radius: 2px; }
-.history-item { padding: 10px 16px; cursor: pointer; border-bottom: 1px solid #1c2033; transition: background 0.12s; }
+.history-item { padding: 10px 16px; cursor: pointer; border-bottom: 1px solid #1c2033; transition: background 0.12s; display: flex; align-items: center; gap: 8px; }
 .history-item:hover { background: #1c2033; }
 .history-item.active { background: #1f2740; border-left: 3px solid #58a6ff; padding-left: 13px; }
-.history-item-preview { font-size: 13px; color: #c9d1d9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.history-item-meta { font-size: 11px; color: #6e7681; margin-top: 3px; display: flex; justify-content: space-between; }
+.history-item-preview { font-size: 12px; color: #c9d1d9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
+.history-item-time { font-size: 11px; color: #4d5566; flex-shrink: 0; }
 .history-empty { padding: 20px 16px; font-size: 12px; color: #4d5566; text-align: center; }
+.load-more-btn { display: block; width: 100%; padding: 9px; background: none; border: none; border-top: 1px solid #2d3348; color: #58a6ff; font-size: 12px; cursor: pointer; }
+.load-more-btn:hover { background: #1c2033; }
+.load-more-btn:disabled { color: #4d5566; cursor: default; }
 
 /* Messages */
 .messages-wrap { flex: 1; display: flex; flex-direction: column; min-width: 0; }
@@ -230,7 +239,12 @@ input[type="number"].config-input::-webkit-inner-spin-button { -webkit-appearanc
       <span data-i18n="history_title">History</span>
       <button class="new-chat-btn" onclick="newSession()" data-i18n="new_chat">+ New</button>
     </div>
+    <div class="history-search">
+      <input id="sessionSearch" type="text" placeholder="Search…" oninput="filterSessions(this.value)" onkeydown="if(event.key==='Enter')doSearch()">
+      <button class="search-btn" onclick="doSearch()" title="Search">🔍</button>
+    </div>
     <div class="history-list" id="historyList"></div>
+    <button class="load-more-btn" id="loadMoreBtn" onclick="loadMoreSessions()" style="display:none">↓ Load more</button>
   </div>
 
   <div class="messages-wrap">
@@ -648,11 +662,65 @@ async function init() {
 
 // ── Session list ──────────────────────────────────────────────────────
 async function loadSessionList() {
+  sessionOffset = 0;
+  allSessions = [];
   try {
-    const res = await fetch(`http://${location.hostname}:${API_PORT}/sessions`, { headers: authHeaders() });
+    const res = await fetch(`http://${location.hostname}:${API_PORT}/sessions?limit=${SESSION_PAGE}&offset=0`, { headers: authHeaders() });
+    if (!res.ok) return;
+    allSessions = await res.json();
+    sessionOffset = allSessions.length;
+    sessionHasMore = allSessions.length === SESSION_PAGE;
+    renderSessionList(allSessions);
+    document.getElementById('loadMoreBtn').style.display = sessionHasMore ? '' : 'none';
+  } catch(e) { console.warn('Failed to load session list', e); }
+}
+
+let allSessions = [];
+let sessionOffset = 0;
+const SESSION_PAGE = 30;
+let sessionHasMore = false;
+let searchTimer = null;
+
+async function doSearch() {
+  clearTimeout(searchTimer);
+  const q = document.getElementById('sessionSearch').value;
+  if (!q.trim()) {
+    renderSessionList(allSessions);
+    document.getElementById('loadMoreBtn').style.display = sessionHasMore ? '' : 'none';
+    return;
+  }
+  document.getElementById('loadMoreBtn').style.display = 'none';
+  try {
+    const res = await fetch(`http://${location.hostname}:${API_PORT}/sessions/search?q=${encodeURIComponent(q)}`, { headers: authHeaders() });
     if (!res.ok) return;
     renderSessionList(await res.json());
-  } catch(e) { console.warn('Failed to load session list', e); }
+  } catch(e) { console.warn('search failed', e); }
+}
+
+function filterSessions(q) {
+  clearTimeout(searchTimer);
+  if (!q.trim()) {
+    renderSessionList(allSessions);
+    document.getElementById('loadMoreBtn').style.display = sessionHasMore ? '' : 'none';
+    return;
+  }
+  searchTimer = setTimeout(doSearch, 300);
+}
+
+async function loadMoreSessions() {
+  const btn = document.getElementById('loadMoreBtn');
+  btn.disabled = true;
+  try {
+    const res = await fetch(`http://${location.hostname}:${API_PORT}/sessions?limit=${SESSION_PAGE}&offset=${sessionOffset}`, { headers: authHeaders() });
+    if (!res.ok) return;
+    const more = await res.json();
+    allSessions = allSessions.concat(more);
+    sessionOffset += more.length;
+    sessionHasMore = more.length === SESSION_PAGE;
+    renderSessionList(allSessions);
+    btn.style.display = sessionHasMore ? '' : 'none';
+  } catch(e) { console.warn('load more failed', e); }
+  btn.disabled = false;
 }
 
 function renderSessionList(sessions) {
@@ -667,7 +735,7 @@ function renderSessionList(sessions) {
     const isActive = s.session_id === sessionId;
     return `<div class="history-item${isActive ? ' active' : ''}" onclick="switchSession('${s.session_id}')">
       <div class="history-item-preview">${escHtml(preview)}</div>
-      <div class="history-item-meta"><span>${date}</span><span>${s.turns} ${t('turns_unit')}</span></div>
+      <div class="history-item-time">${date}</div>
     </div>`;
   }).join('');
 }
@@ -710,13 +778,14 @@ function connect() {
   ws.onmessage = (e) => {
     const data = JSON.parse(e.data);
     if (data.type === 'session_created') {
+      const isNew = !sessionId || sessionId !== data.session_id;
       sessionId = data.session_id;
       localStorage.setItem(STORAGE_KEY, sessionId);
       document.getElementById('sessionIdDisplay').textContent = sessionId;
       document.getElementById('input').disabled = false;
       document.getElementById('sendBtn').disabled = false;
       document.getElementById('input').focus();
-      loadSessionList();
+      if (isNew) loadSessionList();
       return;
     }
     removeThinking();

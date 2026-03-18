@@ -1103,7 +1103,7 @@ async def restart_service():
 
 
 @app.get("/sessions")
-async def list_sessions(limit: int = 50):
+async def list_sessions(limit: int = 30, offset: int = 0):
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
@@ -1111,13 +1111,14 @@ async def list_sessions(limit: int = 50):
                 "SELECT r.session_id, COUNT(*) as turns, "
                 "  MIN(r.user_input_at) as started_at, "
                 "  MAX(r.user_input_at) as last_at, "
-                "  (SELECT user_input FROM raw_conversations "
-                "   WHERE session_id = r.session_id "
-                "   ORDER BY user_input_at ASC LIMIT 1) as preview "
+                "  COALESCE("
+                "    (SELECT summary FROM session_tags WHERE session_id = r.session_id ORDER BY created_at DESC LIMIT 1),"
+                "    (SELECT user_input FROM raw_conversations WHERE session_id = r.session_id ORDER BY user_input_at ASC LIMIT 1)"
+                "  ) as preview "
                 "FROM raw_conversations r "
                 "GROUP BY r.session_id "
-                "ORDER BY last_at DESC LIMIT %s",
-                (limit,),
+                "ORDER BY started_at DESC LIMIT %s OFFSET %s",
+                (limit, offset),
             )
             rows = cur.fetchall()
         return [
@@ -1127,6 +1128,40 @@ async def list_sessions(limit: int = 50):
                 "started_at": row[2].isoformat() if row[2] else None,
                 "last_at": row[3].isoformat() if row[3] else None,
                 "preview": (row[4] or "")[:60],
+            }
+            for row in rows
+        ]
+    finally:
+        conn.close()
+
+@app.get("/sessions/search")
+async def search_sessions(q: str = "", limit: int = 50):
+    if not q.strip():
+        return []
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT r.session_id, "
+                "  COUNT(*) as turns, "
+                "  MAX(r.user_input_at) as last_at, "
+                "  (SELECT user_input FROM raw_conversations "
+                "   WHERE session_id = r.session_id ORDER BY user_input_at ASC LIMIT 1) as preview, "
+                "  SUM(CASE WHEN r.user_input ILIKE %s OR r.assistant_reply ILIKE %s THEN 1 ELSE 0 END) as matches "
+                "FROM raw_conversations r "
+                "GROUP BY r.session_id "
+                "HAVING SUM(CASE WHEN r.user_input ILIKE %s OR r.assistant_reply ILIKE %s THEN 1 ELSE 0 END) > 0 "
+                "ORDER BY MIN(r.user_input_at) DESC LIMIT %s",
+                (f"%{q}%", f"%{q}%", f"%{q}%", f"%{q}%", limit),
+            )
+            rows = cur.fetchall()
+        return [
+            {
+                "session_id": row[0],
+                "turns": row[1],
+                "last_at": row[2].isoformat() if row[2] else None,
+                "preview": (row[3] or "")[:60],
+                "matches": row[4],
             }
             for row in rows
         ]

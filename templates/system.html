@@ -383,6 +383,17 @@ function toggleBadge(type, name, enabled) {
 
 function renderInfoCard(r) {
   const onClass = r.on === true ? 'on' : r.on === false ? 'off' : '';
+  // Choice buttons card
+  if (r.choice) {
+    const btns = r.options.map(o =>
+      `<button class="choice-btn${String(r.value) === String(o) ? ' active' : ''}" data-value="${escHtml(o)}" onclick="selectInfoChoice(this)">${escHtml(o)}</button>`
+    ).join('');
+    return `
+    <div class="info-card" data-path="${escHtml(r.path)}" data-current="${escHtml(r.value)}">
+      <div class="label">${t(r.key)}</div>
+      <div class="value"><div class="choice-group">${btns}</div></div>
+    </div>`;
+  }
   // Boolean toggle card (ON/OFF clickable)
   if (r.toggle) {
     const curOn = r.on;
@@ -401,7 +412,7 @@ function renderInfoCard(r) {
     </div>`;
   }
   // Text / dropdown / sensitive edit card
-  const optionsAttr = r.options ? ` data-options="${escHtml(JSON.stringify(r.options))}"` : '';
+  const optionsAttr = r.options ? ` data-options='${JSON.stringify(r.options)}'` : '';
   return `
     <div class="info-card editable" data-path="${escHtml(r.path)}" data-sensitive="${r.sensitive ? 'true' : 'false'}" data-current="${escHtml(r.value)}"${optionsAttr} onclick="startEdit(this)">
       <div class="label">${t(r.key)}<span class="edit-icon">✎</span></div>
@@ -435,7 +446,7 @@ function renderConfigField(f) {
       <div class="config-field-value">${escHtml(f.value) || '—'}</div>
     </div>`;
   }
-  const optAttr = f.options ? ` data-options="${escHtml(JSON.stringify(f.options))}"` : '';
+  const optAttr = f.options ? ` data-options='${JSON.stringify(f.options)}'` : '';
   return `<div class="config-field editable" data-path="${escHtml(f.path)}" data-sensitive="${f.sensitive ? 'true' : 'false'}" data-current="${escHtml(f.value)}"${optAttr} onclick="startConfigEdit(this)">
     <div class="config-field-label">${t(f.labelKey)}</div>
     <div class="config-field-value">${escHtml(f.value) || '—'}${f.hint ? `<div class="config-field-hint">${t(f.hint)}</div>` : ''}</div>
@@ -528,7 +539,7 @@ function renderSystem(sys, cloudProviders) {
   const provider = sys.llm_provider || 'openai';
 
   const topRows = [
-    { key: 'label_language', value: sys.language },
+    { key: 'label_language', value: sys.language, choice: true, path: 'language', options: ['en', 'zh', 'ja'] },
     { key: 'label_timezone', value: sys.timezone, editable: true, path: 'timezone' },
   ];
 
@@ -747,6 +758,31 @@ async function selectChoice(btn) {
   } catch(e) {
     alert('Failed: ' + e.message);
     field.querySelectorAll('.choice-btn').forEach(b => b.disabled = false);
+  }
+}
+
+async function selectInfoChoice(btn) {
+  const card = btn.closest('.info-card');
+  const path = card.dataset.path;
+  const value = btn.dataset.value;
+  if (card.dataset.current === value) return;
+  card.querySelectorAll('.choice-btn').forEach(b => b.disabled = true);
+  try {
+    const res = await fetch(`http://${location.hostname}:${API_PORT}/system/config`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ path, value }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    card.dataset.current = value;
+    card.querySelectorAll('.choice-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.value === value);
+      b.disabled = false;
+    });
+    showBanner();
+  } catch(e) {
+    alert('Failed: ' + e.message);
+    card.querySelectorAll('.choice-btn').forEach(b => b.disabled = false);
   }
 }
 

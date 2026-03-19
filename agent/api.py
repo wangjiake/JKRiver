@@ -1364,7 +1364,8 @@ async def restart_service():
     import sys
     async def _do_restart():
         await asyncio.sleep(0.5)
-        os.execv(sys.executable, [sys.executable] + sys.argv)
+        os.execv(sys.executable, [sys.executable, "-m", "uvicorn", "agent.api:app",
+                                   "--host", "0.0.0.0", "--port", "8400"])
     asyncio.create_task(_do_restart())
     return {"status": "restarting"}
 

@@ -132,7 +132,7 @@ def unlock_post():
     if _token_valid(token):
         _record_success(ip)
         resp = make_response(redirect(url_for("chat.chat")))
-        resp.set_cookie(COOKIE_NAME, token, max_age=COOKIE_MAX_AGE, httponly=True, samesite="Lax")
+        resp.set_cookie(COOKIE_NAME, token, max_age=COOKIE_MAX_AGE, httponly=False, samesite="Lax")
         return resp
     else:
         _record_failure(ip)

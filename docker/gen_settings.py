@@ -58,15 +58,17 @@ if env("OLLAMA_API_BASE"):
 
 # Public mode / access token
 import secrets as _secrets
-_token = env("ACCESS_TOKEN") or _secrets.token_urlsafe(32)
+_public_mode = env("PUBLIC_MODE", "false").lower() in ("1", "true", "yes")
 cfg.setdefault("public_mode", {})
-cfg["public_mode"]["enabled"] = True
-cfg["public_mode"]["access_token"] = _token
-if not env("ACCESS_TOKEN"):
-    print("=" * 60)
-    print("[gen_settings] Access token generated (save this!):")
-    print(f"  ACCESS_TOKEN={_token}")
-    print("=" * 60)
+cfg["public_mode"]["enabled"] = _public_mode
+if _public_mode:
+    _token = env("ACCESS_TOKEN") or _secrets.token_urlsafe(32)
+    cfg["public_mode"]["access_token"] = _token
+    if not env("ACCESS_TOKEN"):
+        print("=" * 60)
+        print("[gen_settings] Access token generated (save this!):")
+        print(f"  ACCESS_TOKEN={_token}")
+        print("=" * 60)
 
 # Telegram
 if env("TELEGRAM_BOT_TOKEN"):

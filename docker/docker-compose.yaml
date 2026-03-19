@@ -59,6 +59,7 @@ services:
       DB_NAME: Riverse
       DB_USER: postgres
       DB_HOST: postgres
+      PUBLIC_MODE: ${PUBLIC_MODE:-true}
       ACCESS_TOKEN: ${ACCESS_TOKEN:-}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       TELEGRAM_ALLOWED_USERS: ${TELEGRAM_ALLOWED_USERS:-}

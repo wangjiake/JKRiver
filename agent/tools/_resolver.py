@@ -43,7 +43,7 @@ def _build_resolver_messages(user_input: str, registry, input_metadata: dict | N
 
     profile_hint = ""
     if profile:
-        profile_lines = [f"  {p['category']}: {p['value']}" for p in profile]
+        profile_lines = [f"  {p['category']}/{p.get('subject', '')}: {p['value']}" for p in profile]
         profile_hint = f"\n{L.get('user_profile_hint', '用户信息')}:\n" + "\n".join(profile_lines)
 
     return [

@@ -25,6 +25,10 @@ class FinanceQueryTool(BaseTool):
 
     def __init__(self, config: dict):
         self.config = config
+        self._tool_cfg = config.get("tools", {}).get("finance_query", {})
+
+    def is_available(self) -> bool:
+        return self._tool_cfg.get("enabled", True)
 
     def manifest(self) -> ToolManifest:
         lang = self.config.get("language", "en")

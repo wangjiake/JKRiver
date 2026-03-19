@@ -91,6 +91,32 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; ba
 .delete-btn { background: transparent; border: none; cursor: pointer; color: #6e7681; font-size: 13px; padding: 1px 4px; border-radius: 3px; line-height: 1; flex-shrink: 0; opacity: 0; transition: opacity 0.15s, color 0.15s; }
 .card:hover .delete-btn { opacity: 1; }
 .delete-btn:hover { color: #f85149; background: #2d1a1a; }
+.install-btn { margin-left: auto; padding: 4px 12px; background: #1f3a6e; border: 1px solid #2d4f8e; border-radius: 5px; color: #58a6ff; font-size: 11px; cursor: pointer; font-weight: 600; }
+.install-btn:hover { background: #24426e; }
+.install-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 500; display: none; align-items: center; justify-content: center; }
+.install-modal.open { display: flex; }
+.install-box { background: #161b22; border: 1px solid #2d3348; border-radius: 10px; padding: 24px; width: 560px; max-width: 96vw; max-height: 90vh; overflow-y: auto; }
+.install-box h4 { font-size: 14px; color: #e1e4e8; margin-bottom: 12px; }
+.install-tabs { display: flex; gap: 0; border-bottom: 1px solid #2d3348; margin-bottom: 14px; }
+.install-tab { padding: 6px 16px; font-size: 12px; color: #6e7681; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s; }
+.install-tab.active { color: #58a6ff; border-bottom-color: #58a6ff; }
+.install-tab-pane { display: none; }
+.install-tab-pane.active { display: block; }
+.install-box p { font-size: 12px; color: #6e7681; margin-bottom: 10px; }
+.install-box textarea { width: 100%; height: 200px; max-height: 400px; background: #0d1117; border: 1px solid #2d3348; border-radius: 6px; color: #e1e4e8; padding: 10px; font-size: 12px; font-family: monospace; outline: none; resize: vertical; box-sizing: border-box; }
+.install-box textarea:focus { border-color: #58a6ff; }
+.hub-search-row { display: flex; gap: 8px; margin-bottom: 10px; }
+.hub-search-row input { flex: 1; background: #0d1117; border: 1px solid #2d3348; border-radius: 6px; color: #e1e4e8; padding: 7px 10px; font-size: 13px; outline: none; }
+.hub-search-row input:focus { border-color: #58a6ff; }
+.hub-search-row button { padding: 7px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; border: 1px solid #2d4f8e; background: #1f3a6e; color: #58a6ff; }
+.hub-status { font-size: 12px; color: #6e7681; min-height: 20px; }
+.hub-status.err { color: #f85149; }
+.hub-status.ok { color: #3fb950; }
+.install-box-btns { display: flex; gap: 8px; margin-top: 14px; justify-content: flex-end; }
+.install-box-btns button { padding: 6px 16px; border-radius: 6px; font-size: 12px; cursor: pointer; border: 1px solid #2d3348; background: #252a40; color: #c9d1d9; }
+.install-box-btns button.primary { background: #1f3a6e; border-color: #58a6ff; color: #58a6ff; }
+.badge-skillhub { background: #1a1a2e; color: #a78bfa; }
+.badge-file { background: #1a2a1a; color: #3fb950; }
 .cp-card { border-bottom: 1px solid #21262d; }
 .cp-card:last-child { border-bottom: none; }
 .cp-header { display: flex; align-items: center; gap: 8px; padding: 9px 16px; cursor: pointer; user-select: none; }
@@ -151,7 +177,13 @@ const I18N = {
     section_agents: '智能体',
     section_skills: '技能',
     section_mcp: 'MCP 服务',
-    empty_tools: '无内置工具', empty_agents: '无已配置 Agent',
+    empty_tools: '无内置工具', empty_agents: '无已配置 Agent', empty_skills: '暂无技能',
+    install_skill: '安装技能', install_skill_tip: '安装技能', install_skill_title: '安装技能',
+    install_skill_desc: '粘贴 YAML 或 SKILL.md 格式内容，安装后立即生效。',
+    install_skill_placeholder: '粘贴技能 YAML 或 SKILL.md…', badge_file: '已安装', badge_skillhub: 'SkillHub',
+    tab_paste: '粘贴安装', tab_hub: 'SkillHub 搜索',
+    hub_desc: '输入技能名称从 SkillHub 搜索安装（如 explain-code）。',
+    hub_search_btn: '获取', hub_searching: '搜索中…', hub_not_found: '未找到该技能，请尝试直接粘贴 SKILL.md 内容。',
     empty_mcp: '无 MCP 服务',
     label_language: '语言', label_llm_provider: 'LLM 提供商',
     label_llm_model: 'LLM 模型', label_llm_api: 'LLM API',
@@ -168,7 +200,7 @@ const I18N = {
     edit_placeholder: '输入新值', edit_placeholder_sensitive: '输入新密钥（留空则不修改）',
     not_set: '未配置',
     badge_builtin: '内置', badge_agent: '智能体', badge_skill: '技能',
-    banner_msg: '配置已修改，需要重启服务后生效', btn_restart: '立即重启', btn_revert: '撤销修改',
+    banner_msg: '配置已修改，需要重启服务后生效', btn_restart: '立即重启', btn_revert: '撤销修改', btn_cancel: '取消', btn_install: '安装',
     restarting: '正在重启...', reverting: '正在撤销...',
     label_temperature: '温度', label_max_tokens: '最大Token', label_temp_dir: '临时目录',
     label_allowed_ids: '允许的用户ID', label_voice_zh: '中文语音', label_voice_en: '英文语音',
@@ -210,7 +242,13 @@ const I18N = {
     section_agents: 'Agents',
     section_skills: 'Skills',
     section_mcp: 'MCP Servers',
-    empty_tools: 'No built-in tools', empty_agents: 'No agents configured',
+    empty_tools: 'No built-in tools', empty_agents: 'No agents configured', empty_skills: 'No skills yet',
+    install_skill: 'Install', install_skill_tip: 'Install skill', install_skill_title: 'Install Skill',
+    install_skill_desc: 'Paste YAML or SKILL.md content. Takes effect immediately.',
+    install_skill_placeholder: 'Paste skill YAML or SKILL.md…', badge_file: 'Installed', badge_skillhub: 'SkillHub',
+    tab_paste: 'Paste', tab_hub: 'SkillHub',
+    hub_desc: 'Enter a skill name to fetch from SkillHub (e.g. explain-code).',
+    hub_search_btn: 'Fetch', hub_searching: 'Searching…', hub_not_found: 'Skill not found. Try pasting SKILL.md content directly.',
     empty_mcp: 'No MCP servers',
     label_language: 'Language', label_llm_provider: 'LLM Provider',
     label_llm_model: 'LLM Model', label_llm_api: 'LLM API',
@@ -227,7 +265,7 @@ const I18N = {
     edit_placeholder: 'Enter new value', edit_placeholder_sensitive: 'Enter new key (leave empty to keep)',
     not_set: 'not set',
     badge_builtin: 'Built-in', badge_agent: 'Agent', badge_skill: 'Skill',
-    banner_msg: 'Config changed — restart required', btn_restart: 'Restart now', btn_revert: 'Revert',
+    banner_msg: 'Config changed — restart required', btn_restart: 'Restart now', btn_revert: 'Revert', btn_cancel: 'Cancel', btn_install: 'Install',
     restarting: 'Restarting...', reverting: 'Reverting...',
     label_temperature: 'Temperature', label_max_tokens: 'Max Tokens', label_temp_dir: 'Temp Dir',
     label_allowed_ids: 'Allowed User IDs', label_voice_zh: 'Chinese Voice', label_voice_en: 'English Voice',
@@ -269,7 +307,13 @@ const I18N = {
     section_agents: 'エージェント',
     section_skills: 'スキル',
     section_mcp: 'MCPサーバー',
-    empty_tools: '組み込みツールなし', empty_agents: 'エージェント未設定',
+    empty_tools: '組み込みツールなし', empty_agents: 'エージェント未設定', empty_skills: 'スキルなし',
+    install_skill: 'インストール', install_skill_tip: 'スキルをインストール', install_skill_title: 'スキルのインストール',
+    install_skill_desc: 'YAMLまたはSKILL.md形式を貼り付けてください。インストール後すぐに有効になります。',
+    install_skill_placeholder: 'スキル YAMLまたはSKILL.mdを貼り付け…', badge_file: 'インストール済', badge_skillhub: 'SkillHub',
+    tab_paste: '貼り付け', tab_hub: 'SkillHub',
+    hub_desc: 'スキル名を入力してSkillHubから取得（例: explain-code）。',
+    hub_search_btn: '取得', hub_searching: '検索中…', hub_not_found: 'スキルが見つかりません。SKILL.mdの内容を直接貼り付けてください。',
     empty_mcp: 'MCPサーバーなし',
     label_language: '言語', label_llm_provider: 'LLMプロバイダー',
     label_llm_model: 'LLMモデル', label_llm_api: 'LLM API',
@@ -286,7 +330,7 @@ const I18N = {
     edit_placeholder: '新しい値を入力', edit_placeholder_sensitive: '新しいキーを入力（空欄で変更なし）',
     not_set: '未設定',
     badge_builtin: '組み込み', badge_agent: 'エージェント', badge_skill: 'スキル',
-    banner_msg: '設定が変更されました — 再起動が必要です', btn_restart: '今すぐ再起動', btn_revert: '元に戻す',
+    banner_msg: '設定が変更されました — 再起動が必要です', btn_restart: '今すぐ再起動', btn_revert: '元に戻す', btn_cancel: 'キャンセル', btn_install: 'インストール',
     restarting: '再起動中...', reverting: '元に戻し中...',
     label_temperature: '温度', label_max_tokens: '最大トークン', label_temp_dir: '一時ディレクトリ',
     label_allowed_ids: '許可ユーザーID', label_voice_zh: '中国語音声', label_voice_en: '英語音声',
@@ -376,7 +420,7 @@ function statusBadge(enabled) {
 }
 function toggleBadge(type, name, enabled) {
   const cls = enabled ? 'badge-on' : 'badge-off';
-  return `<span class="badge ${cls} toggle-badge" style="cursor:pointer" data-type="${escHtml(type)}" data-name="${escHtml(name)}" data-enabled="${enabled}" title="click to toggle">` +
+  return `<span class="badge ${cls} toggle-badge" style="cursor:pointer" data-type="${escHtml(type)}" data-name="${escHtml(name)}" data-enabled="${enabled}" title="click to toggle" onclick="handleToggle(this)">` +
     (enabled ? 'ON' : 'OFF') + `</span>`;
 }
 
@@ -927,15 +971,13 @@ function _mask(v) {
   return v.slice(0,6) + '••••' + v.slice(-4);
 }
 
-const _TOGGLEABLE_TOOLS = new Set(['shell_exec', 'file_read', 'tts']);
-
 function renderToolCard(tool) {
   const examples = tool.examples && tool.examples.length
     ? `<div class="card-examples">${tool.examples.map(e => `<span class="example-tag">${escHtml(e)}</span>`).join('')}</div>` : '';
   const params = Object.keys(tool.parameters || {}).length
     ? `<div class="card-meta">${t('label_params')}：<span>${Object.keys(tool.parameters).join(', ')}</span></div>` : '';
   const eid = encodeURIComponent(tool.name);
-  const statusEl = _TOGGLEABLE_TOOLS.has(tool.name)
+  const statusEl = tool.type === 'builtin'
     ? toggleBadge('tool', tool.name, tool.enabled)
     : statusBadge(tool.enabled);
   return `
@@ -943,6 +985,7 @@ function renderToolCard(tool) {
       <div class="card-header">
         <div class="card-name">${escHtml(tool.name)}</div>
         ${badge(tool.type)}${statusEl}
+        ${tool.type === 'builtin' ? `<button class="delete-btn" data-type="tool" data-name="${escHtml(tool.name)}" title="${t('delete_tip')}">✕</button>` : ''}
       </div>
       ${tool.description ? `<div class="card-desc">${escHtml(tool.description)}</div>` : ''}
       ${params}${examples}
@@ -972,12 +1015,18 @@ function renderSkillCard(s) {
     ? `${t('label_keywords')}：${s.keywords.slice(0,4).map(k => `<span class="example-tag">${escHtml(k)}</span>`).join('')}`
     : `${t('label_schedule')}：<span class="example-tag">${escHtml(s.cron)}</span>`;
   const eid = encodeURIComponent(s.name);
+  const isSkillHub = s.source && s.source.startsWith('skillhub:');
+  const isFile = s.source && s.source !== 'bundled' && !isSkillHub;
+  const sourceBadge = isSkillHub
+    ? `<span class="badge badge-skillhub">${t('badge_skillhub')}</span>`
+    : isFile ? `<span class="badge badge-file">${t('badge_file')}</span>` : '';
+  const deletable = isFile || isSkillHub;
   return `
     <div class="card ${s.enabled ? '' : 'disabled'}" id="card-skill-${eid}">
       <div class="card-header">
         <div class="card-name">${escHtml(s.name)}</div>
-        ${badge('skill')}${toggleBadge('skill', s.name, s.enabled)}
-        <button class="delete-btn" data-type="skill" data-name="${escHtml(s.name)}" title="${t('delete_tip')}">✕</button>
+        ${badge('skill')}${sourceBadge}${toggleBadge('skill', s.name, s.enabled)}
+        ${deletable ? `<button class="delete-btn" data-type="skill-file" data-name="${escHtml(s.name)}" title="${t('delete_tip')}">✕</button>` : ''}
       </div>
       ${s.description ? `<div class="card-desc">${escHtml(s.description)}</div>` : ''}
       <div class="card-examples">${trigger}</div>
@@ -1020,11 +1069,13 @@ function render(d) {
       ${agents.length ? `<div class="cards">${agents.map(renderAgentCard).join('')}</div>` : `<div class="empty">${t('empty_agents')}</div>`}
     </div>
 
-    ${skills.length ? `
     <div class="section">
-      <div class="section-title">${t('section_skills')} (${skills.length})</div>
-      <div class="cards">${skills.map(renderSkillCard).join('')}</div>
-    </div>` : ''}
+      <div class="section-title">
+        ${t('section_skills')} (${skills.length})
+        <button class="install-btn" onclick="openInstallSkill()" title="${t('install_skill_tip')}">+ ${t('install_skill')}</button>
+      </div>
+      ${skills.length ? `<div class="cards">${skills.map(renderSkillCard).join('')}</div>` : `<div class="empty">${t('empty_skills')}</div>`}
+    </div>
 
     ${mcpServers.length || mcpTools.length ? `
     <div class="section">
@@ -1036,7 +1087,8 @@ function render(d) {
 }
 
 async function load() {
-  document.getElementById('loading-text').textContent = t('loading');
+  const contentEl = document.getElementById('content');
+  contentEl.innerHTML = `<div class="loading" id="loading-text">${t('loading')}</div>`;
   try {
     const res = await fetch(`http://${location.hostname}:${API_PORT}/system`, { headers: authHeaders() });
     if (!res.ok) throw new Error(res.status);
@@ -1067,18 +1119,23 @@ async function doRestart() {
     await fetch(`http://${location.hostname}:${API_PORT}/system/restart`, {
       method: 'POST', headers: authHeaders(),
     });
-    // Poll until API is back up
-    const poll = setInterval(async () => {
-      try {
-        const r = await fetch(`http://${location.hostname}:${API_PORT}/health`);
-        if (r.ok) { clearInterval(poll); hideBanner(); load(); }
-      } catch {}
-    }, 1000);
-  } catch(e) {
-    btn.disabled = revertBtn.disabled = false;
-    btn.textContent = t('btn_restart');
-    alert('Failed: ' + e.message);
-  }
+  } catch {}
+  // Poll until API is back up, max 30 attempts (~30s)
+  let attempts = 0;
+  const poll = setInterval(async () => {
+    attempts++;
+    if (attempts > 30) {
+      clearInterval(poll);
+      btn.disabled = revertBtn.disabled = false;
+      btn.textContent = t('btn_restart');
+      alert('Restart timed out. Please refresh manually.');
+      return;
+    }
+    try {
+      const r = await fetch(`http://${location.hostname}:${API_PORT}/health`);
+      if (r.ok) { clearInterval(poll); hideBanner(); load(); }
+    } catch {}
+  }, 1000);
 }
 
 async function doRevert() {
@@ -1112,16 +1169,18 @@ document.getElementById('content').addEventListener('click', async function(e) {
   btn.disabled = true;
   btn.style.opacity = '0.4';
   try {
-    const res = await fetch(`http://${location.hostname}:${API_PORT}/system/${type}/${encodeURIComponent(name)}`, {
-      method: 'DELETE', headers: authHeaders(),
-    });
+    const endpoint = type === 'skill-file'
+      ? `http://${location.hostname}:${API_PORT}/system/skill/${encodeURIComponent(name)}`
+      : `http://${location.hostname}:${API_PORT}/system/${type}/${encodeURIComponent(name)}`;
+    const res = await fetch(endpoint, { method: 'DELETE', headers: authHeaders() });
     if (!res.ok) throw new Error(await res.text());
     const json = await res.json();
     if (type === 'cloud_provider') {
       showBanner(); load();
     } else {
       const eid = encodeURIComponent(name);
-      const card = document.getElementById(`card-${type}-${eid}`);
+      const cardType = type === 'skill-file' ? 'skill' : type;
+      const card = document.getElementById(`card-${cardType}-${eid}`);
       if (card) card.remove();
       if (json.pending_restart) showBanner();
     }
@@ -1132,10 +1191,8 @@ document.getElementById('content').addEventListener('click', async function(e) {
   }
 });
 
-// Toggle event delegation
-document.getElementById('content').addEventListener('click', async function(e) {
-  const badge = e.target.closest('.toggle-badge');
-  if (!badge) return;
+// Toggle handler (called directly via onclick attribute)
+async function handleToggle(badge) {
   const type = badge.dataset.type;
   const name = badge.dataset.name;
   const currentEnabled = badge.dataset.enabled === 'true';
@@ -1163,7 +1220,7 @@ document.getElementById('content').addEventListener('click', async function(e) {
     badge.style.opacity = '';
     badge.style.pointerEvents = '';
   }
-});
+}
 
 // Init
 document.querySelectorAll('.lang-btn').forEach(b =>
@@ -1175,6 +1232,127 @@ const _titleText = '⚙ ' + t('nav_system') + ' — ' + DB_NAME;
 document.getElementById('header-title').textContent = _titleText;
 document.title = t('nav_system') + ' — ' + DB_NAME;
 load();
+</script>
+
+<!-- Install Skill Modal -->
+<div class="install-modal" id="installSkillModal">
+  <div class="install-box">
+    <h4 id="installSkillTitle">Install Skill</h4>
+    <div class="install-tabs">
+      <div class="install-tab active" id="tabPaste" onclick="switchInstallTab('paste')" id="tabPaste"></div>
+      <div class="install-tab" id="tabHub" onclick="switchInstallTab('hub')"></div>
+    </div>
+    <!-- Paste tab -->
+    <div class="install-tab-pane active" id="paneInstallPaste">
+      <p id="installSkillDesc"></p>
+      <textarea id="installSkillYaml" spellcheck="false"></textarea>
+      <div class="install-box-btns">
+        <button id="installCancelBtn" onclick="closeInstallSkill()">Cancel</button>
+        <button id="installConfirmBtn" class="primary" onclick="doInstallSkill()">Install</button>
+      </div>
+    </div>
+    <!-- SkillHub tab -->
+    <div class="install-tab-pane" id="paneInstallHub">
+      <p id="hubDesc"></p>
+      <div class="hub-search-row">
+        <input type="text" id="hubSkillName" placeholder="explain-code" />
+        <button id="hubFetchBtn" onclick="doFetchFromHub()"></button>
+      </div>
+      <div class="hub-status" id="hubStatus"></div>
+      <div class="install-box-btns">
+        <button id="hubCancelBtn" onclick="closeInstallSkill()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+let _installTab = 'paste';
+
+function switchInstallTab(tab) {
+  _installTab = tab;
+  document.getElementById('tabPaste').classList.toggle('active', tab === 'paste');
+  document.getElementById('tabHub').classList.toggle('active', tab === 'hub');
+  document.getElementById('paneInstallPaste').classList.toggle('active', tab === 'paste');
+  document.getElementById('paneInstallHub').classList.toggle('active', tab === 'hub');
+}
+
+function openInstallSkill() {
+  document.getElementById('installSkillTitle').textContent = t('install_skill_title');
+  document.getElementById('installSkillDesc').textContent = t('install_skill_desc');
+  document.getElementById('installSkillYaml').placeholder = t('install_skill_placeholder');
+  document.getElementById('tabPaste').textContent = t('tab_paste');
+  document.getElementById('tabHub').textContent = t('tab_hub');
+  document.getElementById('hubDesc').textContent = t('hub_desc');
+  document.getElementById('hubFetchBtn').textContent = t('hub_search_btn');
+  document.getElementById('installCancelBtn').textContent = t('btn_cancel');
+  document.getElementById('installConfirmBtn').textContent = t('btn_install');
+  document.getElementById('hubCancelBtn').textContent = t('btn_cancel');
+  document.getElementById('installSkillYaml').value = '';
+  document.getElementById('hubSkillName').value = '';
+  document.getElementById('hubStatus').textContent = '';
+  document.getElementById('hubStatus').className = 'hub-status';
+  switchInstallTab('paste');
+  document.getElementById('installSkillModal').classList.add('open');
+  setTimeout(() => document.getElementById('installSkillYaml').focus(), 50);
+}
+function closeInstallSkill() {
+  document.getElementById('installSkillModal').classList.remove('open');
+}
+async function doInstallSkill() {
+  const content = document.getElementById('installSkillYaml').value.trim();
+  if (!content) return;
+  try {
+    const res = await fetch(`http://${location.hostname}:${API_PORT}/system/skill/install`, {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content }),
+    });
+    const data = await res.json();
+    if (!res.ok) { alert('Failed: ' + (data.detail || res.status)); return; }
+    closeInstallSkill();
+    load();
+  } catch(e) { alert('Error: ' + e.message); }
+}
+async function doFetchFromHub() {
+  const name = document.getElementById('hubSkillName').value.trim();
+  if (!name) return;
+  // If user pasted SKILL.md content instead of a skill name, redirect to paste tab
+  if (name.startsWith('---')) {
+    document.getElementById('installSkillYaml').value = name;
+    switchInstallTab('paste');
+    return;
+  }
+  const statusEl = document.getElementById('hubStatus');
+  statusEl.textContent = t('hub_searching');
+  statusEl.className = 'hub-status';
+  document.getElementById('hubFetchBtn').disabled = true;
+  try {
+    const res = await fetch(`http://${location.hostname}:${API_PORT}/system/skill/install-from-hub`, {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      statusEl.textContent = data.detail || t('hub_not_found');
+      statusEl.className = 'hub-status err';
+    } else {
+      statusEl.textContent = '✓ ' + data.name;
+      statusEl.className = 'hub-status ok';
+      setTimeout(() => { closeInstallSkill(); load(); }, 800);
+    }
+  } catch(e) {
+    statusEl.textContent = e.message;
+    statusEl.className = 'hub-status err';
+  }
+  document.getElementById('hubFetchBtn').disabled = false;
+}
+document.getElementById('hubSkillName').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') doFetchFromHub();
+});
+document.getElementById('installSkillModal').addEventListener('click', function(e) {
+  if (e.target === this) closeInstallSkill();
+});
 </script>
 </body>
 </html>

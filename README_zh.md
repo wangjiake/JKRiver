@@ -91,8 +91,9 @@ Riverse 是一个运行在你自己机器上的个人 AI Agent。它记住每一
 - **持久记忆** — 跨会话记忆，构建随你演化的用户画像
 - **离线整理（Sleep）** — 对话结束后自动提炼认知、解决矛盾
 - **多模态输入** — 文本、语音、图片、文件，原生理解
-- **可插拔工具** — 网页搜索、财务追踪、健康同步（Withings）、TTS 等
-- **YAML 技能** — 按关键词或 cron 定时触发自定义行为
+- **可插拔工具** — 网页搜索、财务追踪、健康同步（Withings）、TTS 等；在 System 页面可一键开关或删除
+- **YAML 技能** — 按关键词或 cron 定时触发自定义行为；支持从 SkillHub 搜索安装或粘贴 YAML 直接部署
+- **会话管理** — 支持对话重命名、置顶，快速定位重要会话
 - **外部 Agent** — 通过 `agents_*.yaml` 接入 Home Assistant、n8n、Dify 等
 - **MCP 协议** — 支持 Model Context Protocol，接入 Gmail 等 MCP Server
 - **多渠道** — Telegram、Discord、REST API、WebSocket、CLI、Web 仪表盘

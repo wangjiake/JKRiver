@@ -63,15 +63,38 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; ba
 .history-list { flex: 1; overflow-y: auto; }
 .history-list::-webkit-scrollbar { width: 4px; }
 .history-list::-webkit-scrollbar-thumb { background: #2d3348; border-radius: 2px; }
-.history-item { padding: 10px 16px; cursor: pointer; border-bottom: 1px solid #1c2033; transition: background 0.12s; display: flex; align-items: center; gap: 8px; }
+.history-item { padding: 8px 8px 8px 16px; cursor: pointer; border-bottom: 1px solid #1c2033; transition: background 0.12s; display: flex; align-items: center; gap: 4px; }
 .history-item:hover { background: #1c2033; }
 .history-item.active { background: #1f2740; border-left: 3px solid #58a6ff; padding-left: 13px; }
-.history-item-preview { font-size: 12px; color: #c9d1d9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
-.history-item-time { font-size: 11px; color: #4d5566; flex-shrink: 0; }
+.history-item-content { flex: 1; min-width: 0; }
+.history-item-title { font-size: 12px; color: #c9d1d9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.history-item-time { font-size: 10px; color: #4d5566; margin-top: 2px; }
+.history-item-menu { flex-shrink: 0; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 4px; color: #3a4258; font-size: 15px; opacity: 1; transition: color 0.1s, background 0.1s; cursor: pointer; line-height: 1; }
+.history-item:hover .history-item-menu { color: #6b7491; }
+.history-item-menu:hover { background: #2d3348; color: #c9d1d9; }
 .history-empty { padding: 20px 16px; font-size: 12px; color: #4d5566; text-align: center; }
 .load-more-btn { display: block; width: 100%; padding: 9px; background: none; border: none; border-top: 1px solid #2d3348; color: #58a6ff; font-size: 12px; cursor: pointer; }
 .load-more-btn:hover { background: #1c2033; }
 .load-more-btn:disabled { color: #4d5566; cursor: default; }
+.section-label { padding: 6px 16px 4px; font-size: 10px; color: #4d5566; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; }
+.section-gap { height: 8px; background: #0a0d14; border-top: 1px solid #1c2033; border-bottom: 1px solid #1c2033; flex-shrink: 0; }
+.pinned-section { max-height: 270px; overflow-y: auto; }
+.pinned-section::-webkit-scrollbar { width: 4px; }
+.pinned-section::-webkit-scrollbar-thumb { background: #2d3348; border-radius: 2px; }
+.item-dropdown { position: fixed; background: #1c2033; border: 1px solid #2d3348; border-radius: 6px; z-index: 500; min-width: 130px; box-shadow: 0 4px 16px rgba(0,0,0,0.5); display: none; }
+.item-dropdown.open { display: block; }
+.item-dropdown-item { padding: 8px 14px; font-size: 12px; color: #c9d1d9; cursor: pointer; white-space: nowrap; }
+.item-dropdown-item:hover { background: #252a40; }
+.item-dropdown-item.danger { color: #f85149; }
+.rename-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 600; display: none; align-items: center; justify-content: center; }
+.rename-modal.open { display: flex; }
+.rename-box { background: #1c2033; border: 1px solid #2d3348; border-radius: 10px; padding: 20px; width: 300px; }
+.rename-box h4 { font-size: 14px; color: #e1e4e8; margin-bottom: 12px; }
+.rename-box input { width: 100%; background: #0f1117; border: 1px solid #2d3348; border-radius: 6px; color: #e1e4e8; padding: 8px 10px; font-size: 13px; outline: none; }
+.rename-box input:focus { border-color: #58a6ff; }
+.rename-box-btns { display: flex; gap: 8px; margin-top: 12px; justify-content: flex-end; }
+.rename-box-btns button { padding: 6px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; border: 1px solid #2d3348; background: #252a40; color: #c9d1d9; }
+.rename-box-btns button.primary { background: #1f3a6e; border-color: #58a6ff; color: #58a6ff; }
 
 /* Messages */
 .messages-wrap { flex: 1; display: flex; flex-direction: column; min-width: 0; }
@@ -244,6 +267,12 @@ input[type="number"].config-input::-webkit-inner-spin-button { -webkit-appearanc
       <input id="sessionSearch" type="text" placeholder="Search…" oninput="filterSessions(this.value)" onkeydown="if(event.key==='Enter')doSearch()">
       <button class="search-btn" onclick="doSearch()" title="Search">🔍</button>
     </div>
+    <div id="pinnedWrapper" style="display:none">
+      <div class="section-label" data-i18n="pinned_label">Pinned</div>
+      <div class="pinned-section" id="pinnedList"></div>
+      <div class="section-gap"></div>
+    </div>
+    <div class="section-label" id="historyLabel" data-i18n="history_label">History</div>
     <div class="history-list" id="historyList"></div>
     <button class="load-more-btn" id="loadMoreBtn" onclick="loadMoreSessions()" style="display:none">↓ Load more</button>
   </div>
@@ -380,6 +409,11 @@ const I18N = {
     attach_title: '附加图片', voice_title: '语音输入',
     voice_no_support: '浏览器不支持语音输入',
     uploading: '上传中…',
+    pinned_label: '置顶', history_label: '历史记录', pin: '置顶', unpin: '取消置顶',
+    rename: '重命名', delete_session: '删除',
+    rename_title: '重命名会话', rename_placeholder: '输入名称…',
+    btn_cancel: '取消', btn_save: '保存',
+    delete_confirm: '确定删除这个会话？',
   },
   en: {
     title: 'Chat', nav_chat: 'Chat', nav_profile: 'Profile', nav_system: 'System', settings_title: 'Settings',
@@ -403,6 +437,11 @@ const I18N = {
     attach_title: 'Attach image', voice_title: 'Voice input',
     voice_no_support: 'Voice input not supported in this browser',
     uploading: 'Uploading…',
+    pinned_label: 'Pinned', history_label: 'History', pin: 'Pin', unpin: 'Unpin',
+    rename: 'Rename', delete_session: 'Delete',
+    rename_title: 'Rename Session', rename_placeholder: 'Enter name…',
+    btn_cancel: 'Cancel', btn_save: 'Save',
+    delete_confirm: 'Delete this session?',
   },
   ja: {
     title: 'チャット', nav_chat: 'チャット', nav_profile: 'プロフィール', nav_system: 'システム', settings_title: '設定',
@@ -426,6 +465,11 @@ const I18N = {
     attach_title: '画像を添付', voice_title: '音声入力',
     voice_no_support: 'このブラウザは音声入力に対応していません',
     uploading: 'アップロード中…',
+    pinned_label: 'ピン留め', history_label: '履歴', pin: 'ピン留め', unpin: 'ピン解除',
+    rename: '名前を変更', delete_session: '削除',
+    rename_title: 'セッション名変更', rename_placeholder: '名前を入力…',
+    btn_cancel: 'キャンセル', btn_save: '保存',
+    delete_confirm: 'このセッションを削除しますか？',
   },
 };
 
@@ -662,30 +706,37 @@ async function init() {
 }
 
 // ── Session list ──────────────────────────────────────────────────────
-async function loadSessionList() {
-  sessionOffset = 0;
-  allSessions = [];
-  try {
-    const res = await fetch(`http://${location.hostname}:${API_PORT}/sessions?limit=${SESSION_PAGE}&offset=0`, { headers: authHeaders() });
-    if (!res.ok) return;
-    allSessions = await res.json();
-    sessionOffset = allSessions.length;
-    sessionHasMore = allSessions.length === SESSION_PAGE;
-    renderSessionList(allSessions);
-    document.getElementById('loadMoreBtn').style.display = sessionHasMore ? '' : 'none';
-  } catch(e) { console.warn('Failed to load session list', e); }
-}
-
 let allSessions = [];
+let pinnedSessions = [];
 let sessionOffset = 0;
 const SESSION_PAGE = 30;
 let sessionHasMore = false;
 let searchTimer = null;
 
+async function loadSessionList() {
+  sessionOffset = 0;
+  allSessions = [];
+  try {
+    const [pinnedRes, histRes] = await Promise.all([
+      fetch(`http://${location.hostname}:${API_PORT}/sessions/pinned`, { headers: authHeaders() }),
+      fetch(`http://${location.hostname}:${API_PORT}/sessions?limit=${SESSION_PAGE}&offset=0`, { headers: authHeaders() }),
+    ]);
+    pinnedSessions = pinnedRes.ok ? await pinnedRes.json() : [];
+    if (!histRes.ok) return;
+    allSessions = await histRes.json();
+    sessionOffset = allSessions.length;
+    sessionHasMore = allSessions.length === SESSION_PAGE;
+    renderPinnedList(pinnedSessions);
+    renderSessionList(allSessions);
+    document.getElementById('loadMoreBtn').style.display = sessionHasMore ? '' : 'none';
+  } catch(e) { console.warn('Failed to load session list', e); }
+}
+
 async function doSearch() {
   clearTimeout(searchTimer);
   const q = document.getElementById('sessionSearch').value;
   if (!q.trim()) {
+    renderPinnedList(pinnedSessions);
     renderSessionList(allSessions);
     document.getElementById('loadMoreBtn').style.display = sessionHasMore ? '' : 'none';
     return;
@@ -694,13 +745,16 @@ async function doSearch() {
   try {
     const res = await fetch(`http://${location.hostname}:${API_PORT}/sessions/search?q=${encodeURIComponent(q)}`, { headers: authHeaders() });
     if (!res.ok) return;
-    renderSessionList(await res.json());
+    const results = await res.json();
+    renderPinnedList([]);
+    renderSessionList(results);
   } catch(e) { console.warn('search failed', e); }
 }
 
 function filterSessions(q) {
   clearTimeout(searchTimer);
   if (!q.trim()) {
+    renderPinnedList(pinnedSessions);
     renderSessionList(allSessions);
     document.getElementById('loadMoreBtn').style.display = sessionHasMore ? '' : 'none';
     return;
@@ -724,21 +778,112 @@ async function loadMoreSessions() {
   btn.disabled = false;
 }
 
+function renderSessionItem(s) {
+  const title = escHtml(s.custom_name || s.preview || s.session_id.slice(0, 8) + '…');
+  const date = s.started_at ? formatDate(s.started_at) : (s.last_at ? formatDate(s.last_at) : '');
+  const isActive = s.session_id === sessionId;
+  const pinned = s.pinned || false;
+  return `<div class="history-item${isActive ? ' active' : ''}" data-sid="${s.session_id}" onclick="switchSession('${s.session_id}')">
+    <div class="history-item-content">
+      <div class="history-item-title">${title}</div>
+      <div class="history-item-time">${date}</div>
+    </div>
+    <div class="history-item-menu" onclick="showItemMenu(event,'${s.session_id}',${pinned})" title="More">⋯</div>
+  </div>`;
+}
+
+function renderPinnedList(sessions) {
+  const wrapper = document.getElementById('pinnedWrapper');
+  const list = document.getElementById('pinnedList');
+  if (!sessions.length) { wrapper.style.display = 'none'; return; }
+  wrapper.style.display = '';
+  list.innerHTML = sessions.map(renderSessionItem).join('');
+}
+
 function renderSessionList(sessions) {
   const list = document.getElementById('historyList');
   if (!sessions.length) {
     list.innerHTML = `<div class="history-empty">${t('history_empty')}</div>`;
     return;
   }
-  list.innerHTML = sessions.map(s => {
-    const date = s.last_at ? formatDate(s.last_at) : '';
-    const preview = s.preview || s.session_id.slice(0, 8) + '…';
-    const isActive = s.session_id === sessionId;
-    return `<div class="history-item${isActive ? ' active' : ''}" onclick="switchSession('${s.session_id}')">
-      <div class="history-item-preview">${escHtml(preview)}</div>
-      <div class="history-item-time">${date}</div>
-    </div>`;
-  }).join('');
+  list.innerHTML = sessions.map(renderSessionItem).join('');
+}
+
+// ── Session actions (pin / rename / delete) ────────────────────────────
+let _renameTargetId = null;
+
+function showItemMenu(event, sid, pinned) {
+  event.stopPropagation();
+  closeDropdown();
+  const dd = document.getElementById('itemDropdown');
+  dd.innerHTML = `
+    <div class="item-dropdown-item" onclick="togglePin('${sid}',${pinned})">${pinned ? t('unpin') : t('pin')}</div>
+    <div class="item-dropdown-item" onclick="openRenameModal('${sid}')">${t('rename')}</div>
+    <div class="item-dropdown-item danger" onclick="confirmDelete('${sid}')">${t('delete_session')}</div>
+  `;
+  const rect = event.currentTarget.getBoundingClientRect();
+  dd.classList.add('open');
+  const ddH = dd.offsetHeight || 96;
+  const top = rect.bottom + 4 + ddH > window.innerHeight ? rect.top - ddH - 4 : rect.bottom + 4;
+  dd.style.top = top + 'px';
+  dd.style.left = Math.max(4, rect.right - 134) + 'px';
+}
+
+function closeDropdown() {
+  document.getElementById('itemDropdown').classList.remove('open');
+}
+
+document.addEventListener('click', closeDropdown);
+
+async function togglePin(sid, currentPinned) {
+  closeDropdown();
+  try {
+    await fetch(`http://${location.hostname}:${API_PORT}/sessions/${sid}/pin`, { method: 'POST', headers: authHeaders() });
+    await loadSessionList();
+  } catch(e) { console.warn('pin failed', e); }
+}
+
+function openRenameModal(sid) {
+  closeDropdown();
+  _renameTargetId = sid;
+  const s = [...pinnedSessions, ...allSessions].find(x => x.session_id === sid);
+  document.getElementById('renameInput').value = (s && s.custom_name) ? s.custom_name : '';
+  document.getElementById('renameModal').classList.add('open');
+  setTimeout(() => document.getElementById('renameInput').focus(), 50);
+}
+
+function closeRenameModal() {
+  document.getElementById('renameModal').classList.remove('open');
+  _renameTargetId = null;
+}
+
+async function confirmRename() {
+  const sid = _renameTargetId;
+  const name = document.getElementById('renameInput').value.trim();
+  closeRenameModal();
+  if (!sid) return;
+  try {
+    await fetch(`http://${location.hostname}:${API_PORT}/sessions/${sid}/rename`, {
+      method: 'PATCH',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    await loadSessionList();
+  } catch(e) { console.warn('rename failed', e); }
+}
+
+async function confirmDelete(sid) {
+  closeDropdown();
+  if (!confirm(t('delete_confirm'))) return;
+  try {
+    await fetch(`http://${location.hostname}:${API_PORT}/sessions/${sid}`, { method: 'DELETE', headers: authHeaders() });
+    if (sid === sessionId) {
+      sessionId = null;
+      localStorage.removeItem(STORAGE_KEY);
+      document.getElementById('messages').innerHTML = '';
+    }
+    await loadSessionList();
+  } catch(e) { console.warn('delete failed', e); }
 }
 
 function formatDate(iso) {
@@ -747,7 +892,13 @@ function formatDate(iso) {
   if (diffDays === 0) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   if (diffDays === 1) return currentLang === 'zh' ? '昨天' : currentLang === 'ja' ? '昨日' : 'Yesterday';
   if (diffDays < 7) return `${diffDays}${currentLang === 'zh' ? '天前' : currentLang === 'ja' ? '日前' : 'd ago'}`;
-  return `${d.getMonth()+1}/${d.getDate()}`;
+  const sameYear = d.getFullYear() === now.getFullYear();
+  if (sameYear) return `${d.getMonth()+1}/${d.getDate()}`;
+  return currentLang === 'zh'
+    ? `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`
+    : currentLang === 'ja'
+    ? `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`
+    : `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`;
 }
 
 function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -761,7 +912,7 @@ async function switchSession(sid) {
   document.getElementById('input').disabled = true;
   document.getElementById('sendBtn').disabled = true;
   document.querySelectorAll('.history-item').forEach(el =>
-    el.classList.toggle('active', el.onclick.toString().includes(`'${sid}'`)));
+    el.classList.toggle('active', el.dataset.sid === sid));
   closeSidebar();
   await loadHistory(sid);
   connect();
@@ -994,5 +1145,21 @@ document.getElementById('input').addEventListener('input', function () {
 
 init();
 </script>
+
+<!-- Session item dropdown -->
+<div class="item-dropdown" id="itemDropdown"></div>
+
+<!-- Rename modal -->
+<div class="rename-modal" id="renameModal">
+  <div class="rename-box">
+    <h4 data-i18n="rename_title">Rename Session</h4>
+    <input id="renameInput" type="text" data-i18n-placeholder="rename_placeholder" placeholder="Enter name…"
+           onkeydown="if(event.key==='Enter')confirmRename();if(event.key==='Escape')closeRenameModal()">
+    <div class="rename-box-btns">
+      <button onclick="closeRenameModal()" data-i18n="btn_cancel">Cancel</button>
+      <button class="primary" onclick="confirmRename()" data-i18n="btn_save">Save</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

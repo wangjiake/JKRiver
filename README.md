@@ -91,8 +91,9 @@ Conversation flows in ──→ Erosion ──→ Sedimentation ──→ Shapes
 - **Persistent Memory** — Remembers across sessions, builds a timeline-based profile that evolves with you
 - **Offline Consolidation (Sleep)** — Extracts insights, resolves contradictions, strengthens confirmed knowledge
 - **Multi-Modal Input** — Text, voice, images, files — all understood natively
-- **Pluggable Tools** — Finance tracking, health sync (Withings), web search, vision, TTS, and more
-- **YAML Skills** — Custom behaviors triggered by keyword or cron schedule
+- **Pluggable Tools** — Finance tracking, health sync (Withings), web search, vision, TTS, and more; toggle or remove any tool from the System page
+- **YAML Skills** — Custom behaviors triggered by keyword or cron schedule; install from SkillHub or paste YAML directly in the dashboard
+- **Session Management** — Rename and pin conversations to quickly find what matters
 - **External Agents** — Connect Home Assistant, n8n, Dify and more via `agents_*.yaml`
 - **MCP Protocol** — Model Context Protocol support for Gmail and other MCP servers
 - **Multi-Channel** — Telegram, Discord, REST API, WebSocket, CLI, Web Dashboard

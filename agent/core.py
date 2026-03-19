@@ -30,6 +30,25 @@ from agent.skills.executor import execute_skill
 
 logger = logging.getLogger(__name__)
 
+def _load_resolver_profile() -> list[dict]:
+    """Load confirmed-only profile sorted by recency, for use in tool resolver."""
+    try:
+        conn = get_db_connection()
+        try:
+            from psycopg2.extras import RealDictCursor
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(
+                    "SELECT category, subject, value FROM user_profile "
+                    "WHERE layer = 'confirmed' AND end_time IS NULL "
+                    "AND rejected = false AND human_end_time IS NULL "
+                    "ORDER BY updated_at DESC"
+                )
+                return list(cur.fetchall())
+        finally:
+            conn.close()
+    except Exception:
+        return []
+
 class Session:
     def __init__(self, config: dict, session_id: str | None = None):
         self.id = session_id or str(uuid.uuid4())
@@ -679,6 +698,8 @@ async def run_cycle_async(user_input: str | dict, session: Session,
         llm_input = processed_text
 
     trajectory = None
+    _resolver_input = perception.get("ai_summary", processed_text)
+
     if category == "knowledge":
         memories = {
             "profile": [], "hypotheses": [], "strategies": [],
@@ -686,22 +707,24 @@ async def run_cycle_async(user_input: str | dict, session: Session,
             "memory_text": "",
         }
         memories_used_at = get_now()
+        _profile = await asyncio.to_thread(_load_resolver_profile)
         tool_results = await resolve_tools_async(
-            processed_text, perception, session.tool_registry,
+            _resolver_input, perception, session.tool_registry,
             session.cognition.config, input_metadata,
-            language=language,
+            language=language, profile=_profile,
         )
     else:
         # Memory build + tool resolution in parallel
         log("info", "记忆构建 + 工具调度 并行中...")
 
+        _profile = await asyncio.to_thread(_load_resolver_profile)
         memories, tool_results = await asyncio.gather(
             build_memory_context_async(perception, session.executed_strategy_ids,
                                        config=session.full_config),
             resolve_tools_async(
-                processed_text, perception, session.tool_registry,
+                _resolver_input, perception, session.tool_registry,
                 session.cognition.config, input_metadata,
-                language=language,
+                language=language, profile=_profile,
             ),
         )
 

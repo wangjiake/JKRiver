@@ -91,7 +91,7 @@ cognition.perceive_system: |
   - ai_summary：忠实复述用户纠错后的问题，只补充上下文中已有的信息使句子完整，禁止添加用户没说的内容
   - keywords：从用户的话中提取2-5个关键词的数组（用于匹配记忆中的策略）
   - need_online：true 或 false（判断标准：这个问题是否需要实时信息、网络搜索、最新数据、专业医疗/法律/金融建议、或者你无法准确回答的知识）
-  - need_tools：true 或 false（判断用户的输入是否需要调用下方的任何工具。纯聊天和知识问答不需要工具。注意：需要联网搜索也算需要工具；查询用户的消费记录、体重、步数等个人数据也需要工具。如果没有可用工具列表，输出false）
+  - need_tools：true 或 false。判断规则：① 可用工具列表中有工具能直接执行用户的请求（如查天气、看系统信息、控制设备等），必须设为true；② 需要联网搜索时设为true；③ 查询用户的消费、体重、步数等个人数据时设为true。纯聊天、单纯知识问答（AI自己知道答案且不需要执行任何操作）才设为false。如果没有可用工具列表，输出false。
 
   分类说明（重要！决定后续处理流程）：
   - knowledge：纯知识问答，和用户个人无关（如'Python怎么读文件''片栗粉是什么'）→ 不加载记忆，直接回答
@@ -154,7 +154,17 @@ cognition.perceive_system: |
   用户说：公司用的是FastAPI框架
   {"correction": "公司用的是FastAPI框架", "category": "personal", "intent": "用户透露公司技术栈", "ai_summary": "公司用的是FastAPI框架", "keywords": ["公司", "FastAPI", "技术栈"], "need_online": false, "need_tools": false}
 
-  示例11（chat）：
+  示例11（knowledge，工具可执行，需要工具）：
+  可用工具：system_info: 查看本机系统信息（CPU、内存、磁盘使用率）
+  用户说：查看本机系统信息
+  {"correction": "查看本机系统信息", "category": "knowledge", "intent": "用户想查看本机系统信息", "ai_summary": "查看本机系统信息", "keywords": ["系统信息", "CPU", "内存"], "need_online": false, "need_tools": true}
+
+  示例12（knowledge，工具可执行，需要工具）：
+  可用工具：weather_query: 查询全球任意城市的实时天气
+  用户说：东京今天天气怎么样
+  {"correction": "东京今天天气怎么样", "category": "knowledge", "intent": "用户询问东京的实时天气", "ai_summary": "东京今天天气怎么样", "keywords": ["东京", "天气"], "need_online": false, "need_tools": true}
+
+  示例13（chat）：
   用户说：今天好冷啊
   {"correction": "今天好冷啊", "category": "chat", "intent": "用户在闲聊天气", "ai_summary": "今天好冷啊", "keywords": ["天气", "冷"], "need_online": false, "need_tools": false}
 
@@ -611,7 +621,7 @@ tools.resolver_system: |
 
   判断原则：
   - 仔细阅读每个工具的描述和示例，判断用户意图是否匹配
-  - 工具参数优先从用户输入中提取；如果用户没有明确说明（如没指定城市），可以参考用户信息中的画像数据（如居住城市）来补全参数
+  - 工具参数从用户输入中提取；如果用户没有明确说明，可根据上下文推断（如用户提到的城市、当前话题等）
   - 可以直接回答的问题 → NONE
   - 可以同时调用多个工具
   - 如果有专门的工具可以完成任务，优先使用专门工具，而不是通用的 web_search

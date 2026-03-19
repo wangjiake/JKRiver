@@ -139,6 +139,18 @@ tools:
             - "git diff"
             - "git branch"
 
+    # 财务数据查询（查询 finance_transactions 表）
+    # Finance data query (queries finance_transactions table)
+    # 財務データクエリ（finance_transactions テーブルを照会）
+    finance_query:
+        enabled: true
+
+    # 健康数据查询（查询 Withings 同步的体重/步数/睡眠数据）
+    # Health data query (queries Withings synced weight/steps/sleep data)
+    # 健康データクエリ（Withings同期の体重/歩数/睡眠データを照会）
+    health_query:
+        enabled: true
+
     # 网页搜索（自动使用 cloud_llm 中 search=true 的模型）
     # Web search (auto-picks search-enabled model from cloud_llm)
     # ウェブ検索（cloud_llm の search=true のモデルを自動使用）

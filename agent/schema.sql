@@ -116,6 +116,15 @@ CREATE INDEX IF NOT EXISTS idx_event_category ON event_log(category);
 CREATE INDEX IF NOT EXISTS idx_event_active ON event_log(expires_at) WHERE expires_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_event_importance ON event_log(importance DESC);
 
+CREATE TABLE IF NOT EXISTS session_meta (
+    session_id VARCHAR(64) PRIMARY KEY,
+    custom_name TEXT,
+    pinned BOOLEAN DEFAULT FALSE,
+    pinned_at TIMESTAMPTZ,
+    deleted_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS session_tags (
     id SERIAL PRIMARY KEY,
     session_id VARCHAR(64) NOT NULL,

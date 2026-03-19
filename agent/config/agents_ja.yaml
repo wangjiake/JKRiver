@@ -207,7 +207,7 @@ agents:
       - "CPU使用率は"
     enabled: false
     command:
-      template: "python scripts/system_info.py --target {target}"
+      template: "python3 scripts/system_info.py --target {target}"
       timeout: 10
       shell: true
       allowed_params:

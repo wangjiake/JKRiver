@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-03-19
+
+### Added
+
+- System page: toggle ON/OFF and delete tools/skills directly from the web dashboard
+- System page: install skills from SkillHub by name or by pasting YAML / SKILL.md content
+- System page: source badges distinguish bundled / file-installed / SkillHub skills
+- Chat page: rename and pin sessions for better conversation organization
+- File-based tool registry (`tools.yaml`) — tools are now dynamically loaded and removable without code changes
+- `session_meta` table for storing session custom names and pinned state
+
+### Fixed
+
+- Tool toggle badges (ON/OFF) now respond to clicks correctly (switched to direct onclick handler)
+- Skill toggle failing for files without an `enabled` field (auto-inserted on first toggle)
+- Skill delete failing when directory name differs from skill name (e.g. SkillHub installs)
+- Install skill modal buttons not translated in non-English UI languages
+- Install skill modal height overflowing the browser viewport
+- SkillHub tab now auto-detects pasted SKILL.md content and redirects to paste tab
+- `weekly_summary` skill missing delete button (fixed skill loading priority: individual files > SkillHub > bundled)
+
 ## [1.2.0] - 2026-03-06
 
 ### Added

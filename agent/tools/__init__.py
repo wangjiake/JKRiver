@@ -44,18 +44,28 @@ class ToolRegistry:
         if enabled:
             self._discover()
 
-    def _discover(self):
-        import agent.tools as tools_pkg
+    @staticmethod
+    def _tools_registry_path() -> str:
+        return os.path.join(os.path.dirname(__file__), "tools.yaml")
 
-        for importer, modname, ispkg in pkgutil.iter_modules(tools_pkg.__path__):
-            if modname.startswith("_"):
-                continue
+    @staticmethod
+    def list_registered_tool_names() -> list[str]:
+        import yaml as _yaml
+        path = ToolRegistry._tools_registry_path()
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = _yaml.safe_load(f) or {}
+            return [str(n) for n in data.get("tools", []) if n]
+        except Exception:
+            return []
+
+    def _discover(self):
+        for modname in self.list_registered_tool_names():
             try:
                 module = importlib.import_module(f"agent.tools.{modname}")
             except Exception as e:
                 logger.warning("Failed to import tool %s: %s", modname, e)
                 continue
-
             for attr_name in dir(module):
                 attr = getattr(module, attr_name)
                 if (isinstance(attr, type)
@@ -70,7 +80,6 @@ class ToolRegistry:
                         logger.warning("Failed to init tool %s: %s", attr_name, e)
 
         self._discover_agents()
-
         self._discover_mcp()
 
     def _discover_mcp(self):

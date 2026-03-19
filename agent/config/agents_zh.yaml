@@ -49,7 +49,7 @@ agents:
       - "东京现在天气怎么样"
       - "北京今天多少度"
       - "伦敦下雨了吗"
-    enabled: true
+    enabled: false
     http:
       url: "https://wttr.in/{city}"
       method: GET
@@ -178,34 +178,20 @@ agents:
 
   # ── 本地命令模板 ──
 
-  - name: "backup_notes"
-    type: command
-    description: "备份笔记文件到指定目录"
-    parameters:
-      scope: "备份范围：all / today / recent"
-    examples:
-      - "帮我备份所有笔记"
-      - "备份今天的笔记"
-    enabled: false
-    command:
-      template: "python scripts/backup_notes.py --scope {scope}"
-      timeout: 30
-      shell: true
-      allowed_params:
-        scope: ["all", "today", "recent"]
-
   - name: "system_info"
     type: command
     description: "查看本机系统信息（CPU、内存、磁盘使用率）"
     parameters:
       target: "查询目标：cpu / memory / disk / all"
     examples:
+      - "查看本机系统信息"
+      - "查看系统信息"
       - "电脑内存还剩多少"
       - "磁盘空间够吗"
       - "CPU占用多少"
     enabled: false
     command:
-      template: "python scripts/system_info.py --target {target}"
+      template: "python3 scripts/system_info.py --target {target}"
       timeout: 10
       shell: true
       allowed_params:

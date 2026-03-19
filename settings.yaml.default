@@ -242,15 +242,6 @@ mcp:
 #  AI 主动发消息给你（事件跟进、策略建议、闲时关心）
 #  AI proactively messages you (event follow-ups, strategy suggestions, idle check-ins)
 #  AI からの能動的メッセージ（イベントフォロー、戦略提案、アイドルチェック）
-# ─── 公开访问 | Public Mode | パブリックモード ──────────────
-#  开启后访问 Web 面板需要 Token 验证（公网部署必须开启）
-#  When enabled, Web Dashboard requires token auth (required for public deployment)
-#  有効にすると Web ダッシュボードにトークン認証が必要（公開デプロイ時は必須）
-public_mode:
-    enabled: false                      # 公网部署改为 true | Set true for public deployment | 公開デプロイは true に
-    access_token: ""                    # 留空则自动生成 | Leave empty to auto-generate | 空なら自動生成
-
-
 proactive:
     enabled: true
     scan_interval_minutes: 30           # 扫描间隔 | Scan interval | スキャン間隔

@@ -44,6 +44,7 @@ services:
 
   jkriver:
     image: wangjiake/jkriver:latest
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
@@ -69,7 +70,7 @@ services:
       - "1234:1234"
       - "8400:8400"
     volumes:
-      - jkriver_settings:/app/settings_volume
+      - jkriver_settings:/app_work
     extra_hosts:
       - "host.docker.internal:host-gateway"
 

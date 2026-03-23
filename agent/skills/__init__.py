@@ -81,7 +81,7 @@ class SkillRegistry:
         self._discover()
 
     def _discover(self):
-        skills_dir = os.path.join(os.path.dirname(__file__))
+        skills_dir = os.environ.get("SKILLS_DIR", os.path.join(os.path.dirname(__file__)))
         if not os.path.isdir(skills_dir):
             return
 

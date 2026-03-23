@@ -1,0 +1,182 @@
+[
+  {
+    "date": "2025-01-10",
+    "messages": [
+      {"user": "Hey! I'm Jake Morrison", "assistant": "Hey Jake! Nice to meet you. What's on your mind today?"},
+      {"user": "28 years old, originally from Portland Oregon", "assistant": "Portland's a great city! Are you still living there or have you moved?"},
+      {"user": "Nah I'm in San Francisco now, been here since college basically", "assistant": "SF is awesome! What brought you there — school or work?"},
+      {"user": "Went to UC Berkeley for computer science, now I work at a startup downtown as a software engineer", "assistant": "Berkeley CS is solid! What kind of startup are you working at?"}
+    ]
+  },
+  {
+    "date": "2025-01-25",
+    "messages": [
+      {"user": "We're building a developer tools platform, series A stage", "assistant": "Developer tools are a hot space right now. How's the startup life treating you?"},
+      {"user": "It's intense man, 60 hour weeks sometimes but I love it", "assistant": "That's the startup grind for sure. At least you're passionate about it!"},
+      {"user": "Yeah the team is great, only like 15 people so everyone knows everyone", "assistant": "Small teams have a special energy. You get to wear a lot of hats too."},
+      {"user": "I mainly do backend stuff, Go and Rust mostly", "assistant": "Go and Rust are a solid combo. Both great for the kind of performance you need in dev tools."}
+    ]
+  },
+  {
+    "date": "2025-02-08",
+    "messages": [
+      {"user": "Just got back from climbing at Mission Cliffs, legs are toast", "assistant": "Mission Cliffs is great! How long have you been climbing?"},
+      {"user": "Started in college, so like 6 years now. Mostly bouldering but I do some sport climbing too", "assistant": "Six years is solid! What grade are you climbing at these days?"},
+      {"user": "Projecting V7 right now, sent my first V6 outdoor last month at Castle Rock", "assistant": "V7 is impressive! Castle Rock must have been amazing — outdoor climbing hits different."},
+      {"user": "Totally, nothing beats real rock. I try to get outdoors at least twice a month", "assistant": "That's a good rhythm. California has so many incredible climbing spots."}
+    ]
+  },
+  {
+    "date": "2025-02-22",
+    "messages": [
+      {"user": "My dog Biscuit is being so annoying today lol", "assistant": "Haha what's Biscuit up to? What kind of dog?"},
+      {"user": "He's a golden retriever, 3 years old. He keeps stealing my socks", "assistant": "Golden retrievers are the best sock thieves! They're such lovable goofballs."},
+      {"user": "Seriously though he's the best, I adopted him during covid", "assistant": "Covid puppies turned out to be the best thing to come out of that era for a lot of people."},
+      {"user": "He comes to the office sometimes, our startup is super dog friendly", "assistant": "Dog-friendly offices are the best perk honestly. Bet Biscuit is the office mascot."}
+    ]
+  },
+  {
+    "date": "2025-03-08",
+    "messages": [
+      {"user": "Been getting into home brewing lately, made my first IPA last weekend", "assistant": "Nice! Home brewing is such a fun hobby. How did the IPA turn out?"},
+      {"user": "Honestly not bad for a first try, a bit too hoppy though", "assistant": "Too hoppy is better than too flat! You'll dial it in with practice."},
+      {"user": "My buddy Mike got me into it, he's been brewing for years", "assistant": "Having a mentor makes a huge difference. Does Mike live nearby?"},
+      {"user": "Yeah he's in Oakland, we went to Berkeley together. He works at Google now", "assistant": "Berkeley to Google is a classic Bay Area pipeline. Cool that you guys stayed close."}
+    ]
+  },
+  {
+    "date": "2025-03-22",
+    "messages": [
+      {"user": "Played piano for like 2 hours today, lost track of time", "assistant": "That flow state is the best! How long have you been playing?"},
+      {"user": "Since I was like 8, my mom made me take lessons. Hated it then but grateful now", "assistant": "Classic story! What kind of stuff do you play now?"},
+      {"user": "Mostly jazz and some classical. Been working on a Bill Evans piece", "assistant": "Bill Evans is beautiful. Which piece are you working on?"},
+      {"user": "Waltz for Debby, the harmonies are killing me but it sounds so good", "assistant": "Waltz for Debby is gorgeous. Those chord voicings are tricky but so rewarding when you nail them."}
+    ]
+  },
+  {
+    "date": "2025-04-05",
+    "messages": [
+      {"user": "SF rent is absolutely brutal dude", "assistant": "Yeah SF rent is no joke. How much are you paying if you don't mind me asking?"},
+      {"user": "3200 a month for a one bedroom in the Mission, and that's considered a deal", "assistant": "3200 for a one bedroom... only in SF is that a 'deal'. At least the Mission is a great neighborhood."},
+      {"user": "The burritos make it worth it honestly, there's this place on Valencia Street that's incredible", "assistant": "Mission burritos are legendary! La Taqueria or somewhere else?"},
+      {"user": "Nah it's a smaller spot, El Farolito. Their super burrito is unreal", "assistant": "El Farolito is a classic! Hard to beat a late night super burrito from there."}
+    ]
+  },
+  {
+    "date": "2025-04-20",
+    "messages": [
+      {"user": "Went climbing at Yosemite this weekend, absolutely unreal", "assistant": "Yosemite climbing is bucket list stuff! What did you get on?"},
+      {"user": "Did some routes in the Cookie Cliff area, nothing crazy but the views man", "assistant": "Cookie Cliff is fantastic. The granite there is so good."},
+      {"user": "Biscuit came too, he loved the meadows. Kept chasing squirrels", "assistant": "A golden retriever in Yosemite meadows sounds like pure happiness."},
+      {"user": "My parents might visit from Portland next month, want to take them there", "assistant": "That would be a great trip! Are your parents outdoorsy too?"}
+    ]
+  },
+  {
+    "date": "2025-05-05",
+    "messages": [
+      {"user": "Mom and dad came down this weekend, took them to Fisherman's Wharf like tourists lol", "assistant": "Haha sometimes you gotta do the tourist stuff! Did they enjoy it?"},
+      {"user": "Dad loved the clam chowder, mom just wanted to see the sea lions", "assistant": "The sea lions at Pier 39 are always entertaining. Sounds like a good time."},
+      {"user": "They keep asking when I'm gonna settle down and find a girlfriend", "assistant": "Parents gonna parent! Is that something on your mind or are you happy single?"},
+      {"user": "I mean I'm open to it but the startup grind doesn't leave much time for dating", "assistant": "That's fair. When the time is right it'll happen naturally."}
+    ]
+  },
+  {
+    "date": "2025-05-20",
+    "messages": [
+      {"user": "Brewed a stout this time, way better than the IPA", "assistant": "Stouts are so satisfying to brew. What made it better this time?"},
+      {"user": "I think I'm getting the fermentation temp control down, Mike lent me his temp controller", "assistant": "Temperature control is a game changer for homebrewing. That was nice of Mike."},
+      {"user": "Piano is going well too, nailed Waltz for Debby finally", "assistant": "Congrats! That must feel amazing after all that practice."},
+      {"user": "Thinking about joining a jazz jam session, there's one at a bar in North Beach every Thursday", "assistant": "You should totally go for it! Playing with other musicians takes things to a whole new level."}
+    ]
+  },
+  {
+    "date": "2025-06-05",
+    "messages": [
+      {"user": "So uh, bad news. Startup is running out of runway", "assistant": "Oh no, that's stressful. How much time does the company have?"},
+      {"user": "CEO said maybe 3 months unless we close the next round, but investors are getting cold feet", "assistant": "That's a tough spot. Are you starting to look around just in case?"},
+      {"user": "Yeah I updated my LinkedIn yesterday, already got a few recruiter messages", "assistant": "That's the good thing about being a software engineer — the market's always there for you."},
+      {"user": "Still hoping we make it though, I really believe in what we're building", "assistant": "That loyalty says a lot. Fingers crossed the round comes through."}
+    ]
+  },
+  {
+    "date": "2025-06-20",
+    "messages": [
+      {"user": "We didn't make it. Layoffs today, I'm out", "assistant": "I'm really sorry to hear that Jake. How are you holding up?"},
+      {"user": "Honestly kind of relieved? The stress was killing me. Got a decent severance at least", "assistant": "Sometimes a door closing is a relief. Severance gives you breathing room to figure out next steps."},
+      {"user": "Already have a few interviews lined up, one in Austin that looks really interesting", "assistant": "Austin's tech scene is booming! What's the company?"},
+      {"user": "Mid-size SaaS company, still growing fast. The role is senior backend engineer", "assistant": "Senior role at a growing SaaS company sounds great. And Austin's cost of living is way better than SF."}
+    ]
+  },
+  {
+    "date": "2025-07-05",
+    "messages": [
+      {"user": "Austin interview went really well, they're flying me out for an onsite next week", "assistant": "That's awesome! Sounds like they're serious about you."},
+      {"user": "The salary is almost the same as SF but rent is literally half", "assistant": "That's the Austin math everyone talks about. Your money goes so much further there."},
+      {"user": "Only thing I'm worried about is the heat, I'm a Pacific Northwest kid", "assistant": "Texas heat is no joke, especially in summer. But you adapt faster than you'd think."},
+      {"user": "Biscuit would love having a yard though, he's cramped in my apartment", "assistant": "A golden retriever with a yard would be living his best life!"}
+    ]
+  },
+  {
+    "date": "2025-07-20",
+    "messages": [
+      {"user": "Got the offer! I'm moving to Austin", "assistant": "Congrats Jake! That's huge. When do you start?"},
+      {"user": "September 1st, so I got about 6 weeks to figure out the move", "assistant": "That's a reasonable timeline. Have you started looking at neighborhoods?"},
+      {"user": "Thinking East Austin or maybe South Congress area, close to downtown", "assistant": "Both great areas! East Austin has a really cool vibe and South Congress is iconic."},
+      {"user": "Told my parents, they're bummed I'm going even further from Portland but supportive", "assistant": "That's parents for you — they want you close but they want you happy more."}
+    ]
+  },
+  {
+    "date": "2025-08-05",
+    "messages": [
+      {"user": "Packing up my SF apartment, this city gave me so much", "assistant": "Moving on is bittersweet. SF shaped who you are."},
+      {"user": "Had a farewell climbing session at Mission Cliffs with the crew", "assistant": "That's a perfect way to say goodbye. Did you send anything special?"},
+      {"user": "Actually sent my first V7! Perfect sendoff", "assistant": "No way! What a way to close that chapter. V7 on your last session there."},
+      {"user": "Mike threw me a going away party too, gonna miss that dude", "assistant": "Sounds like you've built great friendships in SF. Distance won't change that."}
+    ]
+  },
+  {
+    "date": "2025-08-20",
+    "messages": [
+      {"user": "Made it to Austin! Biscuit is already obsessed with the backyard", "assistant": "Welcome to Austin! A golden retriever with his own yard — he must be so happy."},
+      {"user": "Rented a 2 bedroom house in East Austin for 1800. I was paying 3200 in SF lol", "assistant": "Almost half! That's life-changing money you're saving every month."},
+      {"user": "The heat is real though, 105 degrees today. Biscuit and I just stayed inside", "assistant": "105 is brutal. Pro tip: do outdoor stuff early morning before the heat kicks in."},
+      {"user": "Found a climbing gym nearby, Austin Bouldering Project. Looks legit", "assistant": "ABP is one of the best gyms in Texas! You'll find a good community there."}
+    ]
+  },
+  {
+    "date": "2025-09-10",
+    "messages": [
+      {"user": "First week at the new job done, really liking it so far", "assistant": "Great to hear! How's the team and the work?"},
+      {"user": "Way more structured than startup life, which is honestly refreshing", "assistant": "After the chaos of a startup, some structure probably feels nice."},
+      {"user": "They use Rust for the core platform which is right in my wheelhouse", "assistant": "Perfect fit then! Getting paid to write Rust is the dream for a lot of engineers."},
+      {"user": "Also discovered Austin BBQ. Franklin's brisket changed my life", "assistant": "Franklin BBQ is a religious experience. Did you wait in the famous line?"}
+    ]
+  },
+  {
+    "date": "2025-09-25",
+    "messages": [
+      {"user": "Getting into the Austin live music scene, went to a show on 6th Street last night", "assistant": "6th Street is legendary! Who did you see?"},
+      {"user": "Some local blues band, they were incredible. This city is full of talent", "assistant": "Austin's the Live Music Capital for a reason. You'll never run out of shows to see."},
+      {"user": "Haven't touched the piano much since the move, still need to set it up", "assistant": "Understandable with all the moving chaos. Once you're settled it'll be there waiting."},
+      {"user": "Climbing is going great though, already met some cool people at ABP", "assistant": "Making friends through climbing is the best. Found any outdoor spots in Texas yet?"}
+    ]
+  },
+  {
+    "date": "2025-10-15",
+    "messages": [
+      {"user": "So I met someone. Her name is Sophie, she's a graphic designer", "assistant": "That's exciting! How did you two meet?"},
+      {"user": "At the climbing gym actually, she was struggling with a V4 and I gave her a beta", "assistant": "Meeting at the climbing gym is such a great story. Does she climb a lot?"},
+      {"user": "She's been climbing about a year, really into it. We went to Reimers Ranch together last weekend", "assistant": "Reimers Ranch is beautiful! A climbing date in the Texas Hill Country, that's pretty romantic."},
+      {"user": "Biscuit loves her too, he went absolutely nuts when she came over", "assistant": "When the dog approves, you know it's a good sign!"}
+    ]
+  },
+  {
+    "date": "2025-11-01",
+    "messages": [
+      {"user": "Austin is starting to feel like home honestly", "assistant": "That's great to hear! What's making it click for you?"},
+      {"user": "The people are so friendly, the food is insane, and Sophie and I are getting serious", "assistant": "Sounds like everything is falling into place. Austin suits you."},
+      {"user": "We're talking about getting a smoker for the backyard, full Texas mode", "assistant": "Haha you've gone full Texan! A backyard smoker with a golden retriever — living the dream."},
+      {"user": "Still miss SF sometimes but no regrets. Sometimes you gotta take the leap", "assistant": "Absolutely. You took a risk and it's paying off in every way."}
+    ]
+  }
+]

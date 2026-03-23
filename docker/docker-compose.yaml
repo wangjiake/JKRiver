@@ -43,6 +43,9 @@ services:
       - "host.docker.internal:host-gateway"
 
   jkriver:
+    build:
+      context: ../
+      dockerfile: Dockerfile
     image: wangjiake/jkriver:latest
     restart: unless-stopped
     depends_on:
@@ -66,14 +69,14 @@ services:
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
       SLEEP_MODE: ${SLEEP_MODE:-cron}
       SLEEP_CRON_HOUR: ${SLEEP_CRON_HOUR:-0}
+      SKILLS_DIR: /app_config/skills
     ports:
       - "1234:1234"
       - "8400:8400"
     volumes:
-      - jkriver_settings:/app_work
+      - ./config:/app_config
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
 volumes:
   pgdata:
-  jkriver_settings:

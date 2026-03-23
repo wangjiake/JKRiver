@@ -5,19 +5,38 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Access Required</title>
 <style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #161b22;
+  --border: #2d3348;
+  --text: #e1e4e8;
+  --text-muted: #8b92a5;
+  --accent: #58a6ff;
+  --red: #f85149;
+}
+body.light {
+  --bg: #ffffff;
+  --bg-card: #f6f8fa;
+  --border: #d0d7de;
+  --text: #1f2328;
+  --text-muted: #57606a;
+  --accent: #0969da;
+  --red: #cf222e;
+}
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
     font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
-    background: #0f1117;
-    color: #e1e4e8;
+    background: var(--bg);
+    color: var(--text);
     height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
 }
 .card {
-    background: #161b22;
-    border: 1px solid #2d3348;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
     border-radius: 12px;
     padding: 40px 36px;
     width: 100%;
@@ -36,16 +55,16 @@ h1 {
 }
 p {
     font-size: 14px;
-    color: #8b92a5;
+    color: var(--text-muted);
     margin-bottom: 28px;
 }
 input[type="text"] {
     width: 100%;
     padding: 12px 14px;
-    background: #0f1117;
-    border: 1px solid #2d3348;
+    background: var(--bg);
+    border: 1px solid var(--border);
     border-radius: 8px;
-    color: #e1e4e8;
+    color: var(--text);
     font-size: 14px;
     font-family: monospace;
     letter-spacing: 0.05em;
@@ -54,9 +73,9 @@ input[type="text"] {
     transition: border-color 0.2s;
 }
 input[type="text"]:focus {
-    border-color: #58a6ff;
+    border-color: var(--accent);
 }
-button {
+button[type="submit"] {
     width: 100%;
     padding: 12px;
     background: #1f6feb;
@@ -68,19 +87,34 @@ button {
     cursor: pointer;
     transition: background 0.2s;
 }
-button:hover { background: #388bfd; }
+button[type="submit"]:hover { background: #388bfd; }
 .error {
     margin-top: 16px;
     padding: 10px 14px;
     background: rgba(248, 81, 73, 0.1);
     border: 1px solid rgba(248, 81, 73, 0.3);
     border-radius: 6px;
-    color: #f85149;
+    color: var(--red);
     font-size: 13px;
 }
+.theme-btn {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    padding: 6px 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+}
+.theme-btn:hover { border-color: var(--accent); }
 </style>
 </head>
 <body>
+<button class="theme-btn" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme">🌙</button>
 <div class="card">
     <div class="lock-icon">🔒</div>
     <h1>Access Required</h1>
@@ -93,5 +127,23 @@ button:hover { background: #388bfd; }
     <div class="error">{{ error }}</div>
     {% endif %}
 </div>
+<script>
+(function() {
+  const saved = localStorage.getItem('theme') || 'dark';
+  if (saved === 'light') document.body.classList.add('light');
+  updateThemeBtn();
+})();
+
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light');
+  localStorage.setItem('theme', isLight ? 'light' : 'dark');
+  updateThemeBtn();
+}
+
+function updateThemeBtn() {
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.textContent = document.body.classList.contains('light') ? '🌙' : '☀️';
+}
+</script>
 </body>
 </html>

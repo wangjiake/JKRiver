@@ -77,8 +77,10 @@ def setup(app):
     def check_auth():
         if not _public_mode:
             return None
-        # Always allow the unlock routes
+        # Always allow the unlock routes and static assets
         if request.endpoint in ("auth.unlock_get", "auth.unlock_post"):
+            return None
+        if request.path.startswith("/img/"):
             return None
 
         ip = request.remote_addr or "unknown"

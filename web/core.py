@@ -7,7 +7,8 @@ core_bp = Blueprint("core", __name__)
 
 @core_bp.route("/img/<path:filename>")
 def serve_img(filename):
-    return send_from_directory(IMG_DIR, filename)
+    mimetype = "application/manifest+json" if filename.endswith(".webmanifest") else None
+    return send_from_directory(IMG_DIR, filename, mimetype=mimetype)
 
 
 @core_bp.route("/")

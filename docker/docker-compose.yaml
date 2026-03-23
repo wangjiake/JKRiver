@@ -5,8 +5,6 @@ services:
       POSTGRES_DB: Riverse
       POSTGRES_USER: postgres
       POSTGRES_HOST_AUTH_METHOD: trust
-    ports:
-      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -33,6 +31,7 @@ services:
       DB_HOST: postgres
       DEMO_MODE: ${DEMO_MODE:-true}
       DEMO_PROCESS: ${DEMO_PROCESS:-false}
+      ACCESS_TOKEN: ${ACCESS_TOKEN:-}
     ports:
       - "2345:2345"
     volumes:

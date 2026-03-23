@@ -51,7 +51,7 @@ def _api_token_valid(token: str) -> bool:
     except Exception:
         return False
 
-app = FastAPI(title="Riverse Agent API", version="1.2.0", lifespan=lifespan)
+app = FastAPI(title="Riverse Agent API", version="2.2.0", lifespan=lifespan)
 
 
 @app.middleware("http")

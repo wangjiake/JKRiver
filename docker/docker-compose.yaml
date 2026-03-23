@@ -43,9 +43,6 @@ services:
       - "host.docker.internal:host-gateway"
 
   jkriver:
-    build:
-      context: ../
-      dockerfile: Dockerfile
     image: wangjiake/jkriver:latest
     restart: unless-stopped
     depends_on:

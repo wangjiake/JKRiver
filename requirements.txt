@@ -10,4 +10,4 @@ python-telegram-bot~=22.7
 discord.py~=2.7
 edge-tts~=7.2
 python-multipart~=0.0.22
-websockets~=14.0
+websockets~=16.0

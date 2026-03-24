@@ -1,0 +1,25 @@
+skills:
+
+  - name: explain_code
+    description: Automatically explain code line by line when the user sends a snippet
+    trigger:
+      type: keyword
+      keywords: ["explain code", "what does this code do", "walk me through this"]
+    instruction: |
+      The user wants you to explain code. Please:
+      1. Summarize the purpose in one sentence
+      2. Explain the key logic line by line or block by block
+      3. Point out potential improvements or issues
+    enabled: true
+
+  - name: weekly_summary
+    description: Send a friendly weekend greeting every Sunday evening
+    trigger:
+      type: schedule
+      cron: "0 20 * * 0"
+    steps:
+      - respond: |
+          As the user's AI friend, write a short and warm weekend greeting.
+          Ask how their week went and if they have any plans for next week.
+          Keep it casual, like a friend chatting — 2-3 sentences is enough.
+    enabled: true

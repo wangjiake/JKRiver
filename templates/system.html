@@ -6,136 +6,223 @@
 <title id="page-title">System — {{ db_name }}</title>
 <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
 <style>
+:root {
+  --bg: #161e2c;
+  --bg-card: #1a2234;
+  --bg-card2: #182030;
+  --bg-header-start: #1a2030;
+  --bg-header-end: #1e2636;
+  --bg-input: #141c28;
+  --bg-hover: #1e2636;
+  --bg-hover2: #1c2432;
+  --bg-accent: #1e3252;
+  --bg-accent2: #1a2a3e;
+  --border: #28344a;
+  --border-light: #1e2838;
+  --border-accent: #2a4468;
+  --text: #b8c8d8;
+  --text-2: #a8b8cc;
+  --text-muted: #6e7e94;
+  --text-faint: #506070;
+  --text-faint2: #3a4858;
+  --accent: #58a6ff;
+  --green: #3fb950;
+  --yellow: #d29922;
+  --red: #f85149;
+  --purple: #bc8cff;
+  --shadow: rgba(0,0,0,0.5);
+  --glass-bg: rgba(24, 30, 42, 0.68);
+  --glass-sidebar: rgba(20, 26, 36, 0.80);
+  --glass-card: rgba(28, 34, 48, 0.92);
+  --glass-input: rgba(18, 22, 34, 0.84);
+  --glass-blur: blur(24px) saturate(200%);
+  --card-border: rgba(140, 158, 195, 0.16);
+  --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(160, 180, 220, 0.07);
+  --body-gradient: linear-gradient(160deg, #1a2030 0%, #1e2838 35%, #1a2830 65%, #1c2038 100%);
+}
+body.light {
+  --bg: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card2: #f0f3f6;
+  --bg-header-start: #f6f8fa;
+  --bg-header-end: #eaeef2;
+  --bg-input: #ffffff;
+  --bg-hover: #eaeef2;
+  --bg-hover2: #e8ecf0;
+  --bg-accent: #ddf4ff;
+  --bg-accent2: #cae8ff;
+  --border: #d0d7de;
+  --border-light: #eaeef2;
+  --border-accent: #54aeff;
+  --text: #1f2328;
+  --text-2: #24292f;
+  --text-muted: #57606a;
+  --text-faint: #8c959f;
+  --text-faint2: #afb8c1;
+  --accent: #0969da;
+  --green: #1a7f37;
+  --yellow: #9a6700;
+  --red: #cf222e;
+  --purple: #8250df;
+  --shadow: rgba(0,0,0,0.15);
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-sidebar: rgba(248, 250, 255, 0.60);
+  --glass-card: rgba(255, 255, 255, 0.88);
+  --glass-input: rgba(255, 255, 255, 0.85);
+  --card-border: rgba(0, 0, 0, 0.10);
+  --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.14), 0 1px 4px rgba(0, 0, 0, 0.08);
+  --body-gradient: linear-gradient(160deg, #dde8ff 0%, #ede6fa 35%, #ddf2ec 65%, #f5e6f5 100%);
+}
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; background: #0f1117; color: #e1e4e8; min-height: 100vh; }
+html { background-color: #1a2030; }
+html.light { background-color: #f5e6f5; }
+body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; background: var(--body-gradient); color: var(--text); min-height: 100vh; }
 
-.header { background: linear-gradient(135deg, #1a1f36 0%, #252a40 100%); padding: 14px 24px; border-bottom: 1px solid #2d3348; display: flex; justify-content: space-between; align-items: center; }
-.header h1 { font-size: 20px; font-weight: 600; color: #fff; }
+.header { background: var(--glass-bg); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); padding: 14px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; }
+.header h1 { font-size: 20px; font-weight: 600; color: var(--text); }
 .header-right { display: flex; gap: 8px; align-items: center; }
-.nav-link { padding: 5px 12px; background: #252a40; border: 1px solid #2d3348; border-radius: 4px; color: #8b92a5; text-decoration: none; font-size: 12px; }
-.nav-link:hover { color: #58a6ff; border-color: #58a6ff; }
-.nav-link.active { color: #58a6ff; border-color: #58a6ff; background: #1f2740; }
+.nav-link { background: transparent; border: 1px solid rgba(255,255,255,0.10); border-radius: 8px; color: rgba(255,255,255,0.48); font-size: 12px; text-decoration: none; transition: all 0.2s; backdrop-filter: blur(12px) saturate(180%); -webkit-backdrop-filter: blur(12px) saturate(180%); padding: 5px 12px; }
+.nav-link:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.18); color: rgba(255,255,255,0.72); }
+.nav-link.active { background: rgba(88,166,255,0.13); border-color: rgba(88,166,255,0.35); color: #58a6ff; }
+body.light .nav-link { background: transparent; border-color: rgba(0,0,0,0.12); color: rgba(0,0,0,0.42); }
+body.light .nav-link:hover { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.18); color: rgba(0,0,0,0.65); }
+body.light .nav-link.active { background: rgba(9,105,218,0.08); border-color: rgba(9,105,218,0.30); color: #0969da; }
 .lang-switch { display: flex; gap: 4px; }
-.lang-btn { padding: 4px 10px; background: #252a40; border: 1px solid #2d3348; border-radius: 4px; color: #8b92a5; cursor: pointer; font-size: 12px; }
-.lang-btn:hover { color: #c9d1d9; border-color: #444c5e; }
-.lang-btn.active { color: #58a6ff; border-color: #58a6ff; background: #1f2740; }
+.lang-btn { padding: 4px 10px; background: transparent; border: 1px solid rgba(255,255,255,0.10); border-radius: 8px; color: rgba(255,255,255,0.48); cursor: pointer; font-size: 12px; transition: all 0.2s; backdrop-filter: blur(12px) saturate(180%); -webkit-backdrop-filter: blur(12px) saturate(180%); }
+.lang-btn:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.18); color: rgba(255,255,255,0.72); }
+.lang-btn.active { background: rgba(88,166,255,0.13); border-color: rgba(88,166,255,0.35); color: #58a6ff; }
+body.light .lang-btn { background: transparent; border-color: rgba(0,0,0,0.12); color: rgba(0,0,0,0.42); }
+body.light .lang-btn:hover { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.18); color: rgba(0,0,0,0.65); }
+body.light .lang-btn.active { background: rgba(9,105,218,0.08); border-color: rgba(9,105,218,0.30); color: #0969da; }
+.theme-btn { padding: 5px 8px; background: transparent; border: 1px solid rgba(255,255,255,0.10); border-radius: 8px; color: rgba(255,255,255,0.48); cursor: pointer; line-height: 1; display: flex; align-items: center; transition: all 0.2s; backdrop-filter: blur(12px) saturate(180%); -webkit-backdrop-filter: blur(12px) saturate(180%); }
+.theme-btn:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.18); color: rgba(255,255,255,0.72); }
+body.light .theme-btn { background: transparent; border-color: rgba(0,0,0,0.12); color: rgba(0,0,0,0.42); }
+body.light .theme-btn:hover { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.18); color: rgba(0,0,0,0.65); }
 
 .container { max-width: 1100px; margin: 0 auto; padding: 28px 24px; }
 
 .section { margin-bottom: 32px; }
-.section-title { font-size: 13px; font-weight: 600; color: #8b92a5; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
-.section-title::after { content: ''; flex: 1; height: 1px; background: #2d3348; }
+.section-title { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
 .info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
-.info-card { background: #161b22; border: 1px solid #2d3348; border-radius: 8px; padding: 14px 16px; }
-.info-card .label { font-size: 11px; color: #6e7681; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
-.info-card .value { font-size: 14px; color: #e1e4e8; font-weight: 500; }
-.info-card .value.on { color: #3fb950; }
-.info-card .value.off { color: #6e7681; }
+.info-card { background: var(--glass-card); border: 1px solid var(--card-border); border-radius: 10px; padding: 14px 16px; box-shadow: var(--card-shadow); }
+.info-card .label { font-size: 11px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+.info-card .value { font-size: 14px; color: var(--text); font-weight: 500; }
+.info-card .value.on { color: var(--green); }
+.info-card .value.off { color: var(--text-faint); }
 
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
-.card { background: #161b22; border: 1px solid #2d3348; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
-.card.disabled { opacity: 0.45; }
+.card { background: var(--glass-card); border: 1px solid var(--card-border); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 8px; box-shadow: var(--card-shadow); }
+.card.disabled { opacity: 0.65; filter: grayscale(50%); }
 .card-header { display: flex; align-items: center; gap: 8px; }
-.card-name { font-size: 14px; font-weight: 600; color: #e1e4e8; flex: 1; }
+.card-name { font-size: 14px; font-weight: 600; color: var(--text); flex: 1; }
 .badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.05em; flex-shrink: 0; }
-.badge-builtin { background: #1f3a5f; color: #58a6ff; }
+.badge-builtin { background: #1f3a5f; color: var(--accent); }
 .badge-agent { background: #2d1f5f; color: #a78bfa; }
-.badge-mcp { background: #1f4a2d; color: #3fb950; }
-.badge-skill { background: #3d2a0a; color: #d29922; }
-.badge-on { background: #1a3a1a; color: #3fb950; }
-.badge-off { background: #2d2d2d; color: #6e7681; }
-.card-desc { font-size: 13px; color: #8b92a5; line-height: 1.5; }
+.badge-mcp { background: #1f4a2d; color: var(--green); }
+.badge-skill { background: #3d2a0a; color: var(--yellow); }
+.badge-on { background: #1a3a1a; color: var(--green); }
+.badge-off { background: #2d2d2d; color: var(--text-faint); }
+body.light .badge-builtin { background: #dbeafe; color: #1d4ed8; }
+body.light .badge-agent   { background: #ede9fe; color: #6d28d9; }
+body.light .badge-mcp     { background: #dcfce7; color: #166534; }
+body.light .badge-skill   { background: #fef3c7; color: #92400e; }
+body.light .badge-on      { background: #dcfce7; color: #166534; }
+body.light .badge-off     { background: #f1f5f9; color: #64748b; }
+.card-desc { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
 .card-examples { display: flex; flex-wrap: wrap; gap: 6px; }
-.example-tag { font-size: 11px; background: #1e222c; border: 1px solid #2d3348; border-radius: 4px; padding: 3px 8px; color: #8b92a5; }
-.card-meta { font-size: 11px; color: #6e7681; }
-.card-meta span { color: #8b92a5; }
-.empty { text-align: center; padding: 40px; color: #6e7681; font-size: 14px; background: #161b22; border: 1px dashed #2d3348; border-radius: 8px; }
-.loading { text-align: center; padding: 60px; color: #6e7681; }
-.restart-banner { position: sticky; top: 0; z-index: 100; background: #2d2000; border-bottom: 1px solid #d29922; padding: 10px 24px; display: flex; align-items: center; gap: 12px; font-size: 13px; color: #d29922; }
+.example-tag { font-size: 11px; background: var(--glass-card); border: 1px solid var(--border); border-radius: 4px; padding: 3px 8px; color: var(--text-muted); }
+.card-meta { font-size: 11px; color: var(--text-faint); }
+.card-meta span { color: var(--text-muted); }
+.empty { text-align: center; padding: 40px; color: var(--text-faint); font-size: 14px; background: var(--bg-card); border: 1px dashed var(--border); border-radius: 8px; }
+.loading { text-align: center; padding: 60px; color: var(--text-faint); }
+.restart-banner { position: sticky; top: 0; z-index: 100; background: #2d2000; border-bottom: 1px solid var(--yellow); padding: 10px 24px; display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--yellow); }
 .restart-banner .banner-msg { flex: 1; }
 .banner-btn { padding: 5px 14px; border-radius: 4px; border: 1px solid; cursor: pointer; font-size: 12px; font-weight: 600; }
-.banner-btn.restart { background: #d29922; border-color: #d29922; color: #0f1117; }
-.banner-btn.revert { background: transparent; border-color: #d29922; color: #d29922; }
+.banner-btn.restart { background: var(--yellow); border-color: var(--yellow); color: var(--bg); }
+.banner-btn.revert { background: transparent; border-color: var(--yellow); color: var(--yellow); }
 .banner-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .info-card.editable { cursor: pointer; transition: border-color 0.15s; }
 .info-card.editable:hover { border-color: #444c5e; }
 .info-card.editable:hover .edit-icon { opacity: 1; }
-.edit-icon { opacity: 0; font-size: 10px; color: #58a6ff; margin-left: 4px; transition: opacity 0.15s; }
-.info-card.editing { border-color: #58a6ff !important; background: #1a2030; }
-.edit-input { background: transparent; border: none; color: #e1e4e8; font-size: 14px; font-weight: 500; width: 100%; outline: none; padding: 0; }
-.edit-input option { background: #1a2030; color: #e1e4e8; }
+.edit-icon { opacity: 0; font-size: 10px; color: var(--accent); margin-left: 4px; transition: opacity 0.15s; }
+.info-card.editing { border-color: var(--accent) !important; background: var(--bg-hover2); }
+.edit-input { background: transparent; border: none; color: var(--text); font-size: 14px; font-weight: 500; width: 100%; outline: none; padding: 0; }
+.edit-input option { background: var(--bg-hover2); color: var(--text); }
 .edit-actions { display: flex; gap: 6px; margin-top: 6px; }
 .edit-btn { padding: 2px 10px; font-size: 11px; border-radius: 3px; border: 1px solid; cursor: pointer; font-weight: 600; }
 .edit-btn.confirm { background: #238636; border-color: #238636; color: #fff; }
-.edit-btn.cancel { background: transparent; border-color: #444c5e; color: #8b92a5; }
-.config-section { background: #161b22; border: 1px solid #2d3348; border-radius: 8px; overflow: hidden; align-self: start; }
+.edit-btn.cancel { background: transparent; border-color: #444c5e; color: var(--text-muted); }
+.config-section { background: var(--glass-card); border: 1px solid var(--card-border); border-radius: 10px; overflow: hidden; align-self: start; box-shadow: var(--card-shadow); }
 .config-section-header { padding: 12px 16px; display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
-.config-section-header:hover { background: #1c2128; }
-.config-section-title { font-size: 13px; font-weight: 600; color: #e1e4e8; flex: 1; }
-.config-section-arrow { font-size: 10px; color: #6e7681; transition: transform 0.2s; }
+.config-section-header:hover { background: var(--bg-hover2); }
+.config-section-title { font-size: 13px; font-weight: 600; color: var(--text); flex: 1; }
+.config-section-arrow { font-size: 10px; color: var(--text-faint); transition: transform 0.2s; }
 .config-section.open .config-section-arrow { transform: rotate(90deg); }
-.config-section-body { display: none; border-top: 1px solid #2d3348; }
+.config-section-body { display: none; border-top: 1px solid var(--border); }
 .config-section.open .config-section-body { display: block; }
-.config-field { display: flex; align-items: flex-start; padding: 8px 16px; border-bottom: 1px solid #21262d; gap: 12px; min-height: 36px; }
+.config-field { display: flex; align-items: flex-start; padding: 8px 16px; border-bottom: 1px solid var(--border-light); gap: 12px; min-height: 36px; }
 .config-field:last-child { border-bottom: none; }
-.config-field-label { font-size: 11px; color: #6e7681; width: 130px; flex-shrink: 0; padding-top: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
-.config-field-value { font-size: 13px; color: #e1e4e8; flex: 1; }
+.config-field-label { font-size: 11px; color: var(--text-faint); width: 130px; flex-shrink: 0; padding-top: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
+.config-field-value { font-size: 13px; color: var(--text); flex: 1; }
 .config-field.editable .config-field-value { cursor: pointer; padding: 1px 4px; border-radius: 3px; }
-.config-field.editable:hover .config-field-value { background: #1e2a3a; color: #58a6ff; }
+.config-field.editable:hover .config-field-value { background: #1e2a3a; color: var(--accent); }
 .config-field.editing .config-field-value { background: #1e2a3a; }
-.config-field-hint { font-size: 10px; color: #6e7681; margin-top: 2px; }
-.config-field .edit-input { background: #0d1117; border: 1px solid #58a6ff; color: #e1e4e8; font-size: 13px; width: 100%; outline: none; padding: 2px 6px; border-radius: 3px; }
-.config-field .edit-input option { background: #0d1117; }
+.config-field-hint { font-size: 10px; color: var(--text-faint); margin-top: 2px; }
+.config-field .edit-input { background: var(--bg-input); border: 1px solid var(--accent); color: var(--text); font-size: 13px; width: 100%; outline: none; padding: 2px 6px; border-radius: 3px; }
+.config-field .edit-input option { background: var(--bg-input); }
 .config-field .edit-actions { display: flex; gap: 4px; margin-top: 4px; }
-.delete-btn { background: transparent; border: none; cursor: pointer; color: #6e7681; font-size: 13px; padding: 1px 4px; border-radius: 3px; line-height: 1; flex-shrink: 0; opacity: 0; transition: opacity 0.15s, color 0.15s; }
+.delete-btn { background: transparent; border: none; cursor: pointer; color: var(--text-faint); font-size: 13px; padding: 1px 4px; border-radius: 3px; line-height: 1; flex-shrink: 0; opacity: 0; transition: opacity 0.15s, color 0.15s; }
 .card:hover .delete-btn { opacity: 1; }
-.delete-btn:hover { color: #f85149; background: #2d1a1a; }
-.install-btn { margin-left: auto; padding: 4px 12px; background: #1f3a6e; border: 1px solid #2d4f8e; border-radius: 5px; color: #58a6ff; font-size: 11px; cursor: pointer; font-weight: 600; }
+.delete-btn:hover { color: var(--red); background: #2d1a1a; }
+.install-btn { margin-left: auto; padding: 4px 12px; background: var(--bg-accent); border: 1px solid var(--border-accent); border-radius: 5px; color: var(--accent); font-size: 11px; cursor: pointer; font-weight: 600; }
 .install-btn:hover { background: #24426e; }
 .install-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 500; display: none; align-items: center; justify-content: center; }
 .install-modal.open { display: flex; }
-.install-box { background: #161b22; border: 1px solid #2d3348; border-radius: 10px; padding: 24px; width: 560px; max-width: 96vw; max-height: 90vh; overflow-y: auto; }
-.install-box h4 { font-size: 14px; color: #e1e4e8; margin-bottom: 12px; }
-.install-tabs { display: flex; gap: 0; border-bottom: 1px solid #2d3348; margin-bottom: 14px; }
-.install-tab { padding: 6px 16px; font-size: 12px; color: #6e7681; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s; }
-.install-tab.active { color: #58a6ff; border-bottom-color: #58a6ff; }
+.install-box { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 24px; width: 560px; max-width: 96vw; max-height: 90vh; overflow-y: auto; }
+.install-box h4 { font-size: 14px; color: var(--text); margin-bottom: 12px; }
+.install-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+.install-tab { padding: 6px 16px; font-size: 12px; color: var(--text-faint); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s; }
+.install-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 .install-tab-pane { display: none; }
 .install-tab-pane.active { display: block; }
-.install-box p { font-size: 12px; color: #6e7681; margin-bottom: 10px; }
-.install-box textarea { width: 100%; height: 200px; max-height: 400px; background: #0d1117; border: 1px solid #2d3348; border-radius: 6px; color: #e1e4e8; padding: 10px; font-size: 12px; font-family: monospace; outline: none; resize: vertical; box-sizing: border-box; }
-.install-box textarea:focus { border-color: #58a6ff; }
+.install-box p { font-size: 12px; color: var(--text-faint); margin-bottom: 10px; }
+.install-box textarea { width: 100%; height: 200px; max-height: 400px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 10px; font-size: 12px; font-family: monospace; outline: none; resize: vertical; box-sizing: border-box; }
+.install-box textarea:focus { border-color: var(--accent); }
 .hub-search-row { display: flex; gap: 8px; margin-bottom: 10px; }
-.hub-search-row input { flex: 1; background: #0d1117; border: 1px solid #2d3348; border-radius: 6px; color: #e1e4e8; padding: 7px 10px; font-size: 13px; outline: none; }
-.hub-search-row input:focus { border-color: #58a6ff; }
-.hub-search-row button { padding: 7px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; border: 1px solid #2d4f8e; background: #1f3a6e; color: #58a6ff; }
-.hub-status { font-size: 12px; color: #6e7681; min-height: 20px; }
-.hub-status.err { color: #f85149; }
-.hub-status.ok { color: #3fb950; }
+.hub-search-row input { flex: 1; background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 7px 10px; font-size: 13px; outline: none; }
+.hub-search-row input:focus { border-color: var(--accent); }
+.hub-search-row button { padding: 7px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; border: 1px solid var(--border-accent); background: var(--bg-accent); color: var(--accent); }
+.hub-status { font-size: 12px; color: var(--text-faint); min-height: 20px; }
+.hub-status.err { color: var(--red); }
+.hub-status.ok { color: var(--green); }
 .install-box-btns { display: flex; gap: 8px; margin-top: 14px; justify-content: flex-end; }
-.install-box-btns button { padding: 6px 16px; border-radius: 6px; font-size: 12px; cursor: pointer; border: 1px solid #2d3348; background: #252a40; color: #c9d1d9; }
-.install-box-btns button.primary { background: #1f3a6e; border-color: #58a6ff; color: #58a6ff; }
+.install-box-btns button { padding: 6px 16px; border-radius: 6px; font-size: 12px; cursor: pointer; border: 1px solid var(--border); background: var(--bg-header-end); color: var(--text-2); }
+.install-box-btns button.primary { background: var(--bg-accent); border-color: var(--accent); color: var(--accent); }
 .badge-skillhub { background: #1a1a2e; color: #a78bfa; }
-.badge-file { background: #1a2a1a; color: #3fb950; }
-.cp-card { border-bottom: 1px solid #21262d; }
+.badge-file { background: #1a2a1a; color: var(--green); }
+body.light .badge-skillhub { background: #ede9fe; color: #6d28d9; }
+body.light .badge-file     { background: #dcfce7; color: #166534; }
+.cp-card { border-bottom: 1px solid var(--border-light); }
 .cp-card:last-child { border-bottom: none; }
 .cp-header { display: flex; align-items: center; gap: 8px; padding: 9px 16px; cursor: pointer; user-select: none; }
-.cp-header:hover { background: #1c2128; }
-.cp-name { font-size: 13px; font-weight: 600; color: #e1e4e8; }
-.cp-model { font-size: 12px; color: #6e7681; flex: 1; }
-.cp-arrow { font-size: 10px; color: #6e7681; transition: transform 0.2s; }
+.cp-header:hover { background: var(--bg-hover2); }
+.cp-name { font-size: 13px; font-weight: 600; color: var(--text); }
+.cp-model { font-size: 12px; color: var(--text-faint); flex: 1; }
+.cp-arrow { font-size: 10px; color: var(--text-faint); transition: transform 0.2s; }
 .cp-card.open .cp-arrow { transform: rotate(90deg); }
 .cp-body { display: none; }
 .cp-card.open .cp-body { display: block; }
-.cp-add { padding: 10px 16px; border-top: 1px solid #2d3348; }
+.cp-add { padding: 10px 16px; border-top: 1px solid var(--border); }
 .cp-add-form { display: none; margin-bottom: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
 .cp-add-form.hidden { display: none; }
-.cp-add-btn { width: 100%; background: transparent; border: 1px dashed #2d3348; color: #6e7681; padding: 5px; border-radius: 4px; cursor: pointer; font-size: 12px; }
-.cp-add-btn:hover { border-color: #58a6ff; color: #58a6ff; }
+.cp-add-btn { width: 100%; background: transparent; border: 1px dashed var(--border); color: var(--text-faint); padding: 5px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+.cp-add-btn:hover { border-color: var(--accent); color: var(--accent); }
 .choice-group { display: flex; gap: 4px; }
-.choice-btn { padding: 3px 14px; border-radius: 4px; border: 1px solid #2d3348; background: transparent; color: #8b92a5; cursor: pointer; font-size: 12px; font-weight: 500; transition: all 0.15s; }
-.choice-btn:hover:not(.active) { border-color: #444c5e; color: #c9d1d9; }
-.choice-btn.active { background: #1f2740; border-color: #58a6ff; color: #58a6ff; }
+.choice-btn { padding: 3px 14px; border-radius: 4px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); cursor: pointer; font-size: 12px; font-weight: 500; transition: all 0.15s; }
+.choice-btn:hover:not(.active) { border-color: #444c5e; color: var(--text-2); }
+.choice-btn.active { background: var(--bg-accent2); border-color: var(--accent); color: var(--accent); }
 </style>
 </head>
 <body>
@@ -156,6 +243,7 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; ba
       <button class="lang-btn" onclick="setLang('en')">EN</button>
       <button class="lang-btn" onclick="setLang('ja')">日本語</button>
     </div>
+    <button class="theme-btn" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme" data-i18n-title="toggle_theme"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button>
   </div>
 </div>
 
@@ -189,8 +277,8 @@ const I18N = {
     label_llm_model: 'LLM 模型', label_llm_api: 'LLM API',
     label_llm_key: 'LLM 密钥', label_telegram_token: 'Telegram Token',
     label_discord_token: 'Discord Token',
-    label_embedding: '向量搜索', label_embedding_model: '向量模型', label_cloud_llm: '云端升级链',
-    label_public_mode: '公网模式', label_proactive: '主动推送',
+    label_embedding: '语义搜索', label_embedding_model: '向量模型', label_cloud_llm: '云端备用模型',
+    label_public_mode: '公网访问', label_proactive: '主动推送',
     label_tts: '语音合成', label_telegram: 'Telegram Bot',
     label_discord: 'Discord Bot', label_mcp: 'MCP',
     label_params: '参数', label_keywords: '关键词',
@@ -199,7 +287,9 @@ const I18N = {
     edit_confirm: '确认', edit_cancel: '取消',
     edit_placeholder: '输入新值', edit_placeholder_sensitive: '输入新密钥（留空则不修改）',
     not_set: '未配置',
-    badge_builtin: '内置', badge_agent: '智能体', badge_skill: '技能',
+    badge_builtin: '内置', badge_agent: '智能体', badge_skill: '技能', badge_mcp: 'MCP',
+    on: '开', off: '关', toggle_theme: '切换主题', toggle_click: '点击切换',
+    restart_timeout: '重启超时，请手动刷新页面。', err_failed: '操作失败：',
     banner_msg: '配置已修改，需要重启服务后生效', btn_restart: '立即重启', btn_revert: '撤销修改', btn_cancel: '取消', btn_install: '安装',
     restarting: '正在重启...', reverting: '正在撤销...',
     label_temperature: '温度', label_max_tokens: '最大Token', label_temp_dir: '临时目录',
@@ -209,30 +299,31 @@ const I18N = {
     label_max_per_day: '每日最大条数', label_min_gap: '最小间隔(分钟)', label_access_token: '访问令牌',
     label_bot_token: 'Bot Token',
     section_llm: 'LLM 主模型', section_telegram: 'Telegram Bot', section_discord: 'Discord Bot',
-    section_tts_config: '语音合成配置', section_embedding_config: '向量搜索配置',
+    section_tts_config: '语音合成配置', section_embedding_config: '语义搜索配置',
     section_proactive_config: '主动推送配置', section_public_config: '公网访问配置',
     hint_allowed_ids: '留空=所有人，多个ID用逗号分隔',
     confirm_delete: '确定要删除「{name}」吗？此操作不可撤销。',
     delete_tip: '删除',
     add_provider: '添加提供商', label_new_name: '名称', label_new_model: '模型', label_new_base: 'API 地址',
     label_priority: '优先级', label_search: '网页搜索',
-    label_escalation_auto: '自动升级', label_escalation_feedback: '升级后通知',
+    label_escalation_auto: '自动备用', label_escalation_feedback: '启用备用时通知用户',
     label_escalation_min_length: '最短回复字数',
-    section_cloud_providers: '提供商配置', section_cloud_escalation: '升级策略',
+    section_cloud_providers: '提供商配置', section_cloud_escalation: '备用策略',
     provider_no_key: '未填写密钥',
     label_timezone: '时区',
     section_database: '数据库', label_db_name: '数据库名', label_db_user: '用户名', label_db_host: '主机',
     section_session_memory: '会话记忆', label_char_budget: '上下文字符预算',
     label_keep_recent: '保留最近轮次', label_summary_ratio: '摘要占比',
-    label_recall_max: '向量召回上限', label_recall_min_score: '最低召回相似度',
+    label_recall_max: '记忆召回上限', label_recall_min_score: '最低记忆匹配度',
     section_tools_config: '工具配置', label_tools_enabled: '工具总开关',
+    web_search_unsupported: '需要在 Cloud LLM 中配置一个支持联网的 provider（search: true），且 Cloud LLM 已启用',
     label_voice_model: '语音模型', label_voice_lang: '语音语言',
     label_image_provider: '图像提供商', label_image_model: '图像模型',
     label_file_max_size: '最大文件大小(字节)', label_shell_timeout: 'Shell 超时(秒)',
-    label_emb_top_k: '召回条数', label_emb_min_score: '最低相似度', label_emb_clustering: '聚类',
+    label_emb_top_k: '搜索结果数', label_emb_min_score: '最低相似度', label_emb_clustering: '聚类去重',
     section_triggers: '触发器', label_followup: '事件跟进', label_followup_importance: '最低重要性',
     label_followup_after: '跟进延迟(小时)', label_followup_max_age: '最大追溯(天)',
-    label_strategy: '画像策略触发', label_idle: '闲时关心', label_idle_hours: '触发闲置(小时)',
+    label_strategy: '策略分析触发', label_idle: '闲时关心', label_idle_hours: '触发闲置(小时)',
   },
   en: {
     nav_chat: 'Chat', nav_profile: 'Profile', nav_system: 'System',
@@ -254,8 +345,8 @@ const I18N = {
     label_llm_model: 'LLM Model', label_llm_api: 'LLM API',
     label_llm_key: 'LLM API Key', label_telegram_token: 'Telegram Token',
     label_discord_token: 'Discord Token',
-    label_embedding: 'Embedding', label_embedding_model: 'Embedding Model', label_cloud_llm: 'Cloud LLM Escalation',
-    label_public_mode: 'Public Mode', label_proactive: 'Proactive Messages',
+    label_embedding: 'Semantic Search', label_embedding_model: 'Embedding Model', label_cloud_llm: 'Cloud Fallback Model',
+    label_public_mode: 'Public Access', label_proactive: 'Proactive Messages',
     label_tts: 'TTS', label_telegram: 'Telegram Bot',
     label_discord: 'Discord Bot', label_mcp: 'MCP',
     label_params: 'Params', label_keywords: 'Keywords',
@@ -264,7 +355,9 @@ const I18N = {
     edit_confirm: 'OK', edit_cancel: 'Cancel',
     edit_placeholder: 'Enter new value', edit_placeholder_sensitive: 'Enter new key (leave empty to keep)',
     not_set: 'not set',
-    badge_builtin: 'Built-in', badge_agent: 'Agent', badge_skill: 'Skill',
+    badge_builtin: 'Built-in', badge_agent: 'Agent', badge_skill: 'Skill', badge_mcp: 'MCP',
+    on: 'ON', off: 'OFF', toggle_theme: 'Toggle theme', toggle_click: 'Click to toggle',
+    restart_timeout: 'Restart timed out. Please refresh manually.', err_failed: 'Failed: ',
     banner_msg: 'Config changed — restart required', btn_restart: 'Restart now', btn_revert: 'Revert', btn_cancel: 'Cancel', btn_install: 'Install',
     restarting: 'Restarting...', reverting: 'Reverting...',
     label_temperature: 'Temperature', label_max_tokens: 'Max Tokens', label_temp_dir: 'Temp Dir',
@@ -274,30 +367,31 @@ const I18N = {
     label_max_per_day: 'Max/Day', label_min_gap: 'Min Gap (min)', label_access_token: 'Access Token',
     label_bot_token: 'Bot Token',
     section_llm: 'Primary LLM', section_telegram: 'Telegram Bot', section_discord: 'Discord Bot',
-    section_tts_config: 'TTS Config', section_embedding_config: 'Embedding Config',
+    section_tts_config: 'TTS Config', section_embedding_config: 'Semantic Search Config',
     section_proactive_config: 'Proactive Config', section_public_config: 'Public Access Config',
     hint_allowed_ids: 'Empty=everyone, comma-separated IDs',
     confirm_delete: 'Delete "{name}"? This cannot be undone.',
     delete_tip: 'Delete',
     add_provider: 'Add Provider', label_new_name: 'Name', label_new_model: 'Model', label_new_base: 'API Base',
     label_priority: 'Priority', label_search: 'Web Search',
-    label_escalation_auto: 'Auto Escalate', label_escalation_feedback: 'Notify on Escalation',
+    label_escalation_auto: 'Auto Fallback', label_escalation_feedback: 'Notify User on Fallback',
     label_escalation_min_length: 'Min Response Length',
-    section_cloud_providers: 'Providers', section_cloud_escalation: 'Escalation Policy',
+    section_cloud_providers: 'Providers', section_cloud_escalation: 'Fallback Strategy',
     provider_no_key: 'no key set',
     label_timezone: 'Timezone',
     section_database: 'Database', label_db_name: 'DB Name', label_db_user: 'User', label_db_host: 'Host',
     section_session_memory: 'Session Memory', label_char_budget: 'Context Budget (chars)',
     label_keep_recent: 'Keep Recent Turns', label_summary_ratio: 'Summary Ratio',
-    label_recall_max: 'Max Vector Recall', label_recall_min_score: 'Min Recall Score',
+    label_recall_max: 'Max Memory Recall', label_recall_min_score: 'Min Memory Match Score',
     section_tools_config: 'Tools Config', label_tools_enabled: 'Tools Enabled',
+    web_search_unsupported: 'Requires a Cloud LLM provider with search: true configured and Cloud LLM enabled',
     label_voice_model: 'Voice Model', label_voice_lang: 'Voice Language',
     label_image_provider: 'Image Provider', label_image_model: 'Image Model',
     label_file_max_size: 'Max File Size (bytes)', label_shell_timeout: 'Shell Timeout (s)',
-    label_emb_top_k: 'Top K', label_emb_min_score: 'Min Score', label_emb_clustering: 'Clustering',
+    label_emb_top_k: 'Max Results', label_emb_min_score: 'Min Score', label_emb_clustering: 'Cluster Dedup',
     section_triggers: 'Triggers', label_followup: 'Event Follow-up', label_followup_importance: 'Min Importance',
-    label_followup_after: 'Follow-up After (hrs)', label_followup_max_age: 'Max Age (days)',
-    label_strategy: 'Profile Strategy', label_idle: 'Idle Check-in', label_idle_hours: 'Idle Hours',
+    label_followup_after: 'Follow-up Delay (hrs)', label_followup_max_age: 'Max Age (days)',
+    label_strategy: 'Strategy Analysis', label_idle: 'Idle Check-in', label_idle_hours: 'Idle Hours',
   },
   ja: {
     nav_chat: 'Chat', nav_profile: 'プロフィール', nav_system: 'システム',
@@ -319,8 +413,8 @@ const I18N = {
     label_llm_model: 'LLMモデル', label_llm_api: 'LLM API',
     label_llm_key: 'LLM APIキー', label_telegram_token: 'Telegram Token',
     label_discord_token: 'Discord Token',
-    label_embedding: '埋め込み検索', label_embedding_model: '埋め込みモデル', label_cloud_llm: 'クラウドLLMエスカレーション',
-    label_public_mode: '公開モード', label_proactive: 'プロアクティブ通知',
+    label_embedding: 'セマンティック検索', label_embedding_model: '埋め込みモデル', label_cloud_llm: 'クラウド予備モデル',
+    label_public_mode: '公開アクセス', label_proactive: 'プロアクティブ通知',
     label_tts: '音声合成', label_telegram: 'Telegram Bot',
     label_discord: 'Discord Bot', label_mcp: 'MCP',
     label_params: 'パラメータ', label_keywords: 'キーワード',
@@ -329,7 +423,9 @@ const I18N = {
     edit_confirm: '確認', edit_cancel: 'キャンセル',
     edit_placeholder: '新しい値を入力', edit_placeholder_sensitive: '新しいキーを入力（空欄で変更なし）',
     not_set: '未設定',
-    badge_builtin: '組み込み', badge_agent: 'エージェント', badge_skill: 'スキル',
+    badge_builtin: '組み込み', badge_agent: 'エージェント', badge_skill: 'スキル', badge_mcp: 'MCP',
+    on: 'ON', off: 'OFF', toggle_theme: 'テーマ切替', toggle_click: 'クリックで切替',
+    restart_timeout: '再起動がタイムアウトしました。手動でリフレッシュしてください。', err_failed: '失敗: ',
     banner_msg: '設定が変更されました — 再起動が必要です', btn_restart: '今すぐ再起動', btn_revert: '元に戻す', btn_cancel: 'キャンセル', btn_install: 'インストール',
     restarting: '再起動中...', reverting: '元に戻し中...',
     label_temperature: '温度', label_max_tokens: '最大トークン', label_temp_dir: '一時ディレクトリ',
@@ -339,30 +435,31 @@ const I18N = {
     label_max_per_day: '1日最大数', label_min_gap: '最小間隔(分)', label_access_token: 'アクセストークン',
     label_bot_token: 'Bot Token',
     section_llm: 'メイン LLM', section_telegram: 'Telegram Bot', section_discord: 'Discord Bot',
-    section_tts_config: '音声合成設定', section_embedding_config: '埋め込み設定',
+    section_tts_config: '音声合成設定', section_embedding_config: 'セマンティック検索設定',
     section_proactive_config: 'プロアクティブ設定', section_public_config: '公開アクセス設定',
     hint_allowed_ids: '空=全員、カンマ区切りID',
     confirm_delete: '「{name}」を削除しますか？この操作は元に戻せません。',
     delete_tip: '削除',
     add_provider: 'プロバイダー追加', label_new_name: '名前', label_new_model: 'モデル', label_new_base: 'APIアドレス',
     label_priority: '優先度', label_search: 'ウェブ検索',
-    label_escalation_auto: '自動エスカレーション', label_escalation_feedback: 'エスカレーション後通知',
+    label_escalation_auto: '自動フォールバック', label_escalation_feedback: 'フォールバック時通知',
     label_escalation_min_length: '最小回答文字数',
-    section_cloud_providers: 'プロバイダー設定', section_cloud_escalation: 'エスカレーションポリシー',
+    section_cloud_providers: 'プロバイダー設定', section_cloud_escalation: 'フォールバック設定',
     provider_no_key: 'キー未設定',
     label_timezone: 'タイムゾーン',
     section_database: 'データベース', label_db_name: 'DB名', label_db_user: 'ユーザー', label_db_host: 'ホスト',
     section_session_memory: 'セッションメモリ', label_char_budget: 'コンテキスト予算(文字)',
     label_keep_recent: '保持ターン数', label_summary_ratio: '要約比率',
-    label_recall_max: '最大ベクトル検索数', label_recall_min_score: '最小類似度スコア',
+    label_recall_max: '最大記憶召回数', label_recall_min_score: '最小記憶マッチスコア',
     section_tools_config: 'ツール設定', label_tools_enabled: 'ツール有効',
+    web_search_unsupported: 'Cloud LLM で search: true のプロバイダーを設定し、Cloud LLM を有効にしてください',
     label_voice_model: '音声モデル', label_voice_lang: '音声言語',
     label_image_provider: '画像プロバイダー', label_image_model: '画像モデル',
     label_file_max_size: '最大ファイルサイズ(bytes)', label_shell_timeout: 'Shellタイムアウト(秒)',
-    label_emb_top_k: '上位K件', label_emb_min_score: '最小スコア', label_emb_clustering: 'クラスタリング',
+    label_emb_top_k: '最大結果数', label_emb_min_score: '最小スコア', label_emb_clustering: 'クラスタ重複排除',
     section_triggers: 'トリガー', label_followup: 'イベントフォロー', label_followup_importance: '最小重要度',
-    label_followup_after: 'フォロー後(時間)', label_followup_max_age: '最大日数',
-    label_strategy: 'プロフィール戦略', label_idle: 'アイドルチェック', label_idle_hours: 'アイドル時間(時)',
+    label_followup_after: 'フォロー待機時間(時間)', label_followup_max_age: '最大追跡日数',
+    label_strategy: '戦略分析トリガー', label_idle: '無応答時確認', label_idle_hours: '無応答判定時間(時間)',
   },
 };
 
@@ -388,6 +485,10 @@ function setLang(lang) {
   document.getElementById('nav-chat').textContent = t('nav_chat');
   document.getElementById('nav-profile').textContent = t('nav_profile');
   document.getElementById('nav-system').textContent = t('nav_system');
+  const themeBtn = document.getElementById('theme-toggle');
+  if (themeBtn) themeBtn.title = t('toggle_theme');
+  const hubInput = document.getElementById('hubSkillName');
+  if (hubInput) hubInput.placeholder = t('hub_placeholder') || 'explain-code';
   const titleText = '⚙ ' + t('nav_system') + ' — ' + DB_NAME;
   document.getElementById('header-title').textContent = titleText;
   document.title = t('nav_system') + ' — ' + DB_NAME;
@@ -410,18 +511,18 @@ function escHtml(s) {
 
 function badge(type) {
   const map = { builtin: 'badge-builtin', agent: 'badge-agent', mcp: 'badge-mcp', skill: 'badge-skill' };
-  const label = { builtin: t('badge_builtin'), agent: t('badge_agent'), mcp: 'MCP', skill: t('badge_skill') };
+  const label = { builtin: t('badge_builtin'), agent: t('badge_agent'), mcp: t('badge_mcp'), skill: t('badge_skill') };
   return `<span class="badge ${map[type] || 'badge-builtin'}">${label[type] || type}</span>`;
 }
 function statusBadge(enabled) {
   return enabled
-    ? `<span class="badge badge-on">ON</span>`
-    : `<span class="badge badge-off">OFF</span>`;
+    ? `<span class="badge badge-on">${t('on')}</span>`
+    : `<span class="badge badge-off">${t('off')}</span>`;
 }
 function toggleBadge(type, name, enabled) {
   const cls = enabled ? 'badge-on' : 'badge-off';
-  return `<span class="badge ${cls} toggle-badge" style="cursor:pointer" data-type="${escHtml(type)}" data-name="${escHtml(name)}" data-enabled="${enabled}" title="click to toggle" onclick="handleToggle(this)">` +
-    (enabled ? 'ON' : 'OFF') + `</span>`;
+  return `<span class="badge ${cls} toggle-badge" style="cursor:pointer" data-type="${escHtml(type)}" data-name="${escHtml(name)}" data-enabled="${enabled}" title="${t('toggle_click')}" onclick="handleToggle(this)">` +
+    (enabled ? t('on') : t('off')) + `</span>`;
 }
 
 
@@ -475,13 +576,13 @@ function renderConfigField(f) {
     </div>`;
   }
   if (f.separator) {
-    return `<div style="padding:6px 16px 4px; font-size:11px; font-weight:600; color:#58a6ff; background:#0d1520; border-bottom:1px solid #21262d; text-transform:uppercase; letter-spacing:0.06em">${escHtml(f.label)}</div>`;
+    return `<div style="padding:6px 16px 4px; font-size:11px; font-weight:600; color:var(--accent); background:var(--bg-input); border-bottom:1px solid var(--border-light); text-transform:uppercase; letter-spacing:0.06em">${escHtml(f.label)}</div>`;
   }
   if (f.toggle) {
     const cls = f.on ? 'on' : 'off';
     return `<div class="config-field editable" data-path="${escHtml(f.path)}" data-current="${f.on}" onclick="toggleConfig(this)">
       <div class="config-field-label">${t(f.labelKey)}</div>
-      <div class="config-field-value ${cls}">${f.on ? 'ON' : 'OFF'}</div>
+      <div class="config-field-value ${cls}">${f.on ? t('on') : t('off')}</div>
     </div>`;
   }
   if (!f.path) {
@@ -520,7 +621,7 @@ function renderCloudSection(sys, cloudProviders) {
     const hasKey = !!p.api_key_masked;
     const keyBadge = hasKey ? `<span class="badge badge-on" style="font-size:10px">KEY</span>`
                             : `<span class="badge badge-off" style="font-size:10px">NO KEY</span>`;
-    const priBadge = `<span class="badge" style="background:#1e2030;color:#6e7681;font-size:10px">P${escHtml(p.priority)}</span>`;
+    const priBadge = `<span class="badge" style="background:var(--bg-hover);color:var(--text-faint);font-size:10px">P${escHtml(p.priority)}</span>`;
     const fields = [
       { labelKey: 'label_llm_model',   value: p.model,                             path: `cloud_llm.providers.${idx}.model` },
       { labelKey: 'label_llm_api',     value: p.api_base,                          path: `cloud_llm.providers.${idx}.api_base` },
@@ -553,7 +654,7 @@ function renderCloudSection(sys, cloudProviders) {
     <button class="cp-add-btn" id="cp-add-btn" onclick="this.style.display='none';document.getElementById('cp-add-form').classList.remove('hidden')">+ ${t('add_provider')}</button>
   </div>`;
 
-  const sepStyle = `padding:6px 16px 4px;font-size:11px;font-weight:600;color:#58a6ff;background:#0d1520;border-bottom:1px solid #21262d;text-transform:uppercase;letter-spacing:0.06em`;
+  const sepStyle = `padding:6px 16px 4px;font-size:11px;font-weight:600;color:var(--accent);background:var(--bg-input);border-bottom:1px solid var(--border-light);text-transform:uppercase;letter-spacing:0.06em`;
   const escalation = [
     renderConfigField({ labelKey: 'label_escalation_auto',       toggle: true, on: sys.cloud_llm_escalation_auto,     path: 'cloud_llm.escalation.auto' }),
     renderConfigField({ labelKey: 'label_escalation_feedback',   toggle: true, on: sys.cloud_llm_escalation_feedback,  path: 'cloud_llm.escalation.feedback' }),
@@ -746,7 +847,7 @@ async function toggleConfig(el) {
     el.dataset.current = String(newOn);
     const valueEl = el.querySelector('.value span, .config-field-value');
     if (valueEl) {
-      valueEl.textContent = newOn ? 'ON' : 'OFF';
+      valueEl.textContent = newOn ? t('on') : t('off');
       valueEl.className = (el.classList.contains('config-field') ? 'config-field-value' : 'value') + ` ${newOn ? 'on' : 'off'}`;
     }
     showBanner();
@@ -980,6 +1081,9 @@ function renderToolCard(tool) {
   const statusEl = tool.type === 'builtin'
     ? toggleBadge('tool', tool.name, tool.enabled)
     : statusBadge(tool.enabled);
+  const warningEl = (tool.name === 'web_search' && tool.enabled && tool.search_supported === false)
+    ? `<div style="margin-top:6px;padding:5px 8px;background:#2a2000;border:1px solid var(--yellow);border-radius:4px;color:var(--yellow);font-size:12px">⚠ ${t('web_search_unsupported')}</div>`
+    : '';
   return `
     <div class="card ${tool.enabled ? '' : 'disabled'}" id="card-tool-${eid}">
       <div class="card-header">
@@ -988,7 +1092,7 @@ function renderToolCard(tool) {
         ${tool.type === 'builtin' ? `<button class="delete-btn" data-type="tool" data-name="${escHtml(tool.name)}" title="${t('delete_tip')}">✕</button>` : ''}
       </div>
       ${tool.description ? `<div class="card-desc">${escHtml(tool.description)}</div>` : ''}
-      ${params}${examples}
+      ${params}${examples}${warningEl}
     </div>`;
 }
 
@@ -1001,7 +1105,7 @@ function renderAgentCard(a) {
       <div class="card-header">
         <div class="card-name">${escHtml(a.name)}</div>
         ${badge('agent')}
-        <span class="badge" style="background:#1e2a1e;color:#6e8f6e;font-size:10px">${escHtml(a.type)}</span>
+        <span class="badge" style="background:#1e2a1e;color:var(--green);font-size:10px">${escHtml(a.type)}</span>
         ${toggleBadge('agent', a.name, a.enabled)}
         <button class="delete-btn" data-type="agent" data-name="${escHtml(a.name)}" title="${t('delete_tip')}">✕</button>
       </div>
@@ -1128,12 +1232,12 @@ async function doRestart() {
       clearInterval(poll);
       btn.disabled = revertBtn.disabled = false;
       btn.textContent = t('btn_restart');
-      alert('Restart timed out. Please refresh manually.');
+      alert(t('restart_timeout'));
       return;
     }
     try {
       const r = await fetch(`http://${location.hostname}:${API_PORT}/health`);
-      if (r.ok) { clearInterval(poll); hideBanner(); load(); }
+      if (r.ok) { clearInterval(poll); btn.disabled = revertBtn.disabled = false; btn.textContent = t('btn_restart'); hideBanner(); load(); }
     } catch {}
   }, 1000);
 }
@@ -1208,7 +1312,7 @@ async function handleToggle(badge) {
     if (!res.ok) throw new Error(await res.text());
     const json = await res.json();
     badge.dataset.enabled = String(newEnabled);
-    badge.textContent = newEnabled ? 'ON' : 'OFF';
+    badge.textContent = newEnabled ? t('on') : t('off');
     badge.className = `badge ${newEnabled ? 'badge-on' : 'badge-off'} toggle-badge`;
     const eid = encodeURIComponent(name);
     const card = document.getElementById(`card-${type}-${eid}`);
@@ -1220,6 +1324,30 @@ async function handleToggle(badge) {
     badge.style.opacity = '';
     badge.style.pointerEvents = '';
   }
+}
+
+// ── Theme ──────────────────────────────────────────────────────────────
+const _SVG_MOON = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+const _SVG_SUN  = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+function updateThemeBtn() {
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.innerHTML = document.body.classList.contains('light') ? _SVG_MOON : _SVG_SUN;
+}
+(function() {
+  const saved = localStorage.getItem('theme') || 'dark';
+  if (saved === 'light') {
+    document.body.classList.add('light');
+    document.documentElement.classList.add('light');
+  }
+  updateThemeBtn();
+})();
+
+
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light');
+  document.documentElement.classList.toggle('light', isLight);
+  localStorage.setItem('theme', isLight ? 'light' : 'dark');
+  updateThemeBtn();
 }
 
 // Init

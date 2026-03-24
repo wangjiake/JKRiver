@@ -1,0 +1,25 @@
+skills:
+
+  - name: explain_code
+    description: ユーザーがコードを送信した際に自動的に行ごとに解説する
+    trigger:
+      type: keyword
+      keywords: ["コード解説", "このコード何", "コードを説明して", "explain code"]
+    instruction: |
+      ユーザーがコードの説明を求めています。以下の手順で説明してください：
+      1. まず一文でコードの機能を要約する
+      2. 行ごとまたはブロックごとに重要なロジックを解説する
+      3. 改善点や潜在的な問題を指摘する
+    enabled: true
+
+  - name: weekly_summary
+    description: 毎週日曜の夜に温かい週末の挨拶を送る
+    trigger:
+      type: schedule
+      cron: "0 20 * * 0"
+    steps:
+      - respond: |
+          ユーザーのAI友達として、短くて温かい週末の挨拶を書いてください。
+          今週はどうだったか、来週の予定はあるか聞いてみてください。
+          友達が気軽に話しかけるようなトーンで、2〜3文で十分です。
+    enabled: true

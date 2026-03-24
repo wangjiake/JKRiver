@@ -1,0 +1,39 @@
+name: explain_code
+description: Automatically explain code line by line when the user sends a snippet
+trigger:
+  type: keyword
+  keywords: ["explain code", "what does this code do", "walk me through this"]
+instruction: |
+  The user wants you to explain code. Please:
+  1. Summarize the purpose in one sentence
+  2. Explain the key logic line by line or block by block
+  3. Point out potential improvements or issues
+enabled: true
+
+# ── Examples ──
+#
+# 中文:
+#   name: explain_code
+#   description: 用户发代码时自动提供逐行解释
+#   trigger:
+#     type: keyword
+#     keywords: ["解释代码", "explain code", "这段代码什么意思"]
+#   instruction: |
+#     用户希望你解释代码。请：
+#     1. 先用一句话概括这段代码的功能
+#     2. 逐行或逐块解释关键逻辑
+#     3. 指出可能的改进点或潜在问题
+#   enabled: true
+#
+# 日本語:
+#   name: explain_code
+#   description: ユーザーがコードを送信した際に自動的に行ごとに解説する
+#   trigger:
+#     type: keyword
+#     keywords: ["コード解説", "このコード何", "コードを説明して"]
+#   instruction: |
+#     ユーザーがコードの説明を求めています。以下の手順で説明してください：
+#     1. まず一文でコードの機能を要約する
+#     2. 行ごとまたはブロックごとに重要なロジックを解説する
+#     3. 改善点や潜在的な問題を指摘する
+#   enabled: true

@@ -28,6 +28,9 @@ htmlcov/
 
 # Runtime data
 /data/
+docker/data/ChatGPT/
+docker/data/Claude/
+docker/data/Gemini/
 *.log
 tmp/
 

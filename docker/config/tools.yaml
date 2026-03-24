@@ -1,0 +1,10 @@
+tools:
+  - finance_query
+  - health_query
+  - web_search
+  - image_describe
+  - voice_transcribe
+  - shell_exec
+  - file_read
+  - tts
+  - system_manage

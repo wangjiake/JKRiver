@@ -5,8 +5,6 @@ services:
       POSTGRES_DB: Riverse
       POSTGRES_USER: postgres
       POSTGRES_HOST_AUTH_METHOD: trust
-    ports:
-      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -33,6 +31,7 @@ services:
       DB_HOST: postgres
       DEMO_MODE: ${DEMO_MODE:-true}
       DEMO_PROCESS: ${DEMO_PROCESS:-false}
+      ACCESS_TOKEN: ${ACCESS_TOKEN:-}
     ports:
       - "2345:2345"
     volumes:
@@ -66,14 +65,14 @@ services:
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
       SLEEP_MODE: ${SLEEP_MODE:-cron}
       SLEEP_CRON_HOUR: ${SLEEP_CRON_HOUR:-0}
+      SKILLS_DIR: /app_config/skills
     ports:
       - "1234:1234"
       - "8400:8400"
     volumes:
-      - jkriver_settings:/app_work
+      - ./config:/app_config
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
 volumes:
   pgdata:
-  jkriver_settings:

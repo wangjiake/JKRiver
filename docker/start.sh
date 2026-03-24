@@ -3,6 +3,34 @@ set -e
 
 cd /app
 
+echo "[start] Setting up config directory..."
+mkdir -p /app_config/skills /app_config/prompts
+
+# settings.yaml — generated from env vars by gen_settings.py below
+ln -sf /app_config/settings.yaml /app/settings.yaml
+
+# agents config
+for lang in en zh ja; do
+    [ -f /app_config/agents_${lang}.yaml ] || cp /app/agent/config/agents_${lang}.yaml /app_config/agents_${lang}.yaml
+    ln -sf /app_config/agents_${lang}.yaml /app/agent/config/agents_${lang}.yaml
+done
+
+# tools
+[ -f /app_config/tools.yaml ] || cp /app/agent/tools/tools.yaml /app_config/tools.yaml
+ln -sf /app_config/tools.yaml /app/agent/tools/tools.yaml
+
+# skills — copy defaults to /app_config/skills/ (SKILLS_DIR)
+# discovery and new skill creation both use SKILLS_DIR directly, no symlinks needed
+for f in skills_en.yaml skills_zh.yaml skills_ja.yaml explain_code.yaml weekly_summary.yaml; do
+    [ -f /app_config/skills/${f} ] || cp /app/agent/skills/${f} /app_config/skills/${f}
+done
+
+# prompts
+for lang in en zh ja; do
+    [ -f /app_config/prompts/${lang}.yaml ] || cp /app/agent/config/prompts/${lang}.yaml /app_config/prompts/${lang}.yaml
+    ln -sf /app_config/prompts/${lang}.yaml /app/agent/config/prompts/${lang}.yaml
+done
+
 echo "[start] Generating settings.yaml..."
 python3 docker/gen_settings.py
 

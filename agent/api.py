@@ -51,7 +51,7 @@ def _api_token_valid(token: str) -> bool:
     except Exception:
         return False
 
-app = FastAPI(title="Riverse Agent API", version="1.2.0", lifespan=lifespan)
+app = FastAPI(title="Riverse Agent API", version="2.2.0", lifespan=lifespan)
 
 
 @app.middleware("http")
@@ -362,6 +362,15 @@ async def get_system():
     _llm_provider = _config.get("llm_provider", "openai")
     llm = _config.get(_llm_provider, {})
     cloud_cfg = _config.get("cloud_llm", {})
+
+    # Mark web_search tool with whether a search-capable provider is configured
+    _web_search_supported = (
+        cloud_cfg.get("enabled", False) and
+        any(p.get("search") and p.get("api_key") for p in cloud_cfg.get("providers", []))
+    )
+    for _t in tools:
+        if _t["name"] == "web_search":
+            _t["search_supported"] = _web_search_supported
     cloud_providers = [
         p.get("model", "") for p in cloud_cfg.get("providers", [])
         if p.get("api_key")
@@ -758,6 +767,10 @@ async def update_config(request: Request):
     value = str(body.get("value", ""))
     path_parts = path.split(".")
 
+    _READONLY_KEYS = {"api_key", "bot_token", "password", "secret", "token"}
+    if any(blocked in path_parts[-1].lower() for blocked in _READONLY_KEYS):
+        raise HTTPException(status_code=403, detail=f"'{path}' contains sensitive credentials and cannot be updated via API. Edit settings.yaml directly.")
+
     # Special handling for allowed_user_ids (comma-separated string -> YAML list)
     if len(path_parts) == 2 and path_parts[1] == "allowed_user_ids" and path_parts[0] in ("telegram", "discord"):
         success, old_value = _set_settings_allowed_ids(path_parts[0], value)
@@ -1093,7 +1106,7 @@ async def delete_tool(name: str):
     return {"ok": True, "name": name, "pending_restart": True}
 
 
-_SKILLS_DIR = os.path.join(os.path.dirname(__file__), "skills")
+_SKILLS_DIR = os.environ.get("SKILLS_DIR", os.path.join(os.path.dirname(__file__), "skills"))
 
 
 def _parse_skill_md_api(content: str) -> dict | None:

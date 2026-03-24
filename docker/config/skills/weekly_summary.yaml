@@ -1,0 +1,11 @@
+name: weekly_summary
+description: 每周日晚上发送温馨周末问候
+trigger:
+  type: schedule
+  cron: "0 20 * * 0"
+steps:
+  - respond: |
+      作为用户的AI朋友，写一条简短温馨的周末问候。
+      问问用户这周过得怎么样，下周有什么计划。
+      语气像朋友随口聊天，2-3句话即可。
+enabled: true

@@ -1566,7 +1566,7 @@ function appendMessage(role, text, category, intent, at) {
     div.appendChild(actions);
 
     // Fetch actual task status, then render correct UI
-    fetch(`http://${location.hostname}:${API_PORT}/api/outsource/tasks/${taskId}`)
+    fetch(`http://${location.hostname}:${API_PORT}/api/outsource/tasks/${taskId}`, { headers: authHeaders() })
       .then(r => r.ok ? r.json() : null)
       .then(task => {
         if (!task) { actions.remove(); return; }
@@ -1630,7 +1630,7 @@ const _activePollers = {};  // taskId -> timer, prevent duplicate polls
 function pollTaskUntilDone(taskId) {
   if (_activePollers[taskId]) return;  // Already polling
   const timer = setInterval(() => {
-    fetch(`http://${location.hostname}:${API_PORT}/api/outsource/tasks/${taskId}`)
+    fetch(`http://${location.hostname}:${API_PORT}/api/outsource/tasks/${taskId}`, { headers: authHeaders() })
       .then(r => r.ok ? r.json() : null)
       .then(task => {
         if (!task || task.status === 'running' || task.status === 'pending') return;
@@ -1651,7 +1651,7 @@ function outsourceConfirm(taskId, actions) {
 
   fetch(`http://${location.hostname}:${API_PORT}/api/outsource/tasks/${taskId}/confirm`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify({ session_id: sessionId }),
   })
     .then(r => r.json())

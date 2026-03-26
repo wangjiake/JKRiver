@@ -122,7 +122,7 @@ curl -O https://raw.githubusercontent.com/wangjiake/JKRiver/main/docker/docker-c
 docker compose pull && docker compose up -d
 
 # 3. Get your access token (generated automatically on first start)
-docker logs jkriver-jkriver-1 2>&1 | grep "ACCESS_TOKEN="
+docker logs jkriver-jkriver-1 2>&1 | grep "Token:"
 ```
 
 Open `http://localhost:1234` in your browser, enter the access token, then go to **System** to set your API key. That's it.

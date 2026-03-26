@@ -38,7 +38,7 @@ curl -O https://raw.githubusercontent.com/wangjiake/JKRiver/main/docker/docker-c
 docker compose pull && docker compose up -d
 
 # 3. Get your access token (generated automatically on first start)
-docker logs jkriver-jkriver-1 2>&1 | grep "ACCESS_TOKEN="
+docker logs jkriver-jkriver-1 2>&1 | grep "Token:"
 ```
 
 Open `http://localhost:1234`, enter the token, then go to **System** to configure your API key. Done.
@@ -170,7 +170,7 @@ curl -O https://raw.githubusercontent.com/wangjiake/JKRiver/main/docker/docker-c
 docker compose pull && docker compose up -d
 
 # 3. 获取访问 Token（首次启动时自动生成）
-docker logs jkriver-jkriver-1 2>&1 | grep "ACCESS_TOKEN="
+docker logs jkriver-jkriver-1 2>&1 | grep "Token:"
 ```
 
 在浏览器打开 `http://localhost:1234`，输入 Token 后进入 **System** 页面配置 API Key 即可。
@@ -302,7 +302,7 @@ curl -O https://raw.githubusercontent.com/wangjiake/JKRiver/main/docker/docker-c
 docker compose pull && docker compose up -d
 
 # 3. アクセストークンを確認（初回起動時に自動生成）
-docker logs jkriver-jkriver-1 2>&1 | grep "ACCESS_TOKEN="
+docker logs jkriver-jkriver-1 2>&1 | grep "Token:"
 ```
 
 ブラウザで `http://localhost:1234` を開き、トークンを入力後 **System** ページで API キーを設定するだけです。

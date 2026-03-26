@@ -122,7 +122,7 @@ curl -O https://raw.githubusercontent.com/wangjiake/JKRiver/main/docker/docker-c
 docker compose pull && docker compose up -d
 
 # 3. アクセストークンを確認（初回起動時に自動生成）
-docker logs jkriver-jkriver-1 2>&1 | grep "ACCESS_TOKEN="
+docker logs jkriver-jkriver-1 2>&1 | grep "Token:"
 ```
 
 ブラウザで `http://localhost:1234` を開き、トークンを入力後 **System** ページで API キーを設定するだけです。

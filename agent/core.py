@@ -805,25 +805,29 @@ async def run_cycle_async(user_input: str | dict, session: Session,
     _handle_skills(processed_text, session, memories, L, log_fn)
 
     # Short-circuit: dispatch_task preview result is the final response — skip LLM think step
+    # Check both: skill handler direct execution (memories["_outsource_preview"]) and tool_results
+    _outsource_preview_data = memories.get("_outsource_preview")
     _dispatch_preview = next(
         (t for t in (tool_results or [])
          if t["tool"] == "dispatch_task" and t["result"].success and
          "task_id" in (t["result"].data or "")),
         None,
     )
-    if _dispatch_preview:
+    if _outsource_preview_data or _dispatch_preview:
         now = get_now()
+        _preview_data = _outsource_preview_data or _dispatch_preview["result"].data
         think_result = {
-            "raw_response": _dispatch_preview["result"].data,
+            "raw_response": _preview_data,
             "raw_response_at": now,
-            "final_response": _dispatch_preview["result"].data,
+            "final_response": _preview_data,
             "final_response_at": now,
             "verification_result": "",
             "verification_result_at": now,
             "thinking_notes": "",
             "thinking_notes_at": now,
         }
-        final_response = _finalize_response(think_result, tool_results, language)
+        # Use empty tool_results to prevent _finalize_response from appending task_id again
+        final_response = _finalize_response(think_result, tool_results if _dispatch_preview else [], language)
     else:
         has_tool_data = any(t["result"].success and t["result"].data for t in tool_results) if tool_results else False
         log("info", f"思考中...{'(云端)' if has_tool_data else '(本地)'}")

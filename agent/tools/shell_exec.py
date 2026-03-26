@@ -13,9 +13,12 @@ _MAX_OUTPUT_CHARS = 4000
 _DEFAULT_WHITELIST = [
     "ls", "dir", "cat", "head", "tail", "find", "grep", "wc",
     "date", "whoami", "hostname", "uname", "df", "du",
-    "python --version", "python3 --version", "pip list", "pip3 list",
+    "python --version", "python3 --version",
+    "pip list", "pip3 list", "pip show", "pip3 show",
+    "pip install", "pip3 install",   # allowed after user confirmation via ask_user
     "git status", "git log", "git diff", "git branch", "git remote",
     "node --version", "npm --version",
+    "npm install", "npm run",        # allowed after user confirmation via ask_user
 ]
 
 _FALLBACK = {
@@ -109,8 +112,8 @@ class ShellExecTool(BaseTool):
                 data=stdout[:_MAX_OUTPUT_CHARS] if stdout else "",
                 error=error_msg)
 
-        output = stdout or TL.get("no_output", "(无输出)")
+        output = stdout or TL.get("no_output", "(no output)")
         if len(output) > _MAX_OUTPUT_CHARS:
-            output = output[:_MAX_OUTPUT_CHARS] + "\n\n[" + TL.get("output_truncated", "输出已截断，仅显示前 {limit} 字符").format(limit=_MAX_OUTPUT_CHARS) + "]"
+            output = output[:_MAX_OUTPUT_CHARS] + "\n\n[" + TL.get("output_truncated", "Output truncated, showing first {limit} characters only").format(limit=_MAX_OUTPUT_CHARS) + "]"
 
         return ToolResult(success=True, data=output)

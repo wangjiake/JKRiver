@@ -49,17 +49,17 @@ body.light {
   --bg-input: #ffffff;
   --bg-hover: #eaeef2;
   --bg-hover2: #e8ecf0;
-  --bg-accent: #ddf4ff;
-  --bg-accent2: #cae8ff;
+  --bg-accent: #ededf8;
+  --bg-accent2: #e0e0f4;
   --border: #d0d7de;
   --border-light: #eaeef2;
-  --border-accent: #54aeff;
+  --border-accent: #8a96d8;
   --text: #1f2328;
   --text-2: #24292f;
   --text-muted: #57606a;
   --text-faint: #8c959f;
   --text-faint2: #afb8c1;
-  --accent: #0969da;
+  --accent: #4f5fba;
   --green: #1a7f37;
   --yellow: #9a6700;
   --red: #cf222e;
@@ -86,14 +86,14 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; ba
 .nav-link.active { background: rgba(88,166,255,0.13); border-color: rgba(88,166,255,0.35); color: #58a6ff; }
 body.light .nav-link { background: transparent; border-color: rgba(0,0,0,0.12); color: rgba(0,0,0,0.42); }
 body.light .nav-link:hover { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.18); color: rgba(0,0,0,0.65); }
-body.light .nav-link.active { background: rgba(9,105,218,0.08); border-color: rgba(9,105,218,0.30); color: #0969da; }
+body.light .nav-link.active { background: rgba(79,95,186,0.08); border-color: rgba(79,95,186,0.30); color: #4f5fba; }
 .lang-switch { display: flex; gap: 4px; }
 .lang-btn { padding: 4px 10px; background: transparent; border: 1px solid rgba(255,255,255,0.10); border-radius: 8px; color: rgba(255,255,255,0.48); cursor: pointer; font-size: 12px; transition: all 0.2s; backdrop-filter: blur(12px) saturate(180%); -webkit-backdrop-filter: blur(12px) saturate(180%); }
 .lang-btn:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.18); color: rgba(255,255,255,0.72); }
 .lang-btn.active { background: rgba(88,166,255,0.13); border-color: rgba(88,166,255,0.35); color: #58a6ff; }
 body.light .lang-btn { background: transparent; border-color: rgba(0,0,0,0.12); color: rgba(0,0,0,0.42); }
 body.light .lang-btn:hover { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.18); color: rgba(0,0,0,0.65); }
-body.light .lang-btn.active { background: rgba(9,105,218,0.08); border-color: rgba(9,105,218,0.30); color: #0969da; }
+body.light .lang-btn.active { background: rgba(79,95,186,0.08); border-color: rgba(79,95,186,0.30); color: #4f5fba; }
 .theme-btn { padding: 5px 8px; background: transparent; border: 1px solid rgba(255,255,255,0.10); border-radius: 8px; color: rgba(255,255,255,0.48); cursor: pointer; line-height: 1; display: flex; align-items: center; transition: all 0.2s; backdrop-filter: blur(12px) saturate(180%); -webkit-backdrop-filter: blur(12px) saturate(180%); }
 .theme-btn:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.18); color: rgba(255,255,255,0.72); }
 body.light .theme-btn { background: transparent; border-color: rgba(0,0,0,0.12); color: rgba(0,0,0,0.42); }
@@ -223,6 +223,16 @@ body.light .badge-file     { background: #dcfce7; color: #166534; }
 .choice-btn { padding: 3px 14px; border-radius: 4px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); cursor: pointer; font-size: 12px; font-weight: 500; transition: all 0.15s; }
 .choice-btn:hover:not(.active) { border-color: #444c5e; color: var(--text-2); }
 .choice-btn.active { background: var(--bg-accent2); border-color: var(--accent); color: var(--accent); }
+
+/* ── Mobile ─────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .header { padding: 10px 16px 8px; flex-wrap: wrap; align-items: center; gap: 4px; }
+  .header-left { flex: 1; }
+  .header-right { width: 100%; flex-wrap: wrap; gap: 5px; }
+  .header h1 { font-size: 17px; }
+  .lang-btn { padding: 4px 7px; font-size: 11px; }
+  .main { padding: 16px; }
+}
 </style>
 </head>
 <body>
@@ -237,6 +247,7 @@ body.light .badge-file     { background: #dcfce7; color: #166534; }
   <div class="header-right">
     <a href="/chat" class="nav-link" id="nav-chat">Chat</a>
     <a href="/profile" class="nav-link" id="nav-profile">Profile</a>
+    <a href="/outsource" class="nav-link" id="outsource-nav-link">Tasks</a>
     <a href="/system" class="nav-link active" id="nav-system">System</a>
     <div class="lang-switch">
       <button class="lang-btn" onclick="setLang('zh')">中文</button>

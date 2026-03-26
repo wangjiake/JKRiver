@@ -1,0 +1,18 @@
+name: outsource
+description: 用户说"外包模式"或"帮我外包"时，调用 dispatch_task 工具生成计划并等待确认
+trigger:
+  type: keyword
+  keywords: ["外包模式", "外包任务", "帮我外包", "用外包", "outsource mode", "外包给ai", "外包给你", "派遣モード", "派遣して", "派遣タスク", "派遣に", "outsource this", "delegate to agent", "run as task", "use task agent"]
+instruction: |
+  用户要用外包模式执行任务。请按以下步骤操作：
+
+  1. 从用户的消息中提取具体任务描述（例如"帮我加韩语翻译"→ task="为 JKRiver 项目添加韩语翻译"）。
+  2. 调用 dispatch_task 工具，参数：action='preview'，task=具体任务描述。
+  3. 将工具返回的计划原样展示给用户，并询问"确认开始吗？"
+  4. 用户确认后，调用 dispatch_task 工具，参数：action='start'，task_id=上一步返回的任务号。
+  5. 告知用户任务已在后台运行，可前往 /outsource 页面查看进度。
+
+  注意：
+  - 步骤1和2必须先执行，不能跳过计划展示直接开始。
+  - task_id 在计划返回内容的末尾注释中：<!-- task_id:xxxx -->
+enabled: true

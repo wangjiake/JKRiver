@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tasks — {{ db_name }}</title>
+<link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
+<link rel="icon" type="image/x-icon" href="/img/favicon.ico" sizes="48x48">
+<link rel="icon" type="image/png" href="/img/favicon-96x96.png" sizes="96x96">
+<link rel="apple-touch-icon" sizes="180x180" href="/img/apple-touch-icon.png">
+<style>
+:root {
+  --bg: #161e2c;
+  --bg-card: #1a2234;
+  --bg-card2: #182030;
+  --bg-header-start: #1a2030;
+  --bg-header-end: #1e2636;
+  --bg-input: #141c28;
+  --bg-hover: #1e2636;
+  --bg-hover2: #1c2432;
+  --bg-accent: #1e3252;
+  --bg-accent2: #1a2a3e;
+  --border: #28344a;
+  --border-light: #1e2838;
+  --border-accent: #2a4468;
+  --text: #b8c8d8;
+  --text-2: #a8b8cc;
+  --text-muted: #6e7e94;
+  --text-faint: #506070;
+  --text-faint2: #3a4858;
+  --accent: #58a6ff;
+  --green: #3fb950;
+  --yellow: #d29922;
+  --red: #f85149;
+  --purple: #bc8cff;
+  --shadow: rgba(0,0,0,0.5);
+  --glass-bg: rgba(24, 30, 42, 0.68);
+  --glass-sidebar: rgba(20, 26, 36, 0.80);
+  --glass-card: rgba(28, 34, 48, 0.92);
+  --glass-input: rgba(18, 22, 34, 0.84);
+  --glass-blur: blur(24px) saturate(200%);
+  --card-border: rgba(140, 158, 195, 0.16);
+  --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(160, 180, 220, 0.07);
+  --body-gradient: linear-gradient(160deg, #1a2030 0%, #1e2838 35%, #1a2830 65%, #1c2038 100%);
+}
+body.light {
+  --bg: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card2: #f0f3f6;
+  --bg-header-start: #f6f8fa;
+  --bg-header-end: #eaeef2;
+  --bg-input: #ffffff;
+  --bg-hover: #eaeef2;
+  --bg-hover2: #e8ecf0;
+  --bg-accent: #ededf8;
+  --bg-accent2: #e0e0f4;
+  --border: #d0d7de;
+  --border-light: #eaeef2;
+  --border-accent: #8a96d8;
+  --text: #1f2328;
+  --text-2: #24292f;
+  --text-muted: #57606a;
+  --text-faint: #8c959f;
+  --text-faint2: #afb8c1;
+  --accent: #4f5fba;
+  --green: #1a7f37;
+  --yellow: #9a6700;
+  --red: #cf222e;
+  --purple: #8250df;
+  --shadow: rgba(0,0,0,0.15);
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-sidebar: rgba(248, 250, 255, 0.60);
+  --glass-card: rgba(255, 255, 255, 0.88);
+  --glass-input: rgba(255, 255, 255, 0.85);
+  --card-border: rgba(0, 0, 0, 0.10);
+  --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.14), 0 1px 4px rgba(0, 0, 0, 0.08);
+  --body-gradient: linear-gradient(160deg, #dde8ff 0%, #ede6fa 35%, #ddf2ec 65%, #f5e6f5 100%);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { height: 100%; }
+body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; background: var(--body-gradient); color: var(--text); height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+
+/* Header */
+.header { background: var(--glass-bg); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); padding: 14px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+.header-left { display: flex; align-items: center; gap: 10px; }
+.header h1 { font-size: 20px; font-weight: 600; color: var(--text); }
+.header .subtitle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.header-right { display: flex; gap: 6px; align-items: center; }
+.nav-link { background: transparent; border: 1px solid rgba(255,255,255,0.10); border-radius: 8px; color: rgba(255,255,255,0.48); font-size: 12px; text-decoration: none; transition: all 0.2s; backdrop-filter: blur(12px) saturate(180%); -webkit-backdrop-filter: blur(12px) saturate(180%); padding: 5px 12px; }
+.nav-link:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.18); color: rgba(255,255,255,0.72); }
+.nav-link.active { background: rgba(88,166,255,0.13); border-color: rgba(88,166,255,0.35); color: #58a6ff; }
+.theme-btn { padding: 5px 8px; background: transparent; border: 1px solid rgba(255,255,255,0.10); border-radius: 8px; color: rgba(255,255,255,0.48); cursor: pointer; line-height: 1; display: flex; align-items: center; transition: all 0.2s; backdrop-filter: blur(12px) saturate(180%); -webkit-backdrop-filter: blur(12px) saturate(180%); }
+.theme-btn:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.18); color: rgba(255,255,255,0.72); }
+body.light .nav-link { background: transparent; border-color: rgba(0,0,0,0.12); color: rgba(0,0,0,0.42); }
+body.light .nav-link:hover { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.18); color: rgba(0,0,0,0.65); }
+body.light .nav-link.active { background: rgba(79,95,186,0.08); border-color: rgba(79,95,186,0.30); color: #4f5fba; }
+body.light .theme-btn { background: transparent; border-color: rgba(0,0,0,0.12); color: rgba(0,0,0,0.42); }
+body.light .theme-btn:hover { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.18); color: rgba(0,0,0,0.65); }
+.lang-btn { padding: 4px 10px; background: transparent; border: 1px solid rgba(255,255,255,0.10); border-radius: 8px; color: rgba(255,255,255,0.48); cursor: pointer; font-size: 12px; transition: all 0.2s; }
+.lang-btn:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.18); color: rgba(255,255,255,0.72); }
+.lang-btn.active { background: rgba(88,166,255,0.13); border-color: rgba(88,166,255,0.35); color: #58a6ff; }
+body.light .lang-btn { background: transparent; border-color: rgba(0,0,0,0.12); color: rgba(0,0,0,0.42); }
+body.light .lang-btn:hover { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.18); color: rgba(0,0,0,0.65); }
+body.light .lang-btn.active { background: rgba(79,95,186,0.08); border-color: rgba(79,95,186,0.30); color: #4f5fba; }
+
+/* Layout */
+.body { display: flex; flex: 1; min-height: 0; background: transparent; }
+
+/* Task list sidebar */
+.task-sidebar { width: 320px; background: var(--bg-card2); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; }
+.task-sidebar-header { padding: 14px 16px; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.task-list { flex: 1; overflow-y: auto; }
+.task-list::-webkit-scrollbar { width: 4px; }
+.task-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.task-item { padding: 12px 14px; cursor: pointer; border-bottom: 1px solid var(--border-light); transition: background 0.12s; }
+.task-item:hover { background: var(--bg-hover); }
+.task-item.active { background: var(--bg-accent2); border-left: 3px solid var(--accent); padding-left: 11px; }
+.task-item-title { font-size: 13px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 5px; }
+.task-item-meta { display: flex; align-items: center; gap: 6px; }
+.task-item-time { font-size: 10px; color: var(--text-faint2); }
+.task-empty { padding: 24px 16px; font-size: 13px; color: var(--text-faint2); text-align: center; }
+
+/* Status badges */
+.badge { font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0; }
+.badge-pending { background: rgba(110,126,148,0.18); color: var(--text-muted); border: 1px solid rgba(110,126,148,0.25); }
+.badge-planning { background: rgba(88,166,255,0.13); color: var(--accent); border: 1px solid rgba(88,166,255,0.28); }
+.badge-running { background: rgba(210,153,34,0.15); color: var(--yellow); border: 1px solid rgba(210,153,34,0.30); animation: badge-pulse 1.4s ease-in-out infinite; }
+.badge-done { background: rgba(63,185,80,0.13); color: var(--green); border: 1px solid rgba(63,185,80,0.28); }
+.badge-failed { background: rgba(248,81,73,0.13); color: var(--red); border: 1px solid rgba(248,81,73,0.28); }
+.badge-cancelled { background: rgba(110,126,148,0.15); color: var(--text-muted); border: 1px solid rgba(110,126,148,0.28); }
+@keyframes badge-pulse { 0%,100%{opacity:1} 50%{opacity:0.55} }
+
+/* Progress bar */
+.progress-wrap { margin-top: 5px; background: var(--bg-hover); border-radius: 4px; height: 3px; overflow: hidden; }
+.progress-bar { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.4s ease; }
+.progress-bar.done { background: var(--green); }
+.progress-bar.failed { background: var(--red); }
+
+/* Detail panel */
+.task-detail { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow-y: auto; padding: 24px 28px; gap: 20px; }
+.task-detail::-webkit-scrollbar { width: 5px; }
+.task-detail::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.detail-empty { display: flex; flex: 1; align-items: center; justify-content: center; font-size: 14px; color: var(--text-faint2); }
+
+/* Detail sections */
+.detail-title { font-size: 18px; font-weight: 600; color: var(--text); line-height: 1.4; }
+.detail-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.detail-meta .ts { font-size: 12px; color: var(--text-faint); }
+.section-card { background: var(--glass-card); border: 1px solid var(--card-border); border-radius: 10px; padding: 16px 18px; box-shadow: var(--card-shadow); }
+.section-card h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 12px; }
+
+/* Plan steps */
+.plan-list { display: flex; flex-direction: column; gap: 6px; }
+.plan-step { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: var(--text-2); line-height: 1.5; }
+.plan-step-num { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--border); color: var(--text-muted); font-size: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.plan-step.done .plan-step-num { border-color: var(--green); color: var(--green); background: rgba(63,185,80,0.1); }
+.plan-step.running .plan-step-num { border-color: var(--yellow); color: var(--yellow); background: rgba(210,153,34,0.1); animation: badge-pulse 1.2s ease-in-out infinite; }
+
+/* Executed steps */
+.exec-list { display: flex; flex-direction: column; gap: 8px; }
+.exec-step { background: var(--bg-hover); border: 1px solid var(--border-light); border-radius: 8px; padding: 10px 12px; }
+.exec-step-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.exec-step-num { font-size: 11px; color: var(--text-faint); font-weight: 600; }
+.exec-tool { font-size: 11px; background: var(--bg-accent2); border: 1px solid var(--border-accent); color: var(--accent); padding: 2px 7px; border-radius: 5px; font-family: monospace; }
+.exec-reasoning { font-size: 12px; color: var(--text-muted); margin-bottom: 5px; font-style: italic; }
+.exec-result { font-size: 12px; color: var(--text-2); background: var(--bg-input); border: 1px solid var(--border-light); border-radius: 6px; padding: 8px 10px; white-space: pre-wrap; word-break: break-word; font-family: monospace; max-height: 200px; overflow-y: auto; }
+.exec-params-toggle { font-size: 11px; color: var(--text-faint); cursor: pointer; user-select: none; margin-bottom: 4px; display: inline-flex; align-items: center; gap: 4px; }
+.exec-params-toggle:hover { color: var(--accent); }
+.exec-params { font-size: 12px; color: var(--text-muted); background: var(--bg-input); border: 1px solid var(--border-light); border-radius: 6px; padding: 8px 10px; white-space: pre-wrap; word-break: break-word; font-family: monospace; max-height: 300px; overflow-y: auto; margin-bottom: 6px; display: none; }
+.exec-params.open { display: block; }
+
+/* Files changed */
+.files-list { display: flex; flex-direction: column; gap: 4px; }
+.file-item { font-size: 12px; color: var(--text-2); background: var(--bg-hover); border: 1px solid var(--border-light); border-radius: 5px; padding: 5px 9px; font-family: monospace; word-break: break-all; }
+
+/* Result box */
+.result-box { font-size: 13px; color: var(--text-2); line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+.result-box.failed { color: var(--red); }
+
+/* Progress detail bar */
+.progress-detail { display: flex; align-items: center; gap: 10px; }
+.progress-detail-bar { flex: 1; background: var(--bg-hover); border-radius: 6px; height: 6px; overflow: hidden; }
+.progress-detail-fill { height: 100%; background: var(--accent); border-radius: 6px; transition: width 0.4s ease; }
+.progress-detail-fill.done { background: var(--green); }
+.progress-detail-fill.failed { background: var(--red); }
+.progress-detail-text { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+
+/* Mobile list toggle button — hidden on desktop */
+.mobile-list-btn {
+  display: none; align-items: center; gap: 5px;
+  background: transparent; border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 8px; color: rgba(255,255,255,0.60); font-size: 12px;
+  padding: 5px 10px; cursor: pointer; transition: all 0.2s;
+}
+.mobile-list-btn:hover { background: rgba(255,255,255,0.07); }
+body.light .mobile-list-btn { border-color: rgba(0,0,0,0.12); color: rgba(0,0,0,0.42); }
+/* Mobile back button — hidden on desktop */
+.mobile-back-btn {
+  display: none; align-items: center; gap: 6px;
+  background: var(--bg-card2); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--accent);
+  font-size: 13px; padding: 7px 14px; cursor: pointer;
+  margin-bottom: 4px; align-self: flex-start;
+  transition: background 0.15s;
+}
+.mobile-back-btn:hover { background: var(--bg-hover); }
+@media (max-width: 768px) {
+  .header { padding: 10px 16px 8px; flex-wrap: wrap; align-items: center; gap: 4px; }
+  .header-left { flex: 1; }
+  .header-right { width: 100%; flex-wrap: wrap; gap: 5px; }
+  .header h1 { font-size: 17px; }
+  .lang-btn { padding: 4px 7px; font-size: 11px; }
+  .mobile-list-btn { display: flex; }
+  .mobile-back-btn { display: flex; }
+  .body { position: relative; }
+  .task-sidebar { width: 100%; position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 10; display: none; }
+  .task-sidebar.mobile-open { display: flex; }
+  .task-detail { padding: 16px; }
+}
+/* Action buttons */
+.task-actions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.task-action-btn { padding: 3px 10px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); font-size: 11px; cursor: pointer; transition: all 0.15s; }
+.task-action-btn:hover { background: var(--bg-hover); color: var(--text); }
+.task-action-btn.danger { border-color: rgba(248,81,73,0.35); color: var(--red); }
+.task-action-btn.danger:hover { background: rgba(248,81,73,0.1); }
+.task-action-btn.warning { border-color: rgba(210,153,34,0.35); color: var(--yellow); }
+.task-action-btn.warning:hover { background: rgba(210,153,34,0.1); }
+.detail-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.detail-action-btn { padding: 5px 14px; border-radius: 7px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); font-size: 12px; cursor: pointer; transition: all 0.15s; }
+.detail-action-btn:hover { background: var(--bg-hover); color: var(--text); }
+.detail-action-btn.danger { border-color: rgba(248,81,73,0.35); color: var(--red); }
+.detail-action-btn.danger:hover { background: rgba(248,81,73,0.1); }
+.detail-action-btn.warning { border-color: rgba(210,153,34,0.35); color: var(--yellow); }
+.detail-action-btn.warning:hover { background: rgba(210,153,34,0.1); }
+/* Toast */
+.toast { position: fixed; top: 20px; right: 20px; background: var(--bg-card); border: 1px solid var(--border-accent); border-radius: 10px; padding: 12px 18px; font-size: 13px; color: var(--text); box-shadow: 0 4px 20px var(--shadow); z-index: 9999; display: flex; align-items: center; gap: 10px; animation: toast-in 0.2s ease; max-width: 320px; }
+@keyframes toast-in { from { opacity:0; transform:translateY(-8px);} to { opacity:1; transform:none;} }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div>
+      <h1 id="pageTitle">Tasks</h1>
+      <div class="subtitle">{{ db_name }}</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <a href="/chat" class="nav-link" id="nav-chat">Chat</a>
+    <a href="/profile" class="nav-link" id="nav-profile">Profile</a>
+    <a href="/outsource" class="nav-link active" id="outsource-nav-link">Tasks</a>
+    <a href="/system" class="nav-link" id="nav-system">System</a>
+    <div class="lang-switch" style="display:flex;gap:3px;">
+      <button class="lang-btn" onclick="setLang('zh')">中文</button>
+      <button class="lang-btn" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" onclick="setLang('ja')">日本語</button>
+    </div>
+    <button class="theme-btn" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button>
+    <button class="mobile-list-btn" id="mobileListBtn" onclick="toggleMobileSidebar()">☰ <span id="mobileListBtnLabel">列表</span></button>
+  </div>
+</div>
+
+<div class="body">
+  <div class="task-sidebar" id="taskSidebar">
+    <div class="task-sidebar-header">
+      <span id="allTasksLabel">All Tasks</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span id="taskCount" style="color:var(--text-faint2);font-size:11px;"></span>
+        <button class="task-action-btn danger" id="clearAllBtn" onclick="clearAllTasks()" style="padding:2px 8px;">Clear All</button>
+      </div>
+    </div>
+    <div class="task-list" id="taskList">
+      <div class="task-empty" id="taskLoadingMsg">Loading...</div>
+    </div>
+  </div>
+
+  <div class="task-detail" id="taskDetail">
+    <button class="mobile-back-btn" id="mobileBackBtn" onclick="goBackToList()">← <span id="mobileBackLabel">返回</span></button>
+    <div class="detail-empty" id="detailEmpty">...</div>
+    <div id="detailContent" style="display:none; display:flex; flex-direction:column; gap:20px;"></div>
+  </div>
+</div>
+
+<script>
+const API_PORT = 8400;
+const THEME_KEY = 'theme';
+const LANG_KEY = 'jkriver_lang';
+
+const I18N = {
+  en: {
+    page_title: 'Tasks', all_tasks: 'All Tasks', clear_all: 'Clear All',
+    select_task: 'Select a task to view details', loading: 'Loading tasks...', no_tasks: 'No tasks yet',
+    task: 'task', tasks: 'tasks',
+    pending: 'Pending', planning: 'Planning', running: 'Running', done: 'Done', failed: 'Failed', cancelled: 'Cancelled',
+    progress: 'Progress', steps: 'steps', plan: 'Plan', execution_log: 'Execution Log',
+    result: 'Result', files_changed: 'Files Changed',
+    created: 'Created', updated: 'Updated', strict_mode: 'strict mode', loose_mode: 'loose mode',
+    stop: 'Stop', delete: 'Delete',
+    confirm_stop: 'Stop this task?', confirm_delete: 'Delete this task?', confirm_clear: 'Delete all tasks?',
+    task_stopped: 'Task stopped', task_deleted: 'Task deleted', all_cleared: 'All tasks cleared',
+    could_not_stop: 'Could not stop task', could_not_delete: 'Could not delete task',
+    step: 'Step', just_now: 'just now', ago_m: 'm ago', ago_h: 'h ago',
+    nav_chat: 'Chat', nav_profile: 'Profile', nav_tasks: 'Tasks', nav_system: 'System',
+  },
+  zh: {
+    page_title: '外包', all_tasks: '所有外包', clear_all: '清空',
+    select_task: '选择一个外包查看详情', loading: '加载中...', no_tasks: '暂无外包',
+    task: '个外包', tasks: '个外包',
+    pending: '待确认', planning: '规划中', running: '执行中', done: '完成', failed: '失败', cancelled: '已取消',
+    progress: '进度', steps: '步', plan: '计划', execution_log: '执行日志',
+    result: '结果', files_changed: '修改文件',
+    created: '创建', updated: '更新', strict_mode: '严格模式', loose_mode: '宽松模式',
+    stop: '停止', delete: '删除',
+    confirm_stop: '确认停止此外包？', confirm_delete: '确认删除此外包？', confirm_clear: '确认删除所有外包？',
+    task_stopped: '外包已停止', task_deleted: '外包已删除', all_cleared: '所有外包已清空',
+    could_not_stop: '无法停止外包', could_not_delete: '无法删除外包',
+    step: '步骤', just_now: '刚刚', ago_m: '分钟前', ago_h: '小时前',
+    nav_chat: '聊天', nav_profile: '档案', nav_tasks: '外包', nav_system: '系统',
+  },
+  ja: {
+    page_title: '派遣', all_tasks: 'すべての派遣', clear_all: '全削除',
+    select_task: '派遣を選択して詳細を表示', loading: '読み込み中...', no_tasks: '派遣なし',
+    task: '派遣', tasks: '派遣',
+    pending: '保留中', planning: '計画中', running: '実行中', done: '完了', failed: '失敗', cancelled: 'キャンセル済み',
+    progress: '進捗', steps: 'ステップ', plan: 'プラン', execution_log: '実行ログ',
+    result: '結果', files_changed: '変更ファイル',
+    created: '作成', updated: '更新', strict_mode: 'strictモード', loose_mode: 'looseモード',
+    stop: '停止', delete: '削除',
+    confirm_stop: 'この派遣を停止しますか？', confirm_delete: 'この派遣を削除しますか？', confirm_clear: 'すべての派遣を削除しますか？',
+    task_stopped: '派遣を停止しました', task_deleted: '派遣を削除しました', all_cleared: 'すべて削除しました',
+    could_not_stop: '派遣を停止できませんでした', could_not_delete: '派遣を削除できませんでした',
+    step: 'ステップ', just_now: 'たった今', ago_m: '分前', ago_h: '時間前',
+    nav_chat: 'チャット', nav_profile: 'プロフィール', nav_tasks: '派遣', nav_system: 'システム',
+  },
+};
+
+const currentLang = localStorage.getItem(LANG_KEY) || 'zh';
+function t(key) { return (I18N[currentLang] || I18N.en)[key] || key; }
+
+function getDeviceToken() {
+  const match = document.cookie.match(/(?:^|;\s*)jkriver_token=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : '';
+}
+
+function authHeaders() {
+  const token = getDeviceToken();
+  const h = { 'Content-Type': 'application/json' };
+  if (token) h['X-Device-Token'] = token;
+  return h;
+}
+
+function apiUrl(path) {
+  return `http://${location.hostname}:${API_PORT}${path}`;
+}
+
+// Theme
+function toggleTheme() {
+  document.body.classList.toggle('light');
+  localStorage.setItem(THEME_KEY, document.body.classList.contains('light') ? 'light' : 'dark');
+}
+(function() {
+  const saved = localStorage.getItem(THEME_KEY);
+  if (saved === 'light') document.body.classList.add('light');
+})();
+
+// State
+let allTasks = [];
+let selectedTaskId = null;
+let refreshTimer = null;
+let hasActiveTask = false;
+
+function badgeClass(status) {
+  return `badge badge-${status}`;
+}
+
+function statusLabel(status) {
+  return t(status) || status;
+}
+
+function formatTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const now = new Date();
+  const diffSec = (now - d) / 1000;
+  const diffDays = Math.floor((now - d) / 86400000);
+  if (diffSec < 60) return t('just_now');
+  if (diffSec < 3600) return `${Math.floor(diffSec / 60)}${t('ago_m')}`;
+  if (diffDays === 0) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  if (diffDays === 1) return currentLang === 'zh' ? '昨天' : currentLang === 'ja' ? '昨日' : 'Yesterday';
+  if (diffDays < 7) return `${diffDays}${currentLang === 'zh' ? '天前' : currentLang === 'ja' ? '日前' : 'd ago'}`;
+  const sameYear = d.getFullYear() === now.getFullYear();
+  if (sameYear) return `${d.getMonth() + 1}/${d.getDate()}`;
+  return currentLang === 'zh'
+    ? `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`
+    : currentLang === 'ja'
+    ? `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`
+    : `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
+}
+
+function progressPct(task) {
+  if (!task.total_steps || task.total_steps === 0) return 0;
+  return Math.round((task.current_step / task.total_steps) * 100);
+}
+
+function renderTaskList(tasks) {
+  const container = document.getElementById('taskList');
+  const countEl = document.getElementById('taskCount');
+  countEl.textContent = `${tasks.length} ${t('tasks')}`;
+
+  if (tasks.length === 0) {
+    container.innerHTML = `<div class="task-empty">${t('no_tasks')}</div>`;
+    return;
+  }
+
+  container.innerHTML = tasks.map(tk => {
+    const pct = progressPct(tk);
+    const barClass = tk.status === 'done' ? 'done' : tk.status === 'failed' ? 'failed' : '';
+    const isActive = tk.task_id === selectedTaskId;
+    const isActive_ = ['pending','planning','running'].includes(tk.status);
+    const cancelBtn = isActive_ ? `<button class="task-action-btn warning" onclick="event.stopPropagation();cancelTask('${tk.task_id}')">${t('stop')}</button>` : '';
+    const deleteBtn = `<button class="task-action-btn danger" onclick="event.stopPropagation();deleteTask('${tk.task_id}')">${t('delete')}</button>`;
+    return `<div class="task-item${isActive ? ' active' : ''}" onclick="selectTask('${tk.task_id}')">
+      <div class="task-item-title" title="${escHtml(tk.title)}">${escHtml(tk.title)}</div>
+      <div class="task-item-meta">
+        <span class="${badgeClass(tk.status)}">${statusLabel(tk.status)}</span>
+        <span class="task-item-time">${formatTime(tk.created_at)}</span>
+      </div>
+      ${tk.total_steps > 0 ? `<div class="progress-wrap"><div class="progress-bar ${barClass}" style="width:${pct}%"></div></div>` : ''}
+      <div class="task-actions">${cancelBtn}${deleteBtn}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleExecParams(pid) {
+  const el = document.getElementById(pid);
+  const arrow = document.getElementById(pid + '-arrow');
+  if (!el) return;
+  const open = el.classList.toggle('open');
+  if (arrow) arrow.textContent = open ? '▼' : '▶';
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function loadTaskList() {
+  try {
+    const r = await fetch(apiUrl('/api/outsource/tasks'), { headers: authHeaders() });
+    if (!r.ok) return;
+    allTasks = await r.json();
+    renderTaskList(allTasks);
+
+    // Check if there are active tasks
+    hasActiveTask = allTasks.some(t => ['pending','planning','running'].includes(t.status));
+
+    // Update badge in this page's nav
+    updateNavBadge();
+
+    // If we have a selected task, refresh detail too
+    if (selectedTaskId) {
+      const t = allTasks.find(t => t.task_id === selectedTaskId);
+      if (t && ['pending','planning','running'].includes(t.status)) {
+        await loadTaskDetail(selectedTaskId);
+      }
+    }
+  } catch(e) {}
+}
+
+function updateNavBadge() {
+  const link = document.getElementById('outsource-nav-link');
+  if (!link) return;
+  const count = allTasks.filter(t => ['pending','planning','running'].includes(t.status)).length;
+  if (count > 0) {
+    link.textContent = `${t('nav_tasks')} (${count})`;
+    link.style.color = 'var(--yellow)';
+  } else {
+    link.textContent = t('nav_tasks');
+    link.style.color = '';
+  }
+  // keep active class
+  link.className = 'nav-link active';
+}
+
+async function loadTaskDetail(taskId) {
+  try {
+    const r = await fetch(apiUrl(`/api/outsource/tasks/${taskId}`), { headers: authHeaders() });
+    if (!r.ok) return;
+    const task = await r.json();
+    renderDetail(task);
+  } catch(e) {}
+}
+
+function isMobile() { return window.innerWidth <= 768; }
+
+function toggleMobileSidebar() {
+  document.getElementById('taskSidebar').classList.toggle('mobile-open');
+}
+
+function goBackToList() {
+  document.getElementById('taskSidebar').classList.add('mobile-open');
+  document.getElementById('mobileBackBtn').style.display = 'none';
+}
+
+function selectTask(taskId) {
+  selectedTaskId = taskId;
+  // re-render list to show active highlight
+  renderTaskList(allTasks);
+  loadTaskDetail(taskId);
+  // On mobile: close sidebar, show back button
+  if (isMobile()) {
+    document.getElementById('taskSidebar').classList.remove('mobile-open');
+    document.getElementById('mobileBackBtn').style.display = 'flex';
+  }
+}
+
+function renderDetail(task) {
+  const emptyEl = document.getElementById('detailEmpty');
+  const contentEl = document.getElementById('detailContent');
+  emptyEl.style.display = 'none';
+  contentEl.style.display = 'flex';
+
+  const plan = Array.isArray(task.plan) ? task.plan : [];
+  const steps = Array.isArray(task.steps) ? task.steps : [];
+  const files = Array.isArray(task.files_changed) ? task.files_changed : [];
+  const pct = task.total_steps > 0 ? Math.round((task.current_step / task.total_steps) * 100) : 0;
+  const barClass = task.status === 'done' ? 'done' : task.status === 'failed' ? 'failed' : '';
+
+  const isActive = ['pending','planning','running'].includes(task.status);
+  const detailCancelBtn = isActive ? `<button class="detail-action-btn warning" onclick="cancelTask('${task.task_id}')">⏹ ${t('stop')}</button>` : '';
+  const detailDeleteBtn = `<button class="detail-action-btn danger" onclick="deleteTask('${task.task_id}')">🗑 ${t('delete')}</button>`;
+  let html = `
+    <div>
+      <div class="detail-title">${escHtml(task.title)}</div>
+      <div class="detail-meta" style="margin-top:8px;">
+        <span class="${badgeClass(task.status)}">${statusLabel(task.status)}</span>
+        <span class="ts">${t('created')} ${formatTime(task.created_at)}</span>
+        <span class="ts">${t('updated')} ${formatTime(task.updated_at)}</span>
+        ${task.strict_mode ? `<span class="ts">${t('strict_mode')}</span>` : `<span class="ts">${t('loose_mode')}</span>`}
+      </div>
+      <div class="detail-actions" style="margin-top:10px;">${detailCancelBtn}${detailDeleteBtn}</div>
+    </div>`;
+
+  // Progress bar (if has steps)
+  if (task.total_steps > 0) {
+    html += `<div class="section-card">
+      <h3>${t('progress')}</h3>
+      <div class="progress-detail">
+        <div class="progress-detail-bar"><div class="progress-detail-fill ${barClass}" style="width:${pct}%"></div></div>
+        <div class="progress-detail-text">${task.current_step} / ${task.total_steps} ${t('steps')} (${pct}%)</div>
+      </div>
+    </div>`;
+  }
+
+  // Plan
+  if (plan.length > 0) {
+    const planItems = plan.map((p, i) => {
+      const stepNum = p.step || (i + 1);
+      const isDone = task.current_step >= stepNum && task.status !== 'planning';
+      const isRunning = task.current_step === stepNum - 1 && task.status === 'running';
+      const cls = isDone ? 'done' : isRunning ? 'running' : '';
+      const icon = isDone ? '✓' : isRunning ? '…' : stepNum;
+      return `<div class="plan-step ${cls}">
+        <div class="plan-step-num">${icon}</div>
+        <div>${escHtml(p.description || '')}</div>
+      </div>`;
+    }).join('');
+    html += `<div class="section-card"><h3>${t('plan')}</h3><div class="plan-list">${planItems}</div></div>`;
+  }
+
+  // Executed steps
+  if (steps.length > 0) {
+    const execItems = steps.map((s, i) => {
+      const tool = s.tool || 'unknown';
+      const reasoning = s.reasoning || '';
+      const result = s.result || '';
+      const params = s.params && Object.keys(s.params).length > 0
+        ? JSON.stringify(s.params, null, 2) : '';
+      const pid = `ep-${task.task_id.slice(0,8)}-${i}`;
+      const paramsHtml = params ? `
+        <div class="exec-params-toggle" onclick="toggleExecParams('${pid}')">
+          <span id="${pid}-arrow">▶</span> params
+        </div>
+        <div class="exec-params" id="${pid}">${escHtml(params)}</div>` : '';
+      return `<div class="exec-step">
+        <div class="exec-step-header">
+          <span class="exec-step-num">${t('step')} ${s.step || ''}</span>
+          <span class="exec-tool">${escHtml(tool)}</span>
+        </div>
+        ${reasoning ? `<div class="exec-reasoning">${escHtml(reasoning)}</div>` : ''}
+        ${paramsHtml}
+        ${result ? `<div class="exec-result">${escHtml(result)}</div>` : ''}
+      </div>`;
+    }).join('');
+    html += `<div class="section-card"><h3>${t('execution_log')}</h3><div class="exec-list">${execItems}</div></div>`;
+  }
+
+  // Result
+  if (task.result) {
+    html += `<div class="section-card">
+      <h3>${t('result')}</h3>
+      <div class="result-box ${task.status === 'failed' ? 'failed' : ''}">${escHtml(task.result)}</div>
+    </div>`;
+  }
+
+  // Files changed
+  if (files.length > 0) {
+    const fileItems = files.map(f => `<div class="file-item">${escHtml(f)}</div>`).join('');
+    html += `<div class="section-card"><h3>${t('files_changed')}</h3><div class="files-list">${fileItems}</div></div>`;
+  }
+
+  contentEl.innerHTML = html;
+}
+
+// Auto-refresh
+async function tick() {
+  await loadTaskList();
+  // Schedule next tick based on whether there are active tasks
+  const interval = hasActiveTask ? 3000 : 10000;
+  refreshTimer = setTimeout(tick, interval);
+}
+
+function showToast(msg, color) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = `<span style="color:${color||'var(--accent)'}">●</span> ${escHtml(msg)}`;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+async function cancelTask(taskId) {
+  if (!confirm(t('confirm_stop'))) return;
+  try {
+    const r = await fetch(apiUrl(`/api/outsource/tasks/${taskId}/cancel`), {
+      method: 'POST', headers: authHeaders()
+    });
+    const data = await r.json();
+    if (data.ok) { showToast(t('task_stopped'), 'var(--yellow)'); await loadTaskList(); if (selectedTaskId === taskId) await loadTaskDetail(taskId); }
+    else showToast(data.reason || t('could_not_stop'), 'var(--red)');
+  } catch(e) { showToast('Error: ' + e.message, 'var(--red)'); }
+}
+
+async function deleteTask(taskId) {
+  if (!confirm(t('confirm_delete'))) return;
+  try {
+    const r = await fetch(apiUrl(`/api/outsource/tasks/${taskId}`), {
+      method: 'DELETE', headers: authHeaders()
+    });
+    const data = await r.json();
+    if (data.ok) {
+      showToast(t('task_deleted'), 'var(--text-muted)');
+      if (selectedTaskId === taskId) {
+        selectedTaskId = null;
+        document.getElementById('detailEmpty').style.display = '';
+        document.getElementById('detailContent').style.display = 'none';
+        if (isMobile()) goBackToList();
+      }
+      await loadTaskList();
+    } else showToast(t('could_not_delete'), 'var(--red)');
+  } catch(e) { showToast('Error: ' + e.message, 'var(--red)'); }
+}
+
+async function clearAllTasks() {
+  if (!confirm(t('confirm_clear'))) return;
+  const ids = allTasks.map(t => t.task_id);
+  for (const id of ids) {
+    await fetch(apiUrl(`/api/outsource/tasks/${id}`), { method: 'DELETE', headers: authHeaders() });
+  }
+  selectedTaskId = null;
+  document.getElementById('detailEmpty').style.display = '';
+  document.getElementById('detailContent').style.display = 'none';
+  if (isMobile()) goBackToList();
+  showToast(t('all_cleared'), 'var(--text-muted)');
+  await loadTaskList();
+}
+
+function setLang(lang) {
+  localStorage.setItem(LANG_KEY, lang);
+  location.reload();
+}
+
+// Init i18n static elements
+const _labels = { zh: '中文', en: 'EN', ja: '日本語' };
+const _backLabels = { zh: '返回', en: 'Back', ja: '戻る' };
+const _listLabels = { zh: '列表', en: 'List', ja: '一覧' };
+document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent.trim() === _labels[currentLang]));
+document.getElementById('pageTitle').textContent = t('page_title');
+document.getElementById('nav-chat').textContent = t('nav_chat');
+document.getElementById('nav-profile').textContent = t('nav_profile');
+document.getElementById('outsource-nav-link').textContent = t('nav_tasks');
+document.getElementById('nav-system').textContent = t('nav_system');
+document.getElementById('allTasksLabel').textContent = t('all_tasks');
+document.getElementById('clearAllBtn').textContent = t('clear_all');
+document.getElementById('detailEmpty').textContent = t('select_task');
+document.getElementById('taskLoadingMsg').textContent = t('loading');
+document.getElementById('mobileBackLabel').textContent = _backLabels[currentLang] || 'Back';
+document.getElementById('mobileListBtnLabel').textContent = _listLabels[currentLang] || 'List';
+
+// Mobile: show task list by default
+if (isMobile()) {
+  document.getElementById('taskSidebar').classList.add('mobile-open');
+  document.getElementById('mobileBackBtn').style.display = 'none';
+}
+
+// Select task from URL hash (e.g. /outsource#taskId)
+async function initWithHash() {
+  await tick();
+  const hash = location.hash.replace('#', '').trim();
+  if (hash && allTasks.find(t => t.task_id === hash)) {
+    selectTask(hash);
+    // Scroll task into view in the list
+    const el = document.querySelector(`.task-item[onclick*="${hash}"]`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+initWithHash();
+</script>
+</body>
+</html>

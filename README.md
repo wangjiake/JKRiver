@@ -93,6 +93,7 @@ Conversation flows in ──→ Erosion ──→ Sedimentation ──→ Shapes
 - **Multi-Modal Input** — Text, voice, images, files — all understood natively
 - **Pluggable Tools** — Finance tracking, health sync (Withings), web search, vision, TTS, and more; toggle or remove any tool from the System page
 - **YAML Skills** — Custom behaviors triggered by keyword or cron schedule; install from SkillHub or paste YAML directly in the dashboard
+- **Outsource / Task Agent** — Delegate complex multi-step tasks to an autonomous sub-agent; preview the plan, confirm, then track real-time progress on the `/outsource` page
 - **Session Management** — Rename and pin conversations to quickly find what matters
 - **External Agents** — Connect Home Assistant, n8n, Dify and more via `agents_*.yaml`
 - **MCP Protocol** — Model Context Protocol support for Gmail and other MCP servers
@@ -186,12 +187,28 @@ openai:
 
 #### 5. Run
 
+**Web Dashboard (recommended)** — starts FastAPI backend + Flask frontend together:
+
 ```bash
-python -m agent.main                    # CLI mode
-python -m agent.telegram_bot            # Telegram Bot
-python -m agent.discord_bot             # Discord Bot
-python web.py                           # Web Dashboard (http://localhost:1234)
+python scripts/start_local.py
 ```
+
+| Service | URL |
+|---------|-----|
+| Web Dashboard | http://localhost:1234 |
+| API Docs | http://localhost:8400/docs |
+
+Or start services individually:
+
+```bash
+uvicorn agent.api:app --host 127.0.0.1 --port 8400   # FastAPI backend
+python web.py                                          # Flask frontend (http://localhost:1234)
+python -m agent.main                                   # CLI mode
+python -m agent.telegram_bot                           # Telegram Bot
+python -m agent.discord_bot                            # Discord Bot
+```
+
+> **Note:** The web dashboard requires both services running. `start_local.py` handles this automatically and also starts Telegram/Discord bots if enabled in `settings.yaml`.
 
 ### Testing
 

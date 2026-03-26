@@ -19,6 +19,7 @@ def create_app():
     from web.chat import chat_bp
     from web.auth import auth_bp, setup as auth_setup
     from web.system import system_bp
+    from web.outsource import outsource_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(core_bp)
@@ -30,6 +31,7 @@ def create_app():
     app.register_blueprint(health_bp)
     app.register_blueprint(chat_bp)
     app.register_blueprint(system_bp)
+    app.register_blueprint(outsource_bp)
 
     auth_setup(app)
 

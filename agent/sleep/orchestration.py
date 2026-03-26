@@ -145,6 +145,8 @@ def _step_load_initial(state: _PipelineState):
         state.trajectory = None
 
 
+_SKIP_EXTRACT_PREFIXES = ("outsource:", "dispatch_task:", "task_agent:")
+
 def _step_extract_sessions(state: _PipelineState):
     """Extract observations, tags, events from each session."""
     total_session_count = len(state.session_convs)
@@ -152,6 +154,11 @@ def _step_extract_sessions(state: _PipelineState):
         msg_ids = [c["id"] for c in convs]
         state.all_msg_ids.extend(msg_ids)
         state.all_convs.extend(convs)
+
+        # Skip deep analysis for outsource/tool sessions — no personal info to extract
+        session_intents = [c.get("intent", "") or "" for c in convs]
+        if any(i.startswith(_SKIP_EXTRACT_PREFIXES) for i in session_intents):
+            continue
 
         extract_profile, _ = prepare_profile(
             state.existing_profile, max_entries=25, language=state.language,

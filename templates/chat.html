@@ -52,17 +52,17 @@ body.light {
   --bg-input: #ffffff;
   --bg-hover: #eaeef2;
   --bg-hover2: #e8ecf0;
-  --bg-accent: #ddf4ff;
-  --bg-accent2: #cae8ff;
+  --bg-accent: #ededf8;
+  --bg-accent2: #e0e0f4;
   --border: #d0d7de;
   --border-light: #eaeef2;
-  --border-accent: #54aeff;
+  --border-accent: #8a96d8;
   --text: #1f2328;
   --text-2: #24292f;
   --text-muted: #57606a;
   --text-faint: #8c959f;
   --text-faint2: #afb8c1;
-  --accent: #0969da;
+  --accent: #4f5fba;
   --green: #1a7f37;
   --yellow: #9a6700;
   --red: #cf222e;
@@ -100,13 +100,13 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; ba
 .theme-btn:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.18); color: rgba(255,255,255,0.72); }
 body.light .nav-link { background: transparent; border-color: rgba(0,0,0,0.12); color: rgba(0,0,0,0.42); }
 body.light .nav-link:hover { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.18); color: rgba(0,0,0,0.65); }
-body.light .nav-link.active { background: rgba(9,105,218,0.08); border-color: rgba(9,105,218,0.30); color: #0969da; }
+body.light .nav-link.active { background: rgba(79,95,186,0.08); border-color: rgba(79,95,186,0.30); color: #4f5fba; }
 body.light .icon-btn { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.10); color: var(--text-muted); }
 body.light .icon-btn:hover { background: rgba(0,0,0,0.09); border-color: rgba(0,0,0,0.18); color: var(--text-2); }
-body.light .icon-btn.active { background: rgba(9,105,218,0.12); border-color: rgba(9,105,218,0.40); color: var(--accent); }
+body.light .icon-btn.active { background: rgba(79,95,186,0.12); border-color: rgba(79,95,186,0.40); color: var(--accent); }
 body.light .lang-btn { background: transparent; border-color: rgba(0,0,0,0.12); color: rgba(0,0,0,0.42); }
 body.light .lang-btn:hover { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.18); color: rgba(0,0,0,0.65); }
-body.light .lang-btn.active { background: rgba(9,105,218,0.08); border-color: rgba(9,105,218,0.30); color: #0969da; }
+body.light .lang-btn.active { background: rgba(79,95,186,0.08); border-color: rgba(79,95,186,0.30); color: #4f5fba; }
 body.light .theme-btn { background: transparent; border-color: rgba(0,0,0,0.12); color: rgba(0,0,0,0.42); }
 body.light .theme-btn:hover { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.18); color: rgba(0,0,0,0.65); }
 
@@ -122,6 +122,79 @@ body.light .theme-btn:hover { background: rgba(0,0,0,0.05); border-color: rgba(0
 .status-dot.error { background: var(--red); }
 .status-dot.sleeping { background: var(--yellow); animation: blink 1s ease-in-out infinite; }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* Sys stats */
+.sys-stats {
+  display: none; align-items: center; gap: 10px;
+  font-size: 11px; color: var(--text-faint); font-variant-numeric: tabular-nums;
+  margin-left: auto; padding-right: 10px; margin-right: 4px; border-right: 1px solid var(--border);
+}
+.sys-stats.visible { display: flex; }
+.sys-stat { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+#ssCpu  { min-width: 62px; }
+#ssMem  { min-width: 62px; }
+#ssDisk { min-width: 80px; }
+#ssNet  { min-width: 120px; }
+.sys-stat-warn { color: var(--yellow); }
+.sys-stat-crit { color: var(--red); }
+
+/* Task tray */
+.status-bar { flex-direction: column; align-items: stretch; padding: 0; }
+.status-bar-row { display: flex; align-items: center; gap: 8px; padding: 5px 24px; }
+.status-bar-row .status-dot { flex-shrink: 0; }
+.status-bar-row .status-text-wrap { display: flex; align-items: center; gap: 8px; flex: 1; }
+.task-tray-toggle {
+  display: none; align-items: center; gap: 5px;
+  background: rgba(88,166,255,0.1); border: 1px solid var(--border-accent);
+  border-radius: 20px; padding: 2px 10px; font-size: 11px; color: var(--accent);
+  cursor: pointer; white-space: nowrap; transition: background 0.2s;
+}
+.task-tray-toggle:hover { background: rgba(88,166,255,0.2); }
+.task-tray-toggle.visible { display: flex; }
+.task-tray-toggle .tray-arrow { font-size: 9px; transition: transform 0.2s; }
+.task-tray-toggle.expanded .tray-arrow { transform: rotate(180deg); }
+.task-tray-panel {
+  max-height: 0; overflow: hidden;
+  transition: max-height 0.25s ease, padding 0.25s ease;
+  border-top: 0px solid var(--border);
+}
+.task-tray-panel.open {
+  max-height: 80px;
+  padding: 6px 16px 8px;
+  border-top-width: 1px;
+}
+.task-tray-cards {
+  display: flex; flex-direction: row-reverse; justify-content: flex-start;
+  gap: 8px; overflow-x: auto; padding-bottom: 2px;
+  scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+}
+.task-tray-cards .task-card { flex-shrink: 0; }
+.task-tray-cards::-webkit-scrollbar { height: 3px; }
+.task-tray-cards::-webkit-scrollbar-track { background: transparent; }
+.task-tray-cards::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.task-card {
+  flex-shrink: 0; width: 130px; padding: 5px 8px;
+  background: var(--glass-card); border: 1px solid var(--border);
+  border-radius: 8px; cursor: pointer; transition: border-color 0.2s;
+  text-decoration: none; display: block;
+}
+.task-card:hover { border-color: var(--accent); }
+.task-card-top { display: flex; align-items: center; gap: 5px; margin-bottom: 3px; }
+.task-card-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.task-card-dot.running { background: var(--yellow); animation: blink 1s ease-in-out infinite; }
+.task-card-dot.done { background: var(--green); }
+.task-card-dot.failed { background: var(--red); }
+.task-card-id { font-size: 10px; color: var(--accent); font-family: monospace; }
+.task-card-title { font-size: 11px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 600px) {
+  .status-bar-row { padding: 4px 16px; flex-wrap: wrap; row-gap: 4px; }
+  .sys-stats { margin-left: 0; border-right: none; border-top: 1px solid var(--border); padding-right: 0; margin-right: 0; padding-top: 4px; width: 100%; }
+  .sys-stats.visible { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
+  #ssCpu, #ssMem, #ssDisk, #ssNet { min-width: unset; }
+  .task-tray-toggle { margin-left: auto; }
+  .task-tray-panel.open { padding: 6px 12px 8px; }
+  .task-tray-cards { flex-direction: row; }
+}
 
 /* Layout */
 .body { display: flex; flex: 1; min-height: 0; position: relative; background: transparent; }
@@ -225,11 +298,37 @@ button.send { width: 36px; height: 36px; background: var(--accent); border: none
 button.send::after { content: '↑'; font-size: 18px; font-weight: 700; line-height: 1; }
 button.send:hover:not(:disabled) { transform: scale(1.08); box-shadow: 0 4px 16px rgba(89,166,255,0.5); }
 button.send:disabled { opacity: 0.35; cursor: not-allowed; transform: none; box-shadow: none; }
+button.send.stop-mode { background: var(--red, #e05a5a); box-shadow: 0 2px 10px rgba(224,90,90,0.35); }
+button.send.stop-mode::after { content: '■'; font-size: 14px; }
+button.send.stop-mode:hover { box-shadow: 0 4px 16px rgba(224,90,90,0.5); }
+.outsource-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.outsource-btn { padding: 6px 14px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.15s; }
+.outsource-btn.confirm { background: var(--accent); color: #fff; }
+.outsource-btn.confirm:hover { opacity: 0.85; }
+.outsource-btn.cancel { background: var(--surface2, rgba(255,255,255,0.08)); color: var(--text); border: 1px solid var(--border); }
+.outsource-btn.cancel:hover { opacity: 0.75; }
+.outsource-status { font-size: 13px; color: var(--text-sub); padding: 4px 0; }
+/* Task question bubble */
+.task-question { margin-top: 10px; border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; background: rgba(88,166,255,0.06); }
+.task-question-label { font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
+.task-question-text { font-size: 13px; color: var(--text); margin-bottom: 10px; line-height: 1.5; }
+.task-question-input { display: flex; gap: 8px; }
+.task-question-input textarea { flex: 1; background: var(--input-bg, rgba(255,255,255,0.06)); border: 1px solid var(--border); border-radius: 7px; color: var(--text); font-size: 13px; padding: 7px 10px; resize: none; font-family: inherit; }
+.task-question-input button { padding: 6px 14px; border-radius: 7px; border: none; background: var(--accent); color: #fff; font-size: 13px; cursor: pointer; flex-shrink: 0; }
+.task-question-input button:hover { opacity: 0.85; }
+.task-question-answered { font-size: 13px; color: var(--text-sub); font-style: italic; }
+/* Toast notification */
+.toast { position: fixed; top: 20px; right: 20px; background: var(--bg-card2, #1a2236); border: 1px solid var(--border); border-radius: 10px; padding: 12px 18px; font-size: 13px; color: var(--text); box-shadow: 0 4px 24px rgba(0,0,0,0.35); z-index: 9999; display: flex; align-items: center; gap: 10px; animation: toast-in 0.2s ease; max-width: 320px; pointer-events: none; }
+body.light .toast { background: #ffffff; box-shadow: 0 4px 24px rgba(0,0,0,0.12); }
+@keyframes toast-in { from { opacity:0; transform:translateY(-8px);} to { opacity:1; transform:none;} }
+.outsource-status.confirmed { color: var(--accent); }
+.outsource-status.cancelled { color: var(--text-sub); }
 .hint { font-size: 11px; color: var(--text-faint2); margin-top: 6px; }
 
 /* Settings Panel */
 .settings-panel { width: 0; background: var(--glass-sidebar); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border-left: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; transition: width 0.2s ease; }
 .settings-panel.open { width: 340px; overflow-y: auto; }
+.settings-close-btn { display: none; margin-left: auto; background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; padding: 0 4px; line-height: 1; }
 .settings-panel::-webkit-scrollbar { width: 4px; }
 .settings-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 .settings-inner { width: 340px; }
@@ -272,12 +371,22 @@ input[type="number"].config-input::-webkit-inner-spin-button { -webkit-appearanc
 
 /* ── Mobile ─────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .nav-link { display: none; }
+  .header { padding: 10px 16px 8px; flex-wrap: wrap; align-items: center; gap: 4px; }
+  .header-left { flex: 1; }
+  .header-right { width: 100%; flex-wrap: wrap; gap: 5px; }
+  .header h1 { font-size: 17px; }
   .lang-switch { gap: 2px; }
   .lang-btn { padding: 4px 7px; font-size: 11px; }
-  .header { padding: 10px 16px; }
-  .header h1 { font-size: 17px; }
   .status-bar { padding: 4px 16px; }
+  .settings-close-btn { display: flex !important; }
+  .history-sidebar-header { font-size: 13px; padding: 14px 16px; }
+  .new-chat-btn { font-size: 13px; padding: 5px 12px; }
+  .history-search input { font-size: 14px; padding: 7px 10px; }
+  .search-btn { font-size: 15px; padding: 0 11px; }
+  .history-item { padding: 10px 10px 10px 16px; }
+  .history-item-title { font-size: 14px; }
+  .history-item-time { font-size: 12px; margin-top: 3px; }
+  .history-item-menu { width: 32px; height: 32px; font-size: 18px; }
 
   /* Sidebar: fixed overlay drawer on mobile */
   .history-sidebar {
@@ -310,14 +419,11 @@ input[type="number"].config-input::-webkit-inner-spin-button { -webkit-appearanc
 </head>
 <body>
 
-<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar(); if(settingsOpen) toggleSettings();"></div>
 <input type="file" id="imageInput" accept="image/*" style="display:none" onchange="onImageSelected(this)">
 
 <div class="header">
   <div class="header-left">
-    <button class="hamburger" id="hamburgerBtn" onclick="toggleSidebar()" aria-label="Menu">
-      <span></span><span></span><span></span>
-    </button>
     <div>
       <h1 data-i18n="title">Chat</h1>
       <div class="subtitle">{{ db_name }}</div>
@@ -326,6 +432,7 @@ input[type="number"].config-input::-webkit-inner-spin-button { -webkit-appearanc
   <div class="header-right">
     <a href="/chat" class="nav-link active" data-i18n="nav_chat">Chat</a>
     <a href="/profile" class="nav-link" data-i18n="nav_profile">Profile</a>
+    <a href="/outsource" class="nav-link" id="outsource-nav-link" data-i18n="nav_tasks">Tasks</a>
     <a href="/system" class="nav-link" data-i18n="nav_system">System</a>
     <div class="lang-switch">
       <button class="lang-btn" onclick="setLang('zh')">中文</button>
@@ -338,8 +445,28 @@ input[type="number"].config-input::-webkit-inner-spin-button { -webkit-appearanc
 </div>
 
 <div class="status-bar">
-  <div class="status-dot" id="statusDot"></div>
-  <span id="statusText" data-i18n="connecting">Connecting...</span>
+  <div class="status-bar-row">
+    <button class="hamburger" id="hamburgerBtn" onclick="toggleSidebar()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="status-text-wrap">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText" data-i18n="connecting">Connecting...</span>
+    </div>
+    <div class="sys-stats" id="sysStats">
+      <span class="sys-stat" id="ssCpu" data-i18n-title="ss_cpu" title="CPU">–</span>
+      <span class="sys-stat" id="ssMem" data-i18n-title="ss_mem" title="Memory">–</span>
+      <span class="sys-stat" id="ssDisk" data-i18n-title="ss_disk" title="Disk">–</span>
+      <span class="sys-stat" id="ssNet" data-i18n-title="ss_net" title="Network">↑– ↓–</span>
+    </div>
+    <button class="task-tray-toggle" id="taskTrayToggle" onclick="toggleTaskTray()">
+      <span id="taskTrayLabel">⚡ 0</span>
+      <span class="tray-arrow">▾</span>
+    </button>
+  </div>
+  <div class="task-tray-panel" id="taskTrayPanel">
+    <div class="task-tray-cards" id="taskTrayCards"></div>
+  </div>
 </div>
 
 <div class="body">
@@ -376,15 +503,15 @@ input[type="number"].config-input::-webkit-inner-spin-button { -webkit-appearanc
           <textarea id="input" data-i18n-placeholder="placeholder" placeholder="Type a message..." rows="1" disabled></textarea>
           <button class="input-icon-btn" id="voiceBtn" onclick="toggleVoice()" data-i18n-title="voice_title" title="Voice input"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
         </div>
-        <button class="send" id="sendBtn" disabled onclick="sendMessage()" data-i18n="send">Send</button>
+        <button class="send" id="sendBtn" disabled onclick="handleSendStop()" data-i18n="send">Send</button>
       </div>
-      <div class="hint" data-i18n="hint">Enter to send · Shift+Enter for new line</div>
+      <div class="hint" data-i18n="hint">Ctrl+Enter to send · Enter for new line</div>
     </div>
   </div>
 
   <div class="settings-panel" id="settingsPanel">
     <div class="settings-inner">
-      <div class="settings-header" data-i18n="settings_title">Settings</div>
+      <div class="settings-header" style="display:flex;align-items:center;"><span data-i18n="settings_title">Settings</span><button class="settings-close-btn" onclick="toggleSettings()">×</button></div>
       <div class="settings-section">
         <h4 data-i18n="section_sleep">Sleep</h4>
         <div class="toggle-row">
@@ -418,6 +545,28 @@ input[type="number"].config-input::-webkit-inner-spin-button { -webkit-appearanc
         </div>
         <button class="sleep-btn" id="sleepBtn" onclick="runSleep()" data-i18n="sleep_btn">Run Sleep Now</button>
         <div class="sleep-status" id="sleepStatus"></div>
+      </div>
+      <div class="settings-section">
+        <h4 data-i18n="section_sys_stats">System Stats</h4>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label" data-i18n="sys_stats_label">Show system info in status bar</div>
+            <div class="toggle-sub" data-i18n="sys_stats_sub">CPU / Memory / Disk / Network speed</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="sysStatsToggle" onchange="onSysStatsChange()">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div id="sysStatsIntervalRow" class="config-row" style="display:none;margin-top:10px;align-items:center;gap:8px;">
+          <label style="font-size:13px;color:var(--text-2);" data-i18n="sys_stats_interval">Refresh interval</label>
+          <select id="sysStatsInterval" onchange="onSysStatsIntervalChange()" style="background:var(--glass-input);border:1px solid var(--border);color:var(--text-2);border-radius:6px;padding:3px 8px;font-size:13px;cursor:pointer;">
+            <option value="1000">1s</option>
+            <option value="5000" selected>5s</option>
+            <option value="10000">10s</option>
+            <option value="30000">30s</option>
+          </select>
+        </div>
       </div>
       <div class="session-info">
         <h4 data-i18n="section_session">Session</h4>
@@ -466,6 +615,7 @@ let ws = null;
 let sessionId = localStorage.getItem(STORAGE_KEY) || null;
 let waiting = false;
 let autoSleepTimer = null;
+const _pendingTaskQuestions = new Map();  // taskId -> { taskId, taskIdShort, question }
 let settingsOpen = false;
 let sidebarOpen = false;
 let pendingImage = null; // { file, dataUrl }
@@ -475,7 +625,7 @@ let isRecording = false;
 // ── i18n ──────────────────────────────────────────────────────────────
 const I18N = {
   zh: {
-    title: 'Chat', nav_chat: '聊天', nav_profile: '个人资料', nav_system: '系统', settings_title: '设置',
+    title: 'Chat', nav_chat: '聊天', nav_profile: '个人资料', nav_tasks: '外包', nav_system: '系统', settings_title: '设置',
     section_sleep: '睡眠', auto_sleep: '定时睡眠',
     mode_interval: '间隔', mode_daily: '定时',
     every_label: '每', hours_label: '小时运行一次',
@@ -486,8 +636,12 @@ const I18N = {
     connecting: '连接中…', connected: '已连接', disconnected: '已断开 — 刷新页面重连',
     sleeping_status: '睡眠运行中…',
     history_divider: '— 上次会话 {n} 条消息 —',
-    placeholder: '输入消息…', send: '发送',
-    hint: 'Enter 发送 · Shift+Enter 换行',
+    placeholder: '输入消息…', send: '发送', stop: '停止',
+    outsource_task: '外包', task_done: '执行完成', task_failed: '执行失败',
+    confirm_start: '✅ 确认开始', cancel_task: '❌ 取消',
+    task_starting: '启动中…', task_running: '后台执行中', task_cancelled: '已取消',
+    task_question_label: '需要确认', task_question_placeholder: '输入回复…', task_question_send: '回复', task_question_answered: '已回复',
+    hint: 'Ctrl+Enter 发送 · Enter 换行',
     next_interval: '下次运行：{m} 分钟后',
     next_daily: '下次运行：今天 {time}',
     next_daily_tomorrow: '下次运行：明天 {time}',
@@ -502,9 +656,11 @@ const I18N = {
     rename_title: '重命名会话', rename_placeholder: '输入名称…',
     btn_cancel: '取消', btn_save: '保存',
     delete_confirm: '确定删除这个会话？',
+    section_sys_stats: '系统状态', sys_stats_label: '状态栏显示系统信息', sys_stats_sub: '显示 CPU / 内存 / 硬盘 / 网速', sys_stats_interval: '刷新间隔',
+    ss_cpu: 'CPU', ss_mem: '内存', ss_disk: '磁盘', ss_net: '网络',
   },
   en: {
-    title: 'Chat', nav_chat: 'Chat', nav_profile: 'Profile', nav_system: 'System', settings_title: 'Settings',
+    title: 'Chat', nav_chat: 'Chat', nav_profile: 'Profile', nav_tasks: 'Tasks', nav_system: 'System', settings_title: 'Settings',
     section_sleep: 'Sleep', auto_sleep: 'Auto Sleep',
     mode_interval: 'Interval', mode_daily: 'Daily',
     every_label: 'Every', hours_label: 'hour(s)',
@@ -515,8 +671,12 @@ const I18N = {
     connecting: 'Connecting…', connected: 'Connected', disconnected: 'Disconnected — reload to reconnect',
     sleeping_status: 'Sleep running…',
     history_divider: '— {n} messages from previous session —',
-    placeholder: 'Type a message…', send: 'Send',
-    hint: 'Enter to send · Shift+Enter for new line',
+    placeholder: 'Type a message…', send: 'Send', stop: 'Stop',
+    outsource_task: 'Task', task_done: 'Completed', task_failed: 'Failed',
+    confirm_start: '✅ Start', cancel_task: '❌ Cancel',
+    task_starting: 'Starting…', task_running: 'Running in background', task_cancelled: 'Cancelled',
+    task_question_label: 'Needs input', task_question_placeholder: 'Type your reply…', task_question_send: 'Reply', task_question_answered: 'Answered',
+    hint: 'Ctrl+Enter to send · Enter for new line',
     next_interval: 'Next run in {m} min',
     next_daily: 'Next: today at {time}',
     next_daily_tomorrow: 'Next: tomorrow at {time}',
@@ -531,9 +691,11 @@ const I18N = {
     rename_title: 'Rename Session', rename_placeholder: 'Enter name…',
     btn_cancel: 'Cancel', btn_save: 'Save',
     delete_confirm: 'Delete this session?',
+    section_sys_stats: 'System Stats', sys_stats_label: 'Show system info in status bar', sys_stats_sub: 'CPU / Memory / Disk / Network speed', sys_stats_interval: 'Refresh interval',
+    ss_cpu: 'CPU', ss_mem: 'Memory', ss_disk: 'Disk', ss_net: 'Network',
   },
   ja: {
-    title: 'チャット', nav_chat: 'チャット', nav_profile: 'プロフィール', nav_system: 'システム', settings_title: '設定',
+    title: 'チャット', nav_chat: 'チャット', nav_profile: 'プロフィール', nav_tasks: '派遣', nav_system: 'システム', settings_title: '設定',
     section_sleep: 'スリープ', auto_sleep: '自動スリープ',
     mode_interval: '間隔', mode_daily: '毎日',
     every_label: '毎', hours_label: '時間ごと',
@@ -544,8 +706,11 @@ const I18N = {
     connecting: '接続中…', connected: '接続済み', disconnected: '切断 — リロードして再接続',
     sleeping_status: 'スリープ実行中…',
     history_divider: '— 前回セッション {n} 件のメッセージ —',
-    placeholder: 'メッセージを入力…', send: '送信',
-    hint: 'Enter で送信 · Shift+Enter で改行',
+    placeholder: 'メッセージを入力…', send: '送信', stop: '停止',
+    outsource_task: 'タスク', task_done: '完了', task_failed: '失敗',
+    confirm_start: '✅ 開始', cancel_task: '❌ キャンセル',
+    task_starting: '開始中…', task_running: 'バックグラウンド実行中', task_cancelled: 'キャンセル済み',
+    hint: 'Ctrl+Enter で送信 · Enter で改行',
     next_interval: '次回実行：{m} 分後',
     next_daily: '次回：本日 {time}',
     next_daily_tomorrow: '次回：明日 {time}',
@@ -560,6 +725,8 @@ const I18N = {
     rename_title: 'セッション名変更', rename_placeholder: '名前を入力…',
     btn_cancel: 'キャンセル', btn_save: '保存',
     delete_confirm: 'このセッションを削除しますか？',
+    section_sys_stats: 'システム状態', sys_stats_label: 'ステータスバーにシステム情報を表示', sys_stats_sub: 'CPU / メモリ / ディスク / 通信速度', sys_stats_interval: '更新間隔',
+    ss_cpu: 'CPU', ss_mem: 'メモリ', ss_disk: 'ディスク', ss_net: 'ネットワーク',
   },
 };
 
@@ -578,6 +745,149 @@ function t(key, params) {
   if (params) { for (const [k, v] of Object.entries(params)) s = s.replace(`{${k}}`, v); }
   return s;
 }
+
+// ── System Stats ─────────────────────────────────────────────────────────────
+const SYS_STATS_KEY = 'jkriver_sys_stats';
+const SYS_STATS_INTERVAL_KEY = 'jkriver_sys_stats_interval';
+let _sysStatsTimer = null;
+let _sysStatsInterval = 5000;
+
+function fmtSpeed(bps) {
+  if (bps >= 1024 * 1024) return (bps / 1024 / 1024).toFixed(1) + 'M';
+  if (bps >= 1024) return (bps / 1024).toFixed(0) + 'K';
+  return bps + 'B';
+}
+
+function fmtPct(v, warnAt=70, critAt=90) {
+  const cls = v >= critAt ? 'sys-stat-crit' : v >= warnAt ? 'sys-stat-warn' : '';
+  return `<span class="${cls}">${v}%</span>`;
+}
+
+async function fetchSysStats() {
+  try {
+    const r = await fetch(`http://${location.hostname}:${API_PORT}/api/system/stats`, { headers: authHeaders() });
+    if (!r.ok) return;
+    const d = await r.json();
+    if (d.error) return;
+    document.getElementById('ssCpu').innerHTML  = `${t('ss_cpu')} ${fmtPct(d.cpu, 70, 90)}`;
+    document.getElementById('ssMem').innerHTML  = `${t('ss_mem')} ${fmtPct(d.mem, 75, 90)}`;
+    document.getElementById('ssDisk').innerHTML = `${t('ss_disk')} ${fmtPct(d.disk_pct, 80, 95)} <span style="color:var(--text-faint);font-size:10px">· ${d.disk_free_gb}G</span>`;
+    document.getElementById('ssNet').innerHTML  = `${t('ss_net')} ↑${fmtSpeed(d.upload_bps)} ↓${fmtSpeed(d.download_bps)}`;
+  } catch(e) {}
+}
+
+function startSysStats() {
+  const el = document.getElementById('sysStats');
+  if (el) el.classList.add('visible');
+  document.getElementById('sysStatsIntervalRow').style.display = 'flex';
+  if (_sysStatsTimer) clearInterval(_sysStatsTimer);
+  fetchSysStats();
+  _sysStatsTimer = setInterval(fetchSysStats, _sysStatsInterval);
+}
+
+function stopSysStats() {
+  const el = document.getElementById('sysStats');
+  if (el) el.classList.remove('visible');
+  document.getElementById('sysStatsIntervalRow').style.display = 'none';
+  if (_sysStatsTimer) { clearInterval(_sysStatsTimer); _sysStatsTimer = null; }
+}
+
+function onSysStatsChange() {
+  const on = document.getElementById('sysStatsToggle').checked;
+  localStorage.setItem(SYS_STATS_KEY, on ? '1' : '0');
+  on ? startSysStats() : stopSysStats();
+}
+
+function onSysStatsIntervalChange() {
+  const sel = document.getElementById('sysStatsInterval');
+  _sysStatsInterval = parseInt(sel.value, 10);
+  localStorage.setItem(SYS_STATS_INTERVAL_KEY, sel.value);
+  // Restart timer with new interval if running
+  if (_sysStatsTimer) startSysStats();
+}
+
+function loadSysStatsSetting() {
+  const savedInterval = localStorage.getItem(SYS_STATS_INTERVAL_KEY);
+  if (savedInterval) {
+    _sysStatsInterval = parseInt(savedInterval, 10);
+    const sel = document.getElementById('sysStatsInterval');
+    if (sel) sel.value = savedInterval;
+  }
+  const on = localStorage.getItem(SYS_STATS_KEY) === '1';
+  const cb = document.getElementById('sysStatsToggle');
+  if (cb) cb.checked = on;
+  if (on) startSysStats();
+}
+
+loadSysStatsSetting();
+
+let _taskTrayExpanded = false;
+
+function toggleTaskTray() {
+  _taskTrayExpanded = !_taskTrayExpanded;
+  const panel = document.getElementById('taskTrayPanel');
+  const btn = document.getElementById('taskTrayToggle');
+  panel.classList.toggle('open', _taskTrayExpanded);
+  btn.classList.toggle('expanded', _taskTrayExpanded);
+  if (_taskTrayExpanded) renderTaskTrayFull();
+}
+
+function renderTaskTrayFull() {
+  fetch(`http://${location.hostname}:${API_PORT}/api/outsource/tasks`, { headers: authHeaders() })
+    .then(r => r.json())
+    .then(tasks => {
+      const active = tasks.filter(t => ['running','pending','planning'].includes(t.status));
+      const cards = document.getElementById('taskTrayCards');
+      if (!cards) return;
+      cards.innerHTML = '';
+      const shown = active.slice(0, 20); // show up to 20, scroll for more
+      shown.forEach(task => {
+        const a = document.createElement('a');
+        a.className = 'task-card';
+        a.href = `/outsource#${task.task_id}`;
+        const dotClass = task.status === 'running' ? 'running' : task.status === 'done' ? 'done' : 'failed';
+        a.innerHTML = `
+          <div class="task-card-top">
+            <span class="task-card-dot ${dotClass}"></span>
+            <span class="task-card-id">#${task.task_id.slice(0,8)}</span>
+          </div>
+          <div class="task-card-title">${(task.title || '').replace(/</g,'&lt;').slice(0,40)}</div>`;
+        cards.appendChild(a);
+      });
+    }).catch(() => {});
+}
+
+function updateTaskBadge() {
+  fetch(`http://${location.hostname}:${API_PORT}/api/outsource/tasks/active_count`, { headers: authHeaders() })
+    .then(r => r.json())
+    .then(data => {
+      // Update nav link
+      const link = document.getElementById('outsource-nav-link');
+      if (link) {
+        if (data.count > 0) { link.textContent = `${t('nav_tasks')} (${data.count})`; link.style.color = 'var(--yellow)'; }
+        else { link.textContent = t('nav_tasks'); link.style.color = ''; }
+      }
+      // Update task tray toggle
+      const btn = document.getElementById('taskTrayToggle');
+      const lbl = document.getElementById('taskTrayLabel');
+      if (!btn || !lbl) return;
+      if (data.count > 0) {
+        lbl.textContent = `⚡ ${data.count}`;
+        btn.classList.add('visible');
+        if (_taskTrayExpanded) renderTaskTrayFull();
+      } else {
+        btn.classList.remove('visible');
+        // Auto-collapse when no active tasks
+        if (_taskTrayExpanded) {
+          _taskTrayExpanded = false;
+          document.getElementById('taskTrayPanel')?.classList.remove('open');
+          btn.classList.remove('expanded');
+        }
+      }
+    }).catch(() => {});
+}
+updateTaskBadge();
+setInterval(updateTaskBadge, 5000);
 
 function setLang(lang) {
   currentLang = lang;
@@ -690,10 +1000,45 @@ function stopVoice() {
 }
 
 // ── Send message ───────────────────────────────────────────────────────
+function setSendStopMode(isStop) {
+  const btn = document.getElementById('sendBtn');
+  if (isStop) {
+    btn.classList.add('stop-mode');
+    btn.disabled = false;
+  } else {
+    btn.classList.remove('stop-mode');
+  }
+}
+
+function stopResponse() {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  ws.send(JSON.stringify({ type: 'cancel' }));
+  waiting = false;
+  setSendStopMode(false);
+  document.getElementById('sendBtn').disabled = false;
+  removeThinking();
+}
+
+function handleSendStop() {
+  if (waiting) stopResponse();
+  else sendMessage();
+}
+
 async function sendMessage() {
   const input = document.getElementById('input');
   const text = input.value.trim();
   if ((!text && !pendingImage) || waiting) return;
+
+  // If any task is waiting for user input, route to task_answer instead of LLM
+  if (_pendingTaskQuestions.size > 0 && text && !pendingImage) {
+    // Route to the most recent pending question
+    const latest = [..._pendingTaskQuestions.values()].at(-1);
+    input.value = '';
+    input.style.height = 'auto';
+    appendMessage('user', text, '', '');
+    submitTaskAnswer(latest.taskId, latest.taskIdShort, text);
+    return;
+  }
 
   if (pendingImage) {
     await sendImageMessage(text);
@@ -706,7 +1051,8 @@ async function sendMessage() {
   input.value = '';
   input.style.height = 'auto';
   waiting = true;
-  document.getElementById('sendBtn').disabled = true;
+  document.getElementById('sendBtn').disabled = false;
+  setSendStopMode(true);
   showThinking();
 }
 
@@ -721,7 +1067,7 @@ async function sendImageMessage(caption) {
   input.style.height = 'auto';
   clearAttachment();
   waiting = true;
-  document.getElementById('sendBtn').disabled = true;
+  setSendStopMode(true);
   showThinking();
 
   try {
@@ -1028,12 +1374,41 @@ function connect() {
       document.getElementById('sendBtn').disabled = false;
       document.getElementById('input').focus();
       if (isNew) loadSessionList();
+      // Recover any pending task questions (e.g. after page refresh)
+      recoverPendingTaskQuestions();
       return;
     }
-    removeThinking();
-    waiting = false;
-    document.getElementById('sendBtn').disabled = false;
+    // Background task events must NOT reset waiting/thinking state
+    const _bgTypes = new Set(['outsource_started','outsource_cancelled','task_complete','task_question']);
+    if (!_bgTypes.has(data.type)) {
+      removeThinking();
+      waiting = false;
+      setSendStopMode(false);
+      document.getElementById('sendBtn').disabled = false;
+    }
     if (data.type === 'response') appendMessage('agent', data.response, data.category, data.intent);
+    else if (data.type === 'cancelled') { /* silently reset — user already saw stop */ }
+    else if (data.type === 'outsource_started') {
+      updateTaskActions(data.task_id, 'running');
+      return;
+    }
+    else if (data.type === 'outsource_cancelled') {
+      updateTaskActions(data.task_id, 'failed');
+      return;
+    }
+    else if (data.type === 'task_complete') {
+      updateTaskActions(data.task_id, data.success ? 'done' : 'failed', data.result, data.files_changed, data.steps_count);
+      const _Lt = I18N[currentLang] || {};
+      const icon = data.success ? '✅' : '❌';
+      const label = data.success ? (_Lt.task_done || '执行完成') : (_Lt.task_failed || '执行失败');
+      showToast(`${icon} Task #${data.task_id_short} ${label}`, data.success);
+      return;
+    }
+    else if (data.type === 'task_question') {
+      _pendingTaskQuestions.set(data.task_id, { taskId: data.task_id, taskIdShort: data.task_id_short, question: data.question });
+      appendTaskQuestion(data.task_id, data.task_id_short, data.question);
+      return;
+    }
     else if (data.type === 'error') appendMessage('agent', '⚠ ' + data.detail, 'error', '');
   };
   ws.onclose = () => {
@@ -1057,21 +1432,151 @@ async function loadHistory(sid) {
     div.textContent = t('history_divider', { n: history.length });
     container.appendChild(div);
     history.forEach(item => {
-      appendMessage('user', item.user, '', '', item.at, true);
-      appendMessage('agent', item.agent, '', '', item.at, true);
+      if (item.user) appendMessage('user', item.user, '', '', item.at, true);
+      if (item.agent) appendMessage('agent', item.agent, '', '', item.at, true);
     });
   } catch(e) { console.warn('Failed to load history', e); }
 }
 
+// ── Recover pending task questions after refresh ───────────────────────
+async function recoverPendingTaskQuestions() {
+  try {
+    const res = await fetch(`http://${location.hostname}:${API_PORT}/api/outsource/tasks`, { headers: authHeaders() });
+    if (!res.ok) return;
+    const tasks = await res.json();
+    for (const task of tasks) {
+      if (task.status === 'running' && task.pending_question) {
+        // Skip if already shown
+        if (_pendingTaskQuestions.has(task.task_id)) continue;
+        if (document.querySelector(`[data-task-question-id="${task.task_id}"]`)) continue;
+        const shortId = task.task_id.slice(0, 8);
+        _pendingTaskQuestions.set(task.task_id, { taskId: task.task_id, taskIdShort: shortId, question: task.pending_question });
+        appendTaskQuestion(task.task_id, shortId, task.pending_question);
+      }
+    }
+  } catch(e) { console.warn('Failed to recover task questions', e); }
+}
+
 // ── Messages ──────────────────────────────────────────────────────────
+function appendTaskQuestion(taskId, taskIdShort, question) {
+  const container = document.getElementById('messages');
+  const _L = I18N[currentLang] || {};
+
+  // Remove any previous unanswered bubble from the same task to avoid duplicate IDs
+  document.querySelectorAll(`[data-task-question-id="${taskId}"]`).forEach(el => el.remove());
+
+  // Use a unique input ID per question to avoid collisions across multiple asks
+  const inputId = `tq-input-${taskId}-${Date.now()}`;
+
+  const div = document.createElement('div');
+  div.className = 'msg agent';
+  div.dataset.taskQuestionId = taskId;
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+
+  const qDiv = document.createElement('div');
+  qDiv.className = 'task-question';
+  qDiv.innerHTML = `
+    <div class="task-question-label">🤖 Task #${taskIdShort} — ${_L.task_question_label || '需要确认'}</div>
+    <div class="task-question-text">${question.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+    <div class="task-question-input">
+      <textarea rows="2" id="${inputId}" placeholder="${_L.task_question_placeholder || '输入回复…'}" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitTaskAnswer('${taskId}','${taskIdShort}','${inputId}');}"></textarea>
+      <button onclick="submitTaskAnswer('${taskId}', '${taskIdShort}', '${inputId}')">${_L.task_question_send || '回复'}</button>
+    </div>`;
+
+  bubble.appendChild(qDiv);
+  div.appendChild(bubble);
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+
+  setTimeout(() => {
+    const inp = document.getElementById(inputId);
+    if (inp) inp.focus();
+  }, 100);
+}
+
+function submitTaskAnswer(taskId, taskIdShort, inputIdOrAnswer) {
+  // inputIdOrAnswer: either the unique input element ID (from button click) or the answer text (from main chat input)
+  let answer;
+  if (inputIdOrAnswer && inputIdOrAnswer.startsWith('tq-input-')) {
+    const inp = document.getElementById(inputIdOrAnswer);
+    if (!inp) return;
+    answer = inp.value.trim();
+  } else {
+    answer = (inputIdOrAnswer || '').trim();
+  }
+  if (!answer) return;
+
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    showToast('⚠ WebSocket 未连接，请刷新页面重试', false);
+    return;
+  }
+
+  // Immediately lock the UI so user knows it was submitted
+  const qDiv = document.querySelector(`[data-task-question-id="${taskId}"] .task-question`);
+  if (qDiv) {
+    const btn = qDiv.querySelector('button');
+    if (btn) { btn.disabled = true; btn.textContent = '发送中…'; }
+  }
+
+  ws.send(JSON.stringify({ type: 'task_answer', task_id: taskId, answer }));
+  _pendingTaskQuestions.delete(taskId);
+
+  // Replace input with answered state
+  if (qDiv) {
+    const _L = I18N[currentLang] || {};
+    setTimeout(() => {
+      qDiv.innerHTML = `
+        <div class="task-question-label">🤖 Task #${taskIdShort} — ${_L.task_question_label || '需要确认'}</div>
+        <div class="task-question-answered">✅ ${_L.task_question_answered || '已回复'}: ${answer.replace(/</g,'&lt;')}</div>`;
+    }, 200);
+  }
+}
+
+function showToast(msg, success) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  const dot = success === true ? '🟢' : success === false ? '🔴' : '🔵';
+  t.textContent = `${dot} ${msg}`;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
 function appendMessage(role, text, category, intent, at) {
   const container = document.getElementById('messages');
   const div = document.createElement('div');
   div.className = `msg ${role}`;
   const bubble = document.createElement('div');
   bubble.className = 'bubble';
-  bubble.textContent = text;
-  div.appendChild(bubble);
+
+  // Detect outsource plan: extract task_id from <!-- task_id:xxx --> comment (use last match)
+  const taskIdMatches = [...text.matchAll(/<!--\s*task_id:([a-f0-9\-]+)\s*-->/gi)];
+  const taskId = taskIdMatches.length ? taskIdMatches[taskIdMatches.length - 1][1] : null;
+  const displayText = taskId ? text.replace(/<!--[\s\S]*?-->/g, '').trimEnd() : text;
+
+  bubble.textContent = displayText;
+
+  // Append confirm/cancel buttons for outsource plan messages
+  if (taskId && role === 'agent') {
+    const actions = document.createElement('div');
+    actions.className = 'outsource-actions';
+    actions.dataset.taskId = taskId;
+    div.appendChild(bubble);
+    div.appendChild(actions);
+
+    // Fetch actual task status, then render correct UI
+    fetch(`http://${location.hostname}:${API_PORT}/api/outsource/tasks/${taskId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(task => {
+        if (!task) { actions.remove(); return; }
+        updateTaskActions(taskId, task.status, task.result);
+      })
+      .catch(() => { actions.remove(); });
+  } else {
+    div.appendChild(bubble);
+  }
+
   if (role === 'agent' && (category || intent)) {
     const meta = document.createElement('div');
     meta.className = 'msg-meta';
@@ -1087,6 +1592,88 @@ function appendMessage(role, text, category, intent, at) {
   }
   container.appendChild(div);
   container.scrollTop = container.scrollHeight;
+}
+
+// Update task action area by task_id
+function updateTaskActions(taskId, status, resultText, filesChanged, stepsCount) {
+  const actions = document.querySelector(`.outsource-actions[data-task-id="${taskId}"]`);
+  if (!actions) return;
+  const _L = I18N[currentLang] || {};
+  if (status === 'pending') {
+    const btnConfirm = document.createElement('button');
+    btnConfirm.className = 'outsource-btn confirm';
+    btnConfirm.textContent = _L.confirm_start || '✅ 确认开始';
+    btnConfirm.onclick = () => outsourceConfirm(taskId, actions);
+    const btnCancel = document.createElement('button');
+    btnCancel.className = 'outsource-btn cancel';
+    btnCancel.textContent = _L.cancel_task || '❌ 取消';
+    btnCancel.onclick = () => outsourceCancel(taskId, actions);
+    actions.innerHTML = '';
+    actions.appendChild(btnConfirm);
+    actions.appendChild(btnCancel);
+  } else if (status === 'running') {
+    actions.innerHTML = `<span class="outsource-status confirmed">🚀 ${_L.task_running || '后台执行中'} · ID: ${taskId.slice(0,8)}</span>`;
+    pollTaskUntilDone(taskId);
+  } else if (status === 'done') {
+    let summary = resultText ? `\n${resultText}` : '';
+    if (stepsCount) summary += `\n\n步骤数：${stepsCount}`;
+    if (filesChanged && filesChanged.length) summary += `\n\n修改文件：\n${filesChanged.map(f => '· ' + f).join('\n')}`;
+    actions.innerHTML = `<span class="outsource-status confirmed" style="white-space:pre-wrap">✅ ${_L.task_done || '执行完成'}${summary}</span>`;
+  } else {
+    actions.innerHTML = `<span class="outsource-status cancelled">❌ ${_L.task_cancelled || '已取消'}</span>`;
+  }
+}
+
+// Poll task status every 4s when running (e.g. after page refresh)
+const _activePollers = {};  // taskId -> timer, prevent duplicate polls
+
+function pollTaskUntilDone(taskId) {
+  if (_activePollers[taskId]) return;  // Already polling
+  const timer = setInterval(() => {
+    fetch(`http://${location.hostname}:${API_PORT}/api/outsource/tasks/${taskId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(task => {
+        if (!task || task.status === 'running' || task.status === 'pending') return;
+        clearInterval(timer);
+        delete _activePollers[taskId];
+        updateTaskActions(taskId, task.status, task.result, task.files_changed, (task.steps || []).length);
+      })
+      .catch(() => { clearInterval(timer); delete _activePollers[taskId]; });
+  }, 4000);
+  _activePollers[taskId] = timer;
+}
+
+function outsourceConfirm(taskId, actions) {
+  // Disable buttons immediately to prevent double-click
+  actions.querySelectorAll('button').forEach(b => b.disabled = true);
+  const _L = I18N[currentLang] || {};
+  actions.innerHTML = `<span class="outsource-status confirmed">${_L.task_starting || '启动中…'}</span>`;
+
+  fetch(`http://${location.hostname}:${API_PORT}/api/outsource/tasks/${taskId}/confirm`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ session_id: sessionId }),
+  })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        updateTaskActions(taskId, 'running');
+      } else {
+        // Restore buttons if failed
+        actions.innerHTML = `<span class="outsource-status cancelled">❌ ${data.reason || 'Failed'}</span>`;
+        setTimeout(() => updateTaskActions(taskId, 'pending'), 2000);
+      }
+    })
+    .catch(() => {
+      actions.innerHTML = `<span class="outsource-status cancelled">❌ 网络错误</span>`;
+      setTimeout(() => updateTaskActions(taskId, 'pending'), 2000);
+    });
+}
+
+function outsourceCancel(taskId, actions) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  ws.send(JSON.stringify({ type: 'outsource_cancel', task_id: taskId }));
+  updateTaskActions(taskId, 'failed');
 }
 
 function appendImageMessage(role, dataUrl, caption) {
@@ -1131,7 +1718,12 @@ function toggleSettings() {
   settingsOpen = !settingsOpen;
   document.getElementById('settingsPanel').classList.toggle('open', settingsOpen);
   document.getElementById('settingsBtn').classList.toggle('active', settingsOpen);
-  if (settingsOpen) closeSidebar();
+  if (settingsOpen) {
+    closeSidebar();
+    if (window.innerWidth <= 768) document.getElementById('sidebarOverlay').classList.add('visible');
+  } else {
+    document.getElementById('sidebarOverlay').classList.remove('visible');
+  }
 }
 
 // ── Sleep ─────────────────────────────────────────────────────────────
@@ -1226,7 +1818,7 @@ function newSession() {
 
 // ── Input events ──────────────────────────────────────────────────────
 document.getElementById('input').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); sendMessage(); }
 });
 document.getElementById('input').addEventListener('input', function () {
   this.style.height = 'auto';

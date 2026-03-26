@@ -584,6 +584,11 @@ def _save_turn_data(session, perception: dict, think_result: dict,
         except Exception:
             logger.warning("Failed to read file attachment: %s", file_path, exc_info=True)
 
+    # If this turn dispatched an outsource task, skip deep memory extraction
+    _used_dispatch = tool_results and any(t["tool"] == "dispatch_task" for t in tool_results)
+    _need_memory = False if _used_dispatch else perception["need_memory"]
+    _memory_type = perception["memory_type"] if _need_memory else "无"
+
     save_conversation_turn({
         "session_id": session.id,
         "session_created_at": session.created_at,
@@ -592,8 +597,8 @@ def _save_turn_data(session, perception: dict, think_result: dict,
         "assistant_reply": final_response,
         "assistant_reply_at": assistant_reply_at,
         "intent": perception["intent"],
-        "need_memory": perception["need_memory"],
-        "memory_type": perception["memory_type"],
+        "need_memory": _need_memory,
+        "memory_type": _memory_type,
         "ai_summary": perception["ai_summary"],
         "perception_at": perception["perception_at"],
         "memories_used": memories_for_db,
@@ -653,12 +658,22 @@ def _extract_citations(tool_results: list[dict], language: str = "en") -> str:
 def _finalize_response(think_result: dict, tool_results: list[dict],
                         language: str) -> str:
     """Append citations to final_response if tool results contain references."""
+    import re as _re
     final_response = think_result["final_response"]
     if tool_results:
         citations = _extract_citations(tool_results, language=language)
         if citations:
             final_response += "\n\n" + citations
-            think_result["final_response"] = final_response
+        # If dispatch_task preview ran, embed task_id so frontend can show buttons
+        for tr in tool_results:
+            if tr.get("tool") == "dispatch_task" and tr.get("result") and tr["result"].success:
+                m = _re.search(r"<!--\s*task_id:([a-f0-9\-]+)\s*-->", tr["result"].data or "")
+                if m:
+                    # Strip any existing task_id comments from LLM output (may be copied from history)
+                    final_response = _re.sub(r"\s*<!--\s*task_id:[a-f0-9\-]+\s*-->", "", final_response).rstrip()
+                    final_response += f"\n\n<!-- task_id:{m.group(1)} -->"
+                    break
+        think_result["final_response"] = final_response
     return final_response
 
 
@@ -699,6 +714,29 @@ async def run_cycle_async(user_input: str | dict, session: Session,
 
     trajectory = None
     _resolver_input = perception.get("ai_summary", processed_text)
+
+    # Inject session_id into tool config so dispatch_task can push results back
+    session.tool_registry.config["_session_id"] = session.id
+
+    # If user sent a short confirmation and there's exactly 1 pending outsource task
+    # belonging to this session, force tool resolution so dispatch_task(action=start) can run.
+    _CONFIRM_WORDS = {"是", "好", "开始", "确认", "ok", "yes", "好的", "行", "嗯", "可以", "start", "confirm"}
+    _stripped = processed_text.strip()
+    if (not perception.get("need_tools")
+            and _stripped.lower() in _CONFIRM_WORDS
+            and len(_stripped) <= 10):          # exclude longer natural-language sentences
+        try:
+            from agent.storage.outsource import list_tasks
+            _pending = [
+                t for t in list_tasks(limit=20)
+                if t.get("status") == "pending"
+                and t.get("session_id") == session.id
+            ]
+            if len(_pending) == 1:              # only trigger when there is exactly 1 pending task
+                perception["need_tools"] = True
+                perception["_outsource_pending_id"] = _pending[0]["task_id"]
+        except Exception:
+            pass
 
     if category == "knowledge":
         memories = {

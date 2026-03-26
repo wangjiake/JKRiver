@@ -87,11 +87,11 @@ cognition.perceive_system: |
   字段说明：
   - correction：如果用户输入有明显的错别字或同音字错误，输出修正后的完整句子；如果没有错误，原样输出用户的话。注意：专业术语、外语词汇、你不认识的词不要改；人名必须原样保留，不要"纠正"拼写（如用户说collen就是collen，不要改成colleen）。结合对话上下文联想（如聊家乡时输入'假象'应为'家乡'）
   - category：knowledge 或 chat 或 personal
-  - intent：一句话描述用户想要什么（基于纠错后的内容）
+  - intent：一句话描述用户想要什么（基于纠错后的内容）。特殊规则：① 用户提到"外包模式"、"帮我外包"、"外包任务"时，intent 必须以 "outsource:" 开头，如 "outsource:给项目加韩语翻译"；② 上下文中助手刚展示了外包任务计划，用户回复确认词（是/开始/ok等），intent 必须为 "outsource:confirm"
   - ai_summary：忠实复述用户纠错后的问题，只补充上下文中已有的信息使句子完整，禁止添加用户没说的内容
   - keywords：从用户的话中提取2-5个关键词的数组（用于匹配记忆中的策略）
   - need_online：true 或 false（判断标准：这个问题是否需要实时信息、网络搜索、最新数据、专业医疗/法律/金融建议、或者你无法准确回答的知识）
-  - need_tools：true 或 false。判断规则：① 可用工具列表中有工具能直接执行用户的请求（如查天气、看系统信息、控制设备等），必须设为true；② 需要联网搜索时设为true；③ 查询用户的消费、体重、步数等个人数据时设为true。纯聊天、单纯知识问答（AI自己知道答案且不需要执行任何操作）才设为false。如果没有可用工具列表，输出false。
+  - need_tools：true 或 false。判断规则：① 可用工具列表中有工具能直接执行用户的请求（如查天气、看系统信息、控制设备等），必须设为true；② 需要联网搜索时设为true；③ 查询用户的消费、体重、步数等个人数据时设为true；④ 用户提到"外包模式"、"帮我外包"、"外包任务"、"用外包"等关键词时，必须设为true（需调用 dispatch_task 工具）；⑤ 【重要】上下文中助手刚刚展示了外包任务计划（含"📋"或"task_id"或"外包任务计划"），用户回复"是"、"开始"、"确认"、"好"、"ok"、"yes"等确认词时，必须设为true（需调用 dispatch_task action=start）。纯聊天、单纯知识问答（AI自己知道答案且不需要执行任何操作）才设为false。如果没有可用工具列表，输出false。
 
   分类说明（重要！决定后续处理流程）：
   - knowledge：纯知识问答，和用户个人无关（如'Python怎么读文件''片栗粉是什么'）→ 不加载记忆，直接回答
@@ -625,6 +625,8 @@ tools.resolver_system: |
   - 可以直接回答的问题 → NONE
   - 可以同时调用多个工具
   - 如果有专门的工具可以完成任务，优先使用专门工具，而不是通用的 web_search
+  - 用户提到"外包模式"、"帮我外包"、"外包任务"、"用外包做"时，必须调用 dispatch_task 工具，action='preview'，task=用户的具体任务描述。禁止自己生成计划。
+  - 用户说"开始"、"确认"、"是的"且上下文中有外包任务时，调用 dispatch_task，action='start'，task_id=之前 preview 返回的任务号。
 
   重要：image_describe 的 question 参数必须原样使用用户的提问，不要改写。
 
@@ -844,6 +846,9 @@ context.labels:
   input_type: "输入类型"
   attachment_path: "附件路径"
   user_question: "用户问题"
+  user_profile_hint: "用户信息"
+  pending_outsource_hint: "[待确认外包任务 task_id: {task_id}，用户已确认，请调用 dispatch_task action=start task_id={task_id}]"
+  outsource_cancel_result: "用户取消"
   expert_answer: "专家参考回答"
   tool_error: "工具错误"
   birth_year_note: "注意：用户说\"今年XX岁\"时，出生年 = {year} - 年龄。例如\"今年25岁\"→出生年={year}-25={result}。"

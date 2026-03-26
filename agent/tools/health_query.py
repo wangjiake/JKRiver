@@ -54,7 +54,7 @@ class HealthQueryTool(BaseTool):
             if data_type in ("weight", "all"):
                 rows = load_withings_measures(measure_type=1, days=90)
                 if rows:
-                    lines = [TL.get("weight_records", "体重记录({count}条):").format(count=len(rows))]
+                    lines = [TL.get("weight_records", "Weight records ({count} entries):").format(count=len(rows))]
                     for r in rows:
                         lines.append(f"{r['measured_at'].strftime('%Y-%m-%d')} {float(r['value']):.1f}kg")
                     parts.append("\n".join(lines))
@@ -62,7 +62,7 @@ class HealthQueryTool(BaseTool):
             if data_type in ("fat", "all"):
                 rows = load_withings_measures(measure_type=6, days=90)
                 if rows:
-                    lines = [TL.get("fat_records", "体脂记录({count}条):").format(count=len(rows))]
+                    lines = [TL.get("fat_records", "Body fat records ({count} entries):").format(count=len(rows))]
                     for r in rows:
                         lines.append(f"{r['measured_at'].strftime('%Y-%m-%d')} {float(r['value']):.1f}%")
                     parts.append("\n".join(lines))
@@ -70,17 +70,17 @@ class HealthQueryTool(BaseTool):
             if data_type in ("activity", "all"):
                 rows = load_withings_activity(days=90)
                 if rows:
-                    lines = [TL.get("activity_records", "活动记录({count}天):").format(count=len(rows))]
+                    lines = [TL.get("activity_records", "Activity records ({count} days):").format(count=len(rows))]
                     for r in rows:
                         d = r["activity_date"]
                         date_str = d.strftime("%Y-%m-%d") if hasattr(d, "strftime") else str(d)
                         steps = r.get("steps") or 0
                         cal = r.get("calories") or 0
-                        lines.append(f"{date_str} {steps}{TL.get('steps_unit', '步')} {cal:.0f}kcal")
+                        lines.append(f"{date_str} {steps}{TL.get('steps_unit', 'steps')} {cal:.0f}kcal")
                     parts.append("\n".join(lines))
 
             if not parts:
-                return ToolResult(success=True, data=TL.get("no_health_data", "暂无健康数据。"))
+                return ToolResult(success=True, data=TL.get("no_health_data", "No health data available."))
 
             return ToolResult(success=True, data="\n\n".join(parts))
 

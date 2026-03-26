@@ -13,7 +13,8 @@ def _needs_resolution(perception: dict, input_metadata: dict | None) -> bool:
     return False
 
 def _build_resolver_messages(user_input: str, registry, input_metadata: dict | None,
-                             language: str, profile: list[dict] | None) -> list[dict] | None:
+                             language: str, profile: list[dict] | None,
+                             perception: dict | None = None) -> list[dict] | None:
     """Build LLM messages for tool resolution. Returns None if no tools available."""
     available = registry.list_available()
     if not available:
@@ -44,13 +45,22 @@ def _build_resolver_messages(user_input: str, registry, input_metadata: dict | N
     profile_hint = ""
     if profile:
         profile_lines = [f"  {p['category']}/{p.get('subject', '')}: {p['value']}" for p in profile]
-        profile_hint = f"\n{L.get('user_profile_hint', '用户信息')}:\n" + "\n".join(profile_lines)
+        profile_hint = f"\n{L.get('user_profile_hint', 'User Profile')}:\n" + "\n".join(profile_lines)
+
+    pending_hint = ""
+    pending_id = (perception or {}).get("_outsource_pending_id", "")
+    if pending_id:
+        _ph_tpl = L.get(
+            "pending_outsource_hint",
+            "[Pending outsource task task_id: {task_id}, user has confirmed, please call dispatch_task action=start task_id={task_id}]"
+        )
+        pending_hint = "\n" + _ph_tpl.format(task_id=pending_id)
 
     return [
         {"role": "system", "content": get_prompt("tools.resolver_system", language, tools_text=tools_text)},
         {"role": "user", "content": (
             f"[{L['current_time']}: {__import__('agent.utils.time_context', fromlist=['get_now']).get_now().strftime('%Y-%m-%dT%H:%M')}]\n"
-            f"{L['user_input_resolver']}: {user_input}{meta_desc}{profile_hint}"
+            f"{L['user_input_resolver']}: {user_input}{meta_desc}{profile_hint}{pending_hint}"
         )},
     ]
 
@@ -89,7 +99,7 @@ async def resolve_tools_async(user_input: str, perception: dict,
     if not _needs_resolution(perception, input_metadata):
         return []
 
-    messages = _build_resolver_messages(user_input, registry, input_metadata, language, profile)
+    messages = _build_resolver_messages(user_input, registry, input_metadata, language, profile, perception=perception)
     if messages is None:
         return []
 

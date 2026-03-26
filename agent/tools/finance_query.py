@@ -58,7 +58,7 @@ class FinanceQueryTool(BaseTool):
                 year=year, month=month, merchant=merchant, limit=200,
             )
             if not rows:
-                return ToolResult(success=True, data=TL.get("no_transactions", "该期间无消费记录。"))
+                return ToolResult(success=True, data=TL.get("no_transactions", "No transactions found for this period."))
 
             total_jpy = 0
             total_other = {}
@@ -79,7 +79,7 @@ class FinanceQueryTool(BaseTool):
                 else:
                     total_other[cur] = total_other.get(cur, 0) + amt
 
-            summary = TL.get("transaction_summary", "共{count}笔交易，合计: {total} JPY").format(count=len(rows), total=f"{total_jpy:.0f}")
+            summary = TL.get("transaction_summary", "{count} transactions, total: {total} JPY").format(count=len(rows), total=f"{total_jpy:.0f}")
             if total_other:
                 for cur, amt in total_other.items():
                     summary += f" + {amt:.2f} {cur}"

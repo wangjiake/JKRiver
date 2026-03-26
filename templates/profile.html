@@ -53,17 +53,17 @@ body.light {
   --bg-input: #ffffff;
   --bg-hover: #eaeef2;
   --bg-hover2: #e8ecf0;
-  --bg-accent: #ddf4ff;
-  --bg-accent2: #cae8ff;
+  --bg-accent: #ededf8;
+  --bg-accent2: #e0e0f4;
   --border: #d0d7de;
   --border-light: #eaeef2;
-  --border-accent: #54aeff;
+  --border-accent: #8a96d8;
   --text: #1f2328;
   --text-2: #24292f;
   --text-muted: #57606a;
   --text-faint: #8c959f;
   --text-faint2: #afb8c1;
-  --accent: #0969da;
+  --accent: #4f5fba;
   --green: #1a7f37;
   --yellow: #9a6700;
   --red: #cf222e;
@@ -92,14 +92,14 @@ body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; ba
 .nav-link.active { background: rgba(88,166,255,0.13); border-color: rgba(88,166,255,0.35); color: #58a6ff; }
 body.light .nav-link { background: transparent; border-color: rgba(0,0,0,0.12); color: rgba(0,0,0,0.42); }
 body.light .nav-link:hover { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.18); color: rgba(0,0,0,0.65); }
-body.light .nav-link.active { background: rgba(9,105,218,0.08); border-color: rgba(9,105,218,0.30); color: #0969da; }
+body.light .nav-link.active { background: rgba(79,95,186,0.08); border-color: rgba(79,95,186,0.30); color: #4f5fba; }
 .lang-switch { display: flex; gap: 4px; }
 .lang-btn { padding: 4px 10px; background: transparent; border: 1px solid rgba(255,255,255,0.10); border-radius: 8px; color: rgba(255,255,255,0.48); cursor: pointer; font-size: 12px; transition: all 0.2s; backdrop-filter: blur(12px) saturate(180%); -webkit-backdrop-filter: blur(12px) saturate(180%); }
 .lang-btn:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.18); color: rgba(255,255,255,0.72); }
 .lang-btn.active { background: rgba(88,166,255,0.13); border-color: rgba(88,166,255,0.35); color: #58a6ff; }
 body.light .lang-btn { background: transparent; border-color: rgba(0,0,0,0.12); color: rgba(0,0,0,0.42); }
 body.light .lang-btn:hover { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.18); color: rgba(0,0,0,0.65); }
-body.light .lang-btn.active { background: rgba(9,105,218,0.08); border-color: rgba(9,105,218,0.30); color: #0969da; }
+body.light .lang-btn.active { background: rgba(79,95,186,0.08); border-color: rgba(79,95,186,0.30); color: #4f5fba; }
 .theme-btn { padding: 5px 8px; background: transparent; border: 1px solid rgba(255,255,255,0.10); border-radius: 8px; color: rgba(255,255,255,0.48); cursor: pointer; line-height: 1; display: flex; align-items: center; transition: all 0.2s; backdrop-filter: blur(12px) saturate(180%); -webkit-backdrop-filter: blur(12px) saturate(180%); }
 .theme-btn:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.18); color: rgba(255,255,255,0.72); }
 body.light .theme-btn { background: transparent; border-color: rgba(0,0,0,0.12); color: rgba(0,0,0,0.42); }
@@ -250,6 +250,23 @@ body.light .card-layer.suspected { background: rgba(154,103,0,0.12); }
 .loading { text-align: center; color: var(--text-muted); padding: 60px; }
 .loading::after { content: ''; display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin-left: 8px; vertical-align: middle; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Mobile ─────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .header { padding: 10px 16px 8px; flex-wrap: wrap; align-items: center; gap: 4px; }
+  .header-left { flex: 1; }
+  .header-right { width: 100%; flex-wrap: wrap; gap: 5px; }
+  .header h1 { font-size: 17px; }
+  .lang-btn { padding: 4px 7px; font-size: 11px; }
+  .stats-bar { padding: 10px 16px; gap: 12px; }
+  .stat-label { font-size: 11px; }
+  .stat-value { font-size: 18px; }
+  .container { flex-direction: column; }
+  .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); padding: 8px 0; }
+  .sidebar-item { padding: 6px 16px; }
+  .main { padding: 14px 16px; }
+  .snapshot-summary { flex-direction: column; gap: 4px; }
+}
 </style>
 </head>
 <body>
@@ -262,6 +279,7 @@ body.light .card-layer.suspected { background: rgba(154,103,0,0.12); }
   <div class="header-right">
     <a href="/chat" class="nav-link" data-i18n="nav_chat">Chat</a>
     <a href="/profile" class="nav-link active" data-i18n="nav_profile">Profile</a>
+    <a href="/outsource" class="nav-link" id="outsource-nav-link">Tasks</a>
     <a href="/system" class="nav-link" data-i18n="nav_system">System</a>
     <div class="lang-switch">
       <button class="lang-btn active" onclick="setLang('zh')">中文</button>

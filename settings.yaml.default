@@ -119,6 +119,12 @@ tools:
     # Shell 命令执行（安全考虑，默认关闭）
     # Shell command execution (disabled by default for security)
     # シェルコマンド実行（セキュリティのためデフォルト無効）
+    dispatch_task:
+        enabled: true
+        strict_mode: true   # true = 严格模式（只读/测试/语法检查）| false = 宽松模式（可安装包/播放音频等）
+        max_steps: 20       # 最大执行步数 | Max execution steps
+        timeout: 300        # 超时秒数 | Timeout in seconds
+
     shell_exec:
         enabled: false
         timeout: 30                     # 超时秒数 | Timeout in seconds | タイムアウト秒数
@@ -133,7 +139,12 @@ tools:
             - "wc"
             - "date"
             - "python --version"
+            - "python3 --version"
+            - "python3 -m py_compile"
+            - "python3 -m pytest"
+            - "python3 -m unittest"
             - "pip list"
+            - "pip3 list"
             - "git status"
             - "git log"
             - "git diff"

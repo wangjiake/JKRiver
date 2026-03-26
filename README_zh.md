@@ -93,6 +93,7 @@ Riverse 是一个运行在你自己机器上的个人 AI Agent。它记住每一
 - **多模态输入** — 文本、语音、图片、文件，原生理解
 - **可插拔工具** — 网页搜索、财务追踪、健康同步（Withings）、TTS 等；在 System 页面可一键开关或删除
 - **YAML 技能** — 按关键词或 cron 定时触发自定义行为；支持从 SkillHub 搜索安装或粘贴 YAML 直接部署
+- **外包 / 任务 Agent** — 将复杂多步任务委托给自主子 Agent 执行；预览执行计划并确认后，在 `/outsource` 页面实时跟踪进度
 - **会话管理** — 支持对话重命名、置顶，快速定位重要会话
 - **外部 Agent** — 通过 `agents_*.yaml` 接入 Home Assistant、n8n、Dify 等
 - **MCP 协议** — 支持 Model Context Protocol，接入 Gmail 等 MCP Server
@@ -186,12 +187,28 @@ openai:
 
 #### 5. 启动
 
+**Web 面板（推荐）** — 一键同时启动 FastAPI 后端和 Flask 前端：
+
 ```bash
-python -m agent.main                    # CLI 模式
-python -m agent.telegram_bot            # Telegram Bot
-python -m agent.discord_bot             # Discord Bot
-python web.py                           # Web 面板 (http://localhost:1234)
+python scripts/start_local.py
 ```
+
+| 服务 | 地址 |
+|------|------|
+| Web 面板 | http://localhost:1234 |
+| API 文档 | http://localhost:8400/docs |
+
+或单独启动各服务：
+
+```bash
+uvicorn agent.api:app --host 127.0.0.1 --port 8400   # FastAPI 后端
+python web.py                                          # Flask 前端 (http://localhost:1234)
+python -m agent.main                                   # CLI 模式
+python -m agent.telegram_bot                           # Telegram Bot
+python -m agent.discord_bot                            # Discord Bot
+```
+
+> **注意：** Web 面板需要两个服务同时运行。`start_local.py` 会自动处理，并根据 `settings.yaml` 配置自动启动 Telegram/Discord Bot。
 
 ### 测试
 

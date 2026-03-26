@@ -461,4 +461,25 @@ CREATE TABLE IF NOT EXISTS memory_clusters (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS outsource_tasks (
+    id SERIAL PRIMARY KEY,
+    task_id VARCHAR(36) UNIQUE NOT NULL,  -- UUID
+    title TEXT NOT NULL,
+    status VARCHAR(20) DEFAULT 'pending', -- pending/planning/running/done/failed/cancelled
+    plan JSONB DEFAULT '[]',              -- list of planned steps [{step, description}]
+    steps JSONB DEFAULT '[]',             -- executed steps [{step, tool, reasoning, result, status}]
+    current_step INTEGER DEFAULT 0,
+    total_steps INTEGER DEFAULT 0,
+    result TEXT DEFAULT '',
+    files_changed JSONB DEFAULT '[]',
+    strict_mode BOOLEAN DEFAULT true,
+    session_id VARCHAR(64) DEFAULT '',    -- originating chat session id
+    pending_question TEXT DEFAULT NULL,   -- ask_user question waiting for answer
+    deleted_at TIMESTAMPTZ DEFAULT NULL,  -- soft delete
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_ot_status ON outsource_tasks(status);
+CREATE INDEX IF NOT EXISTS idx_ot_created ON outsource_tasks(created_at DESC);
+
 COMMIT;

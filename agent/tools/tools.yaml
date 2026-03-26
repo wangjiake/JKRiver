@@ -6,5 +6,10 @@ tools:
   - voice_transcribe
   - shell_exec
   - file_read
+  - file_write
+  - file_list
+  - grep
+  - dispatch_task
   - tts
   - system_manage
+  - ask_user

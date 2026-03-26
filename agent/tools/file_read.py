@@ -80,7 +80,7 @@ class FileReadTool(BaseTool):
         truncated = ""
         if len(content) > _MAX_OUTPUT_CHARS:
             content = content[:_MAX_OUTPUT_CHARS]
-            truncated = "\n\n[" + TL.get("content_truncated", "内容已截断，仅显示前 {limit} 字符").format(limit=_MAX_OUTPUT_CHARS) + "]"
+            truncated = "\n\n[" + TL.get("content_truncated", "Content truncated, showing first {limit} characters only").format(limit=_MAX_OUTPUT_CHARS) + "]"
 
         return ToolResult(
             success=True,

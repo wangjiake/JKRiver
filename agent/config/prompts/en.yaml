@@ -91,7 +91,7 @@ cognition.perceive_system: |
   - ai_summary: Faithfully restate the user's corrected question, only adding information already present in context to make the sentence complete — do not add content the user didn't say
   - keywords: An array of 2-5 keywords extracted from the user's words (used to match strategies in memory)
   - need_online: true or false (criteria: does this question require real-time information, web search, latest data, professional medical/legal/financial advice, or knowledge you cannot accurately answer?)
-  - need_tools: true or false (determine whether the user's input requires calling any of the tools below. Pure chat and knowledge Q&A don't need tools. Note: needing a web search also counts as needing tools; querying the user's spending records, weight, steps, and other personal data also requires tools. If there is no available tool list, output false)
+  - need_tools: true or false (determine whether the user's input requires calling any of the tools below. Pure chat and knowledge Q&A don't need tools. Note: needing a web search also counts as needing tools; querying the user's spending records, weight, steps, and other personal data also requires tools. If the user mentions "outsource mode", "delegate task", "outsource this", must set to true — call dispatch_task tool. If there is no available tool list, output false)
 
   Category guidelines (important! determines the subsequent processing flow):
   - knowledge: Pure knowledge Q&A, unrelated to the user personally (e.g., 'How to read a file in Python', 'What is cornstarch') → No memory loaded, answer directly
@@ -834,6 +834,9 @@ context.labels:
   input_type: "Input Type"
   attachment_path: "Attachment Path"
   user_question: "User Question"
+  user_profile_hint: "User Profile"
+  pending_outsource_hint: "[Pending outsource task task_id: {task_id}, user has confirmed, please call dispatch_task action=start task_id={task_id}]"
+  outsource_cancel_result: "Cancelled by user"
   expert_answer: "Expert Reference Answer"
   tool_error: "Tool Error"
   birth_year_note: "Note: When the user says \"I'm XX years old this year\", birth year = {year} - age. E.g., \"I'm 25 this year\" → birth year = {year} - 25 = {result}."

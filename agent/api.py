@@ -1,9 +1,13 @@
 
 import asyncio
+import copy
 import logging
 import os
+import re
 import secrets
+import shutil
 import sys
+import threading
 import uuid
 from datetime import datetime, timezone
 from contextlib import asynccontextmanager
@@ -27,6 +31,10 @@ logger = logging.getLogger(__name__)
 _config = None
 _manager = None
 _pending_restart = False
+# session_id -> list[WebSocket], supports multiple tabs per session
+_ws_connections: dict[str, list] = {}
+_cancel_flags: dict[str, "threading.Event"] = {}
+_task_questions: dict[str, tuple] = {}  # task_id -> (threading.Event, answer_holder dict)
 _revert_ops: list[dict] = []   # [{"file", "name", "enabled"(original)}]
 
 _SETTINGS_PATH = os.path.join(os.path.dirname(__file__), "..", "settings.yaml")
@@ -36,6 +44,15 @@ async def lifespan(app: FastAPI):
     global _config, _manager
     _config = load_config()
     _manager = SessionManager(_config)
+    # Reset tasks stuck in running/planning state from a previous server crash
+    try:
+        from agent.storage.outsource import list_tasks, update_task as _ot_update
+        for _t in list_tasks(limit=200):
+            if _t.get("status") in ("running", "planning"):
+                _ot_update(_t["task_id"], status="failed",
+                           result="Server restarted — task was interrupted.")
+    except Exception:
+        pass
     yield
 
 
@@ -186,6 +203,231 @@ async def trigger_sleep():
         return {"status": "ok", "message": L["memory_done"]}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+class TaskRequest(BaseModel):
+    task: str
+    max_steps: int = 20
+
+class TaskResponse(BaseModel):
+    success: bool
+    result: str
+    steps: list
+    files_changed: list
+
+@app.post("/task", response_model=TaskResponse)
+async def run_task_endpoint(req: TaskRequest):
+    from agent.task_agent import run_task_async
+    session = _manager.get_or_create("__task__")
+    result = await run_task_async(
+        task=req.task,
+        config=_manager.config,
+        registry=session.tool_registry,
+        max_steps=req.max_steps,
+    )
+    return TaskResponse(**result)
+
+
+# ── Outsource endpoints ──────────────────────────────────────────────────────
+from agent.storage.outsource import (
+    create_task as _ot_create,
+    update_task as _ot_update,
+    get_task as _ot_get,
+    list_tasks as _ot_list,
+    count_active as _ot_count_active,
+    delete_task as _ot_delete,
+)
+
+
+class OutsourceCreateRequest(BaseModel):
+    task: str
+    strict_mode: bool = True
+
+
+@app.get("/api/outsource/tasks/active_count")
+async def api_active_count():
+    return {"count": _ot_count_active()}
+
+
+@app.get("/api/outsource/tasks/{task_id}")
+async def api_get_task(task_id: str):
+    task = _ot_get(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    for k in ("created_at", "updated_at"):
+        if task.get(k):
+            task[k] = task[k].isoformat()
+    return task
+
+
+@app.get("/api/outsource/tasks")
+async def api_list_tasks():
+    tasks = _ot_list()
+    for t in tasks:
+        for k in ("created_at", "updated_at"):
+            if t.get(k):
+                t[k] = t[k].isoformat()
+    return tasks
+
+
+@app.post("/api/outsource/tasks")
+async def api_create_task(req: OutsourceCreateRequest):
+    from agent.tools import ToolRegistry
+    from agent.task_agent import plan_task_async, run_task_async
+
+    task_id = _ot_create(req.task, strict_mode=req.strict_mode)
+    config = _manager.config
+
+    # Generate plan synchronously (still in this request)
+    _ot_update(task_id, status="planning")
+    plan = await plan_task_async(req.task, config)
+    _ot_update(task_id, plan=plan, total_steps=len(plan), status="running")
+
+    strict_mode = req.strict_mode
+
+    async def _run():
+        if strict_mode:
+            agent_config = config
+        else:
+            try:
+                from agent.tools.dispatch_task import _LOOSE_SHELL_WHITELIST
+                whitelist = _LOOSE_SHELL_WHITELIST
+            except ImportError:
+                whitelist = []
+            agent_config = copy.deepcopy(config)
+            agent_config.setdefault("tools", {}).setdefault("shell_exec", {}).update({
+                "enabled": True,
+                "whitelist": whitelist,
+                "timeout": 120,
+            })
+
+        registry = ToolRegistry(agent_config)
+        executed_steps = []
+
+        async def on_step(step_data: dict):
+            executed_steps.append(step_data)
+            _ot_update(task_id,
+                steps=executed_steps,
+                current_step=len(executed_steps))
+
+        result = await run_task_async(
+            req.task, agent_config, registry,
+            strict_mode=strict_mode,
+            progress_callback=on_step,
+        )
+        _ot_update(task_id,
+            status="done" if result["success"] else "failed",
+            result=result["result"],
+            files_changed=result["files_changed"],
+            steps=result["steps"],
+            current_step=len(result["steps"]),
+        )
+
+    def _thread_runner():
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(_run())
+        finally:
+            loop.close()
+
+    t = threading.Thread(target=_thread_runner, daemon=True)
+    t.start()
+
+    return {"task_id": task_id, "plan": plan}
+
+
+@app.post("/api/outsource/tasks/{task_id}/confirm")
+async def api_confirm_task(task_id: str, request: Request):
+    record = _ot_get(task_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if record.get("status") != "pending":
+        return {"ok": False, "reason": "Task is not pending"}
+    body = {}
+    try:
+        body = await request.json()
+    except Exception:
+        pass
+    session_id = body.get("session_id", "")
+    from agent.tools.dispatch_task import DispatchTaskTool
+    sess = _manager.get_or_create(session_id or None)
+    cfg = dict(sess.full_config)
+    cfg["_session_id"] = sess.id
+    tool = DispatchTaskTool(cfg)
+    result = tool.execute({"action": "start", "task_id": task_id})
+    return {"ok": result.success, "message": result.data if result.success else result.error}
+
+
+@app.post("/api/outsource/tasks/{task_id}/cancel")
+async def api_cancel_task(task_id: str):
+    record = _ot_get(task_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="Task not found")
+    status = record.get("status", "")
+    if status not in ("pending", "planning", "running"):
+        return {"ok": False, "reason": "Task is not active"}
+    # Set cancel flag if running
+    if task_id in _cancel_flags:
+        _cancel_flags[task_id].set()
+    _ot_update(task_id, status="cancelled", result="Cancelled by user")
+    return {"ok": True}
+
+
+@app.delete("/api/outsource/tasks/{task_id}")
+async def api_delete_task(task_id: str):
+    record = _ot_get(task_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="Task not found")
+    # Cancel if running
+    if task_id in _cancel_flags:
+        _cancel_flags[task_id].set()
+        _cancel_flags.pop(task_id, None)
+    deleted = _ot_delete(task_id)
+    return {"ok": deleted}
+
+
+# ── System stats ──────────────────────────────────────────────────────────────
+_net_last: dict = {}   # {"bytes_sent": x, "bytes_recv": x, "time": t}
+
+@app.get("/api/system/stats")
+async def system_stats():
+    try:
+        import psutil, time
+
+        # CPU
+        cpu = psutil.cpu_percent(interval=None)
+
+        # Memory
+        mem = psutil.virtual_memory()
+        mem_pct = mem.percent
+
+        # Disk (root partition)
+        disk = psutil.disk_usage("/")
+        disk_pct = disk.percent
+        disk_free_gb = disk.free / 1024 ** 3
+
+        # Network speed (delta since last call)
+        net = psutil.net_io_counters()
+        now = time.monotonic()
+        upload_bps = download_bps = 0.0
+        if _net_last:
+            dt = now - _net_last["time"]
+            if dt > 0:
+                upload_bps = (net.bytes_sent - _net_last["bytes_sent"]) / dt
+                download_bps = (net.bytes_recv - _net_last["bytes_recv"]) / dt
+        _net_last.update({"bytes_sent": net.bytes_sent, "bytes_recv": net.bytes_recv, "time": now})
+
+        return {
+            "cpu": round(cpu, 1),
+            "mem": round(mem_pct, 1),
+            "disk_pct": round(disk_pct, 1),
+            "disk_free_gb": round(disk_free_gb, 1),
+            "upload_bps": round(upload_bps),
+            "download_bps": round(download_bps),
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
 
 @app.get("/health")
 async def health_check():
@@ -543,7 +785,7 @@ def _set_settings_list_item_field(section: str, list_key: str, index: int, field
     e.g. section='cloud_llm', list_key='providers', index=0, field='api_key'
     If the field does not exist in the target item, it is inserted.
     """
-    import re as _re
+
     try:
         with open(_SETTINGS_PATH, "r", encoding="utf-8") as f:
             lines = f.readlines()
@@ -597,9 +839,9 @@ def _set_settings_list_item_field(section: str, list_key: str, index: int, field
                 target_last_line = i
                 if stripped.startswith(f"{field}:"):
                     rest = stripped[len(field) + 1:].strip()
-                    m = _re.match(r'^"(.*)"$', rest) or _re.match(r"^'(.*)'$", rest)
+                    m = re.match(r'^"(.*)"$', rest) or re.match(r"^'(.*)'$", rest)
                     old_value = m.group(1) if m else rest
-                    comment_match = _re.search(r'\s+(#.*)$', line[line.index(':') + 1:])
+                    comment_match = re.search(r'\s+(#.*)$', line[line.index(':') + 1:])
                     comment = "  " + comment_match.group(1) if comment_match else ""
                     lines[i] = " " * indent + f'{field}: {new_val}{comment}\n'
                     with open(_SETTINGS_PATH, "w", encoding="utf-8") as f:
@@ -666,7 +908,7 @@ def _set_settings_field(path_parts: list[str], value: str) -> tuple[bool, str]:
     """Update a field in settings.yaml at arbitrary depth, preserving comments.
     Returns (success, old_value).
     """
-    import re as _re
+
     try:
         with open(_SETTINGS_PATH, "r", encoding="utf-8") as f:
             lines = f.readlines()
@@ -697,9 +939,9 @@ def _set_settings_field(path_parts: list[str], value: str) -> tuple[bool, str]:
         if depth == len(path_parts) - 1:
             # Found the final field — update it
             rest = stripped[len(target) + 1:].strip()
-            m = _re.match(r'^"(.*)"$', rest) or _re.match(r"^'(.*)'$", rest)
+            m = re.match(r'^"(.*)"$', rest) or re.match(r"^'(.*)'$", rest)
             old_value = m.group(1) if m else rest
-            comment_match = _re.search(r'\s+(#.*)$', line[line.index(':') + 1:])
+            comment_match = re.search(r'\s+(#.*)$', line[line.index(':') + 1:])
             comment = "  " + comment_match.group(1) if comment_match else ""
             if value in ("true", "false"):
                 new_val = value
@@ -723,7 +965,7 @@ def _set_settings_field(path_parts: list[str], value: str) -> tuple[bool, str]:
 
 def _set_settings_allowed_ids(section: str, value: str) -> tuple[bool, str]:
     """Write allowed_user_ids as a YAML list in the given section of settings.yaml."""
-    import re as _re
+
     try:
         with open(_SETTINGS_PATH, "r", encoding="utf-8") as f:
             lines = f.readlines()
@@ -901,17 +1143,17 @@ def _set_skill_md_enabled(name: str, enabled: bool) -> bool:
     try:
         with open(skill_md, "r", encoding="utf-8") as f:
             content = f.read()
-        import re as _re
+    
         # Update or insert enabled in frontmatter
         def replace_enabled(m):
             fm = m.group(1)
             body = m.group(2)
-            if _re.search(r'^enabled:', fm, _re.MULTILINE):
-                fm = _re.sub(r'^enabled:.*$', f'enabled: {"true" if enabled else "false"}', fm, flags=_re.MULTILINE)
+            if re.search(r'^enabled:', fm, re.MULTILINE):
+                fm = re.sub(r'^enabled:.*$', f'enabled: {"true" if enabled else "false"}', fm, flags=re.MULTILINE)
             else:
                 fm = fm.rstrip() + f'\nenabled: {"true" if enabled else "false"}\n'
             return f"---\n{fm}\n---\n{body}"
-        new_content = _re.sub(r'^---\s*\n(.*?)\n---\s*\n?(.*)', replace_enabled, content, flags=_re.DOTALL)
+        new_content = re.sub(r'^---\s*\n(.*?)\n---\s*\n?(.*)', replace_enabled, content, flags=re.DOTALL)
         with open(skill_md, "w", encoding="utf-8") as f:
             f.write(new_content)
         return True
@@ -1213,7 +1455,6 @@ async def install_skill_from_hub(request: Request):
 @app.delete("/system/skill/{name}")
 async def delete_skill(name: str):
     """Delete an individually-installed skill file (YAML or SKILL.md subdirectory)."""
-    import shutil
     safe_name = "".join(c if c.isalnum() or c in "-_" else "_" for c in name)
     candidates = list(dict.fromkeys([safe_name, name]))
 
@@ -1553,10 +1794,89 @@ async def session_history(session_id: str, limit: int = 100):
         conn.close()
 
 
+async def push_task_result_to_session(session_id: str, task_id: str, success: bool, result: str,
+                                      files_changed: list = None, steps_count: int = 0,
+                                      language: str = "zh"):
+    """Push outsource task completion to the chat session WebSocket(s) if connected."""
+    icon = "✅" if success else "❌"
+    _labels = {
+        "zh": ("执行完成", "执行失败", "步骤数", "修改文件"),
+        "ja": ("完了", "失敗", "ステップ数", "変更ファイル"),
+        "en": ("Completed", "Failed", "Steps", "Files changed"),
+    }
+    _done, _fail, _steps_lbl, _files_lbl = _labels.get(language, _labels["zh"])
+    label = _done if success else _fail
+    msg = f"{icon} **[Task #{task_id[:8]}] {label}**\n\n{result}"
+    if steps_count:
+        msg += f"\n\n**{_steps_lbl}**：{steps_count}"
+    if files_changed:
+        msg += f"\n\n**{_files_lbl}**：\n" + "\n".join(f"- `{f}`" for f in files_changed)
+
+    # Persist to conversation history so it survives page reload
+    try:
+        from agent.storage.conversation import save_raw_conversation
+        from agent.storage._db import get_db_connection
+        from agent.utils.time_context import get_now
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT session_created_at FROM raw_conversations "
+                    "WHERE session_id = %s ORDER BY user_input_at ASC LIMIT 1",
+                    (session_id,)
+                )
+                row = cur.fetchone()
+            session_created_at = row[0] if row else get_now()
+        finally:
+            conn.close()
+        now = get_now()
+        save_raw_conversation(session_id, session_created_at, "", now, msg, now)
+    except Exception:
+        pass
+
+    wss = _ws_connections.get(session_id, [])
+    if not wss:
+        return
+    payload = {
+        "type": "task_complete",
+        "task_id": task_id,
+        "task_id_short": task_id[:8],
+        "success": success,
+        "status": "done" if success else "failed",
+        "result": result,
+        "files_changed": files_changed or [],
+        "steps_count": steps_count,
+    }
+    for ws in list(wss):
+        try:
+            await ws.send_json(payload)
+        except Exception:
+            pass
+
+
+async def push_task_question_to_session(session_id: str, task_id: str, question: str):
+    """Push a mid-task question to the user's chat WebSocket(s)."""
+    wss = _ws_connections.get(session_id, [])
+    if not wss:
+        return
+    payload = {
+        "type": "task_question",
+        "task_id": task_id,
+        "task_id_short": task_id[:8],
+        "question": question,
+    }
+    for ws in list(wss):
+        try:
+            await ws.send_json(payload)
+        except Exception:
+            pass
+
+
 @app.websocket("/ws/chat")
 async def ws_chat(websocket: WebSocket, session_id: str | None = None):
     await websocket.accept()
     session = _manager.get_or_create(session_id)
+    _ws_connections.setdefault(session.id, []).append(websocket)
     await websocket.send_json({
         "type": "session_created",
         "session_id": session.id,
@@ -1565,6 +1885,74 @@ async def ws_chat(websocket: WebSocket, session_id: str | None = None):
     try:
         while True:
             data = await websocket.receive_json()
+            if data.get("type") == "cancel":
+                continue  # Nothing running, ignore stray cancels
+
+            # Direct outsource confirm/cancel — bypass LLM entirely
+            if data.get("type") == "outsource_confirm":
+                task_id = data.get("task_id", "")
+                if task_id:
+                    from agent.storage.outsource import get_task
+                    from agent.tools.dispatch_task import DispatchTaskTool
+                    record = get_task(task_id)
+                    # Verify task belongs to this session before starting
+                    if (record
+                            and record.get("status") == "pending"
+                            and record.get("session_id") == session.id):
+                        _cfg = dict(session.full_config)
+                        _cfg["_session_id"] = session.id
+                        tool = DispatchTaskTool(_cfg)
+                        result = tool.execute({"action": "start", "task_id": task_id})
+                        await websocket.send_json({
+                            "type": "outsource_started",
+                            "task_id": task_id,
+                            "task_id_short": task_id[:8],
+                            "message": result.data if result.success else result.error,
+                        })
+                continue
+
+            if data.get("type") == "outsource_cancel":
+                task_id = data.get("task_id", "")
+                if task_id:
+                    from agent.storage.outsource import get_task, update_task
+                    record = get_task(task_id)
+                    # Verify task belongs to this session before cancelling
+                    if record and record.get("session_id") == session.id:
+                        from agent.config.prompts import get_labels as _gl
+                        _lang = session.full_config.get("language", "en")
+                        _cancel_msg = _gl("context.labels", _lang).get("outsource_cancel_result", "Cancelled by user")
+                        update_task(task_id, status="cancelled", result=_cancel_msg)
+                        await websocket.send_json({
+                            "type": "outsource_cancelled",
+                            "task_id": task_id,
+                            "task_id_short": task_id[:8],
+                        })
+                continue
+
+            if data.get("type") == "task_answer":
+                task_id = data.get("task_id", "")
+                answer = data.get("answer", "")
+                if task_id and task_id in _task_questions:
+                    event, holder = _task_questions[task_id]
+                    holder["answer"] = answer
+                    event.set()
+                    # Clear pending_question from DB immediately
+                    try:
+                        from agent.storage.outsource import update_task as _ot_upd
+                        _ot_upd(task_id, pending_question=None)
+                    except Exception:
+                        pass
+                else:
+                    # Task not found — notify client so they don't wait silently
+                    try:
+                        await websocket.send_json({
+                            "type": "error",
+                            "detail": f"Task {task_id[:8]} 已不在等待回复状态（可能已超时或重启）",
+                        })
+                    except Exception:
+                        pass
+                continue
+
             message = data.get("message", "")
             if not message:
                 continue
@@ -1576,18 +1964,68 @@ async def ws_chat(websocket: WebSocket, session_id: str | None = None):
                 except (ValueError, TypeError):
                     pass
 
-            try:
-                result = await run_cycle_async(message, session)
-                await websocket.send_json({
-                    "type": "response",
-                    "response": result["response"],
-                    "category": result["perception"].get("category", "chat"),
-                    "intent": result["perception"].get("intent", ""),
-                })
-            except Exception as e:
-                await websocket.send_json({
-                    "type": "error",
-                    "detail": str(e),
-                })
-    except WebSocketDisconnect:
+            process_task = asyncio.create_task(run_cycle_async(message, session))
+            cancelled = False
+
+            # While processing, concurrently listen for a cancel signal
+            while not process_task.done():
+                recv_task = asyncio.create_task(websocket.receive_json())
+                done, _ = await asyncio.wait(
+                    {process_task, recv_task},
+                    return_when=asyncio.FIRST_COMPLETED,
+                )
+                if recv_task in done:
+                    try:
+                        incoming = recv_task.result()
+                        if incoming.get("type") == "cancel":
+                            process_task.cancel()
+                            cancelled = True
+                            break
+                    except Exception:
+                        pass
+                else:
+                    recv_task.cancel()
+                    try:
+                        await recv_task
+                    except (asyncio.CancelledError, Exception):
+                        pass
+
+            if cancelled:
+                try:
+                    await process_task
+                except (asyncio.CancelledError, Exception):
+                    pass
+                try:
+                    await websocket.send_json({"type": "cancelled"})
+                except Exception:
+                    pass
+            else:
+                try:
+                    result = process_task.result()
+                    await websocket.send_json({
+                        "type": "response",
+                        "response": result["response"],
+                        "category": result["perception"].get("category", "chat"),
+                        "intent": result["perception"].get("intent", ""),
+                    })
+                except (WebSocketDisconnect, RuntimeError):
+                    # Client disconnected before or while we were sending — ignore
+                    pass
+                except Exception as e:
+                    try:
+                        await websocket.send_json({
+                            "type": "error",
+                            "detail": str(e),
+                        })
+                    except Exception:
+                        pass
+    except (WebSocketDisconnect, RuntimeError):
         pass
+    finally:
+        conns = _ws_connections.get(session.id, [])
+        try:
+            conns.remove(websocket)
+        except ValueError:
+            pass
+        if not conns:
+            _ws_connections.pop(session.id, None)

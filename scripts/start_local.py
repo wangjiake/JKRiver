@@ -1,13 +1,25 @@
 """Local development startup script — starts all services based on settings.yaml."""
 import subprocess
 import sys
+import shutil
 import yaml
 
 with open("settings.yaml") as f:
     cfg = yaml.safe_load(f)
 
+# Use uvicorn from PATH if current Python doesn't have it as a module
+def _uvicorn_cmd():
+    try:
+        import uvicorn  # noqa: F401
+        return [sys.executable, "-m", "uvicorn"]
+    except ImportError:
+        uv = shutil.which("uvicorn")
+        if uv:
+            return [uv]
+        raise RuntimeError("uvicorn not found. Install it: pip install uvicorn")
+
 procs_def = [
-    ("FastAPI  :8400", [sys.executable, "-m", "uvicorn", "agent.api:app", "--host", "127.0.0.1", "--port", "8400"]),
+    ("FastAPI  :8400", _uvicorn_cmd() + ["agent.api:app", "--host", "127.0.0.1", "--port", "8400"]),
     ("Flask    :1234", [sys.executable, "web.py", "--port", "1234"]),
 ]
 

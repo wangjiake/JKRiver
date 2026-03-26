@@ -149,10 +149,12 @@ async def plan_task_async(task: str, config: dict) -> list[dict]:
         {"role": "system", "content": (
             "You are a task planning agent. Given a task, output a JSON array of planned steps. "
             f"Each step: {{\"step\": N, \"description\": \"what will be done\"}}. "
-            f"Be specific. Maximum 15 steps. Output ONLY the JSON array, no explanation. "
+            f"Be specific and concise. Maximum 8 steps. Output ONLY the JSON array, no explanation. "
             f"{_lang_instruction}\n\n"
             f"IMPORTANT: This is a LOCAL project. The working directory is: {cwd}\n"
-            "All file operations should be done on local files, NOT via GitHub or any remote URL."
+            "All file operations should be done on local files, NOT via GitHub or any remote URL.\n"
+            "For counting lines/files/statistics: plan to use shell commands (wc -l, find, du, grep -c) — NOT reading files one by one.\n"
+            "Keep steps high-level and practical. Do NOT include steps like 'clean up variables' or 'close files'."
         )},
         {"role": "user", "content": f"Task: {task}"}
     ]

@@ -781,12 +781,33 @@ async def run_cycle_async(user_input: str | dict, session: Session,
     llm_input = _inject_tool_context(tool_results, memories, llm_input, L, log_fn)
     _handle_skills(processed_text, session, memories, L, log_fn)
 
-    has_tool_data = any(t["result"].success and t["result"].data for t in tool_results) if tool_results else False
-    log("info", f"思考中...{'(云端)' if has_tool_data else '(本地)'}")
-    think_result = await session.cognition.think_async(
-        llm_input, perception, memories, use_cloud=has_tool_data,
-        user_input_at=user_input_at)
-    final_response = _finalize_response(think_result, tool_results, language)
+    # Short-circuit: dispatch_task preview result is the final response — skip LLM think step
+    _dispatch_preview = next(
+        (t for t in (tool_results or [])
+         if t["tool"] == "dispatch_task" and t["result"].success and
+         "task_id" in (t["result"].data or "")),
+        None,
+    )
+    if _dispatch_preview:
+        now = get_now()
+        think_result = {
+            "raw_response": _dispatch_preview["result"].data,
+            "raw_response_at": now,
+            "final_response": _dispatch_preview["result"].data,
+            "final_response_at": now,
+            "verification_result": "",
+            "verification_result_at": now,
+            "thinking_notes": "",
+            "thinking_notes_at": now,
+        }
+        final_response = _finalize_response(think_result, tool_results, language)
+    else:
+        has_tool_data = any(t["result"].success and t["result"].data for t in tool_results) if tool_results else False
+        log("info", f"思考中...{'(云端)' if has_tool_data else '(本地)'}")
+        think_result = await session.cognition.think_async(
+            llm_input, perception, memories, use_cloud=has_tool_data,
+            user_input_at=user_input_at)
+        final_response = _finalize_response(think_result, tool_results, language)
 
     if not is_llm_error(final_response):
         _save_turn_data(session, perception, think_result, memories, memories_used_at,

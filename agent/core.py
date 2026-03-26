@@ -761,6 +761,40 @@ async def run_cycle_async(user_input: str | dict, session: Session,
         except Exception:
             pass
 
+    # Early outsource detection: if outsource skill matched, directly run dispatch_task preview
+    # and short-circuit everything (resolver, memory build, think step)
+    _outsource_skills = session.skill_registry.match_keywords(processed_text)
+    _outsource_skill = next((s for s in _outsource_skills if s.name == "outsource"), None)
+    if _outsource_skill:
+        import re as _re
+        _task_desc = _re.sub(
+            r'^(外包模式|外包任务|帮我外包|用外包|outsource mode|outsource this|外包给ai|外包给你|delegate to agent|run as task|use task agent|派遣モード|派遣して|派遣タスク|派遣に)[：:：\s]*',
+            '', processed_text, flags=_re.IGNORECASE
+        ).strip() or processed_text
+        _dispatch_tool = session.tool_registry.get_tool("dispatch_task")
+        if _dispatch_tool:
+            _preview_result = _dispatch_tool.execute({"action": "preview", "task": _task_desc})
+            if _preview_result.success:
+                now = get_now()
+                _preview_data = _preview_result.data
+                think_result = {
+                    "raw_response": _preview_data, "raw_response_at": now,
+                    "final_response": _preview_data, "final_response_at": now,
+                    "verification_result": "", "verification_result_at": now,
+                    "thinking_notes": "", "thinking_notes_at": now,
+                }
+                _save_turn_data(
+                    session, {"intent": "outsource", "need_memory": False, "memory_type": "无",
+                              "ai_summary": _task_desc, "perception_at": now,
+                              "topic_keywords": [], "category": "chat"},
+                    think_result,
+                    {"profile": [], "hypotheses": [], "strategies": [], "user_model": [],
+                     "events": [], "strategy_ids": [], "memory_text": ""},
+                    now, user_input_at, raw_user_input, _preview_data, [], input_metadata, L,
+                )
+                return {"response": _preview_data, "perception": {}, "memories": {},
+                        "trajectory": None, "think_result": think_result}
+
     if category == "knowledge":
         memories = {
             "profile": [], "hypotheses": [], "strategies": [],

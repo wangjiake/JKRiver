@@ -25,9 +25,9 @@ _FALLBACK = {
         "description": (
             "Delegate a complex multi-step task to an autonomous sub-agent.\n"
             "ALWAYS use a two-step flow:\n"
-            "  Step 1: action='preview' + task description → generates a plan and shows it to the user for confirmation.\n"
+            "  Step 1: action='preview' + task description → generates a plan. You MUST output the tool result verbatim to the user. Do NOT summarize, paraphrase, or replace it with your own words.\n"
             "  Step 2: action='start' + task_id → starts background execution after user confirms.\n"
-            "Never skip the preview step. Never start without user confirmation."
+            "Never skip the preview step. Never start without user confirmation. Never rewrite the plan output."
         ),
         "parameters": {
             "action": "'preview' to generate plan, 'start' to begin execution",
@@ -43,9 +43,9 @@ _FALLBACK = {
         "description": (
             "将复杂任务外包给自主子智能体执行。\n"
             "必须按两步走：\n"
-            "  第一步：action='preview' + 任务描述 → 生成执行计划展示给用户确认。\n"
+            "  第一步：action='preview' + 任务描述 → 生成执行计划。你必须将工具返回内容原样输出给用户，禁止概括、改写或用自己的话替代。\n"
             "  第二步：用户确认后：action='start' + task_id → 后台开始执行。\n"
-            "禁止跳过预览步骤，禁止未经用户确认就开始执行。"
+            "禁止跳过预览步骤，禁止未经用户确认就开始执行，禁止改写计划内容。"
         ),
         "parameters": {
             "action": "'preview' 生成计划，'start' 开始执行",
@@ -61,9 +61,9 @@ _FALLBACK = {
         "description": (
             "複雑なタスクを自律サブエージェントに委託します。\n"
             "必ず2ステップで実行してください：\n"
-            "  Step1: action='preview' + タスク説明 → 実行計画を生成してユーザーに確認。\n"
+            "  Step1: action='preview' + タスク説明 → 実行計画を生成。ツールの返却内容をそのままユーザーに出力すること。要約・言い換え・自分の言葉への置き換えは禁止。\n"
             "  Step2: ユーザー確認後：action='start' + task_id → バックグラウンドで実行開始。\n"
-            "プレビューをスキップしないこと。ユーザー確認なしに開始しないこと。"
+            "プレビューをスキップしないこと。ユーザー確認なしに開始しないこと。計画内容を書き換えないこと。"
         ),
         "parameters": {
             "action": "'preview' で計画生成、'start' で実行開始",

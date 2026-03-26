@@ -1009,10 +1009,6 @@ async def update_config(request: Request):
     value = str(body.get("value", ""))
     path_parts = path.split(".")
 
-    _READONLY_KEYS = {"api_key", "bot_token", "password", "secret", "token"}
-    if any(blocked in path_parts[-1].lower() for blocked in _READONLY_KEYS):
-        raise HTTPException(status_code=403, detail=f"'{path}' contains sensitive credentials and cannot be updated via API. Edit settings.yaml directly.")
-
     # Special handling for allowed_user_ids (comma-separated string -> YAML list)
     if len(path_parts) == 2 and path_parts[1] == "allowed_user_ids" and path_parts[0] in ("telegram", "discord"):
         success, old_value = _set_settings_allowed_ids(path_parts[0], value)

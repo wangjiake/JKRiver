@@ -28,7 +28,9 @@ Guidelines:
 - Always read a file before modifying it.
 - After writing or modifying files, use shell_exec to verify: run syntax checks (python3 -m py_compile), tests (python3 -m pytest), or re-read the file to confirm correctness.
 - Only return "done" after verifying the result is correct.
-- Be concise in reasoning — focus on what you are doing and why."""
+- Be concise in reasoning — focus on what you are doing and why.
+- For counting lines, file sizes, or statistics: prefer shell_exec (e.g. wc -l, find, du) over reading files one by one.
+- The "result" field in the "done" action MUST contain the actual output/data the user asked for (numbers, lists, findings), not just a description of what you did."""
 
 
 def _build_system_prompt() -> str:

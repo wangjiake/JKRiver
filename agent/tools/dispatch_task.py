@@ -11,6 +11,7 @@ from agent.tools import BaseTool, ToolManifest, ToolResult
 
 _LOOSE_SHELL_WHITELIST = [
     "ls", "dir", "cat", "head", "tail", "find", "grep", "wc -l", "wc -c", "wc", "date",
+    "df", "df -h", "du", "du -sh", "free", "free -h", "uname", "uptime", "ps", "top", "htop",
     "python3", "python",
     "python3 -m py_compile", "python3 -m pytest", "python3 -m unittest",
     "pip3 install", "pip install", "pip3 list", "pip list",

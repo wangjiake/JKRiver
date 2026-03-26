@@ -20,6 +20,10 @@ When the task is complete:
 If you cannot complete the task:
 {"action": "error", "reason": "<explanation>"}
 
+IMPORTANT: The only valid values for "action" are: "tool", "done", "error".
+NEVER use a tool name (like "file_list", "shell_exec") as the action value.
+Always use: {"action": "tool", "tool": "<tool_name>", "params": {...}, "reasoning": "..."}
+
 Guidelines:
 - Always read a file before modifying it.
 - After writing or modifying files, use shell_exec to verify: run syntax checks (python3 -m py_compile), tests (python3 -m pytest), or re-read the file to confirm correctness.
@@ -319,12 +323,17 @@ async def run_task_async(
             "result": str(parsed)[:500],
         })
         messages.append({"role": "assistant", "content": response_text})
-        messages.append({
-            "role": "user",
-            "content": (
-                f"Unknown action '{action}'. Please use one of: tool, done, error."
-            ),
-        })
+        # Check if LLM used tool name as action (common GPT-4o mistake)
+        available_tools = [m.name for m in registry.list_available()]
+        if action in available_tools:
+            correction = (
+                f"Format error: '{action}' is a tool name, not an action. "
+                f"Use: {{\"action\": \"tool\", \"tool\": \"{action}\", \"params\": {{...}}, \"reasoning\": \"...\"}}. "
+                "The valid action values are only: tool, done, error."
+            )
+        else:
+            correction = f"Unknown action '{action}'. Valid actions are: tool, done, error."
+        messages.append({"role": "user", "content": correction})
 
     # Reached max steps
     return {

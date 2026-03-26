@@ -950,7 +950,7 @@ def _set_settings_field(path_parts: list[str], value: str) -> tuple[bool, str]:
                     float(value)
                     new_val = value  # numeric — no quotes
                 except ValueError:
-                    new_val = f'"{value}"'
+                    new_val = f'"{value.replace(chr(92), chr(92)*2).replace(chr(34), chr(92)+chr(34))}"'
             lines[i] = " " * indent + f'{target}: {new_val}{comment}\n'
             with open(_SETTINGS_PATH, "w", encoding="utf-8") as f:
                 f.writelines(lines)

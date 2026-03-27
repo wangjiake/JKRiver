@@ -13,9 +13,9 @@ logger = logging.getLogger(__name__)
 
 def _build_chat_request(messages: list[dict], config: dict) -> tuple[str, dict, dict]:
     """Build (url, headers, body) for chat completions API."""
-    api_base = config.get("api_base", "http://localhost:11434")
-    model = config.get("model", "")
-    api_key = config.get("api_key", "")
+    api_base = str(config.get("api_base", "http://localhost:11434"))
+    model = str(config.get("model", ""))
+    api_key = str(config.get("api_key", "") or "")
     temperature = config.get("temperature", 0.7)
     max_tokens = config.get("max_tokens", 2048)
 
@@ -44,9 +44,9 @@ def _parse_chat_response(data: dict) -> str:
 
 def _build_responses_request(messages: list[dict], config: dict) -> tuple[str, dict, dict]:
     """Build (url, headers, body) for responses API."""
-    api_base = config.get("api_base", "https://api.openai.com")
-    model = config.get("model", "")
-    api_key = config.get("api_key", "")
+    api_base = str(config.get("api_base", "https://api.openai.com"))
+    model = str(config.get("model", ""))
+    api_key = str(config.get("api_key", "") or "")
     temperature = config.get("temperature", 0.7)
     max_tokens = config.get("max_tokens", 2048)
 

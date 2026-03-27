@@ -64,7 +64,7 @@ def _api_token_valid(token: str) -> bool:
     if not expected:
         return True
     try:
-        return secrets.compare_digest(token.encode(), expected.encode())
+        return secrets.compare_digest(token.encode(), str(expected).encode())
     except Exception:
         return False
 
@@ -852,7 +852,7 @@ def _set_settings_list_item_field(section: str, list_key: str, index: int, field
         return False, ""
 
     _ALWAYS_STRING_FIELDS = {
-        "api_key", "api_base", "model", "token", "bot_token",
+        "api_key", "api_base", "model", "token", "bot_token", "access_token",
         "name", "host", "user", "password", "language",
     }
     if value in ("true", "false"):
@@ -1010,7 +1010,7 @@ def _set_settings_field(path_parts: list[str], value: str) -> tuple[bool, str]:
             comment = "  " + comment_match.group(1) if comment_match else ""
             # Fields that must always be strings (never treated as numeric)
             _ALWAYS_STRING_FIELDS = {
-                "api_key", "api_base", "model", "token", "bot_token",
+                "api_key", "api_base", "model", "token", "bot_token", "access_token",
                 "name", "host", "user", "password", "language",
             }
             field_name = path_parts[-1]

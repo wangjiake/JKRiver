@@ -767,11 +767,35 @@ async def run_cycle_async(user_input: str | dict, session: Session,
     _outsource_skill = next((s for s in _outsource_skills if s.name == "outsource"), None)
     if _outsource_skill:
         import re as _re
+        # Check if user wants to resume a suspended task
+        _resume_keywords = ["继续执行", "继续任务", "继续外包", "恢复任务", "resume task", "resume the task", "再開して", "タスクを再開"]
+        _is_resume = any(kw in processed_text.lower() for kw in _resume_keywords)
+        _dispatch_tool = session.tool_registry.get_tool("dispatch_task")
+        if _dispatch_tool and _is_resume:
+            _resume_result = _dispatch_tool.execute({"action": "resume"})
+            _resume_data = _resume_result.data if _resume_result.success else (_resume_result.error or "Resume failed")
+            now = get_now()
+            think_result = {
+                "raw_response": _resume_data, "raw_response_at": now,
+                "final_response": _resume_data, "final_response_at": now,
+                "verification_result": "", "verification_result_at": now,
+                "thinking_notes": "", "thinking_notes_at": now,
+            }
+            _save_turn_data(
+                session, {"intent": "outsource_resume", "need_memory": False, "memory_type": "无",
+                          "ai_summary": processed_text, "perception_at": now,
+                          "topic_keywords": [], "category": "chat"},
+                think_result,
+                {"profile": [], "hypotheses": [], "strategies": [], "user_model": [],
+                 "events": [], "strategy_ids": [], "memory_text": ""},
+                now, user_input_at, raw_user_input, _resume_data, [], input_metadata, L,
+            )
+            return {"response": _resume_data, "perception": {}, "memories": {},
+                    "trajectory": None, "think_result": think_result}
         _task_desc = _re.sub(
             r'^(外包模式|外包任务|帮我外包|用外包|outsource mode|outsource this|外包给ai|外包给你|delegate to agent|run as task|use task agent|派遣モード|派遣して|派遣タスク|派遣に)[：:：\s]*',
             '', processed_text, flags=_re.IGNORECASE
         ).strip() or processed_text
-        _dispatch_tool = session.tool_registry.get_tool("dispatch_task")
         if _dispatch_tool:
             _preview_result = _dispatch_tool.execute({"action": "preview", "task": _task_desc})
             if _preview_result.success:

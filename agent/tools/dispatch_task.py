@@ -262,11 +262,11 @@ class DispatchTaskTool(BaseTool):
                 update_task(task_id, status="suspended")
                 lang = self.config.get("language", "en")
                 if lang == "zh":
-                    msg = f"⏸️ 任务已挂起（`{task_id[:8]}`）——当前已有 {running_count} 个任务在执行（上限 {max_concurrent}）。\n前往 [/outsource](/outsource) 在任务完成后手动继续。"
+                    msg = f"⏸️ 任务已挂起（`{task_id[:8]}`）——当前已有 {running_count} 个任务在执行（上限 {max_concurrent}）。\n有空位后，你可以说「**继续执行**」或前往 [/outsource](/outsource) 手动继续。"
                 elif lang == "ja":
-                    msg = f"⏸️ タスクは一時停止されました（`{task_id[:8]}`）——現在 {running_count} 件実行中（上限 {max_concurrent}）。\n[/outsource](/outsource) で他のタスク完了後に再開できます。"
+                    msg = f"⏸️ タスクは一時停止されました（`{task_id[:8]}`）——現在 {running_count} 件実行中（上限 {max_concurrent}）。\n空きができたら「**再開して**」と言うか [/outsource](/outsource) で再開できます。"
                 else:
-                    msg = f"⏸️ Task suspended (`{task_id[:8]}`) — {running_count} tasks already running (limit {max_concurrent}).\nGo to [/outsource](/outsource) to resume it when a slot is free."
+                    msg = f"⏸️ Task suspended (`{task_id[:8]}`) — {running_count} tasks already running (limit {max_concurrent}).\nWhen a slot is free, say **"resume task"** or go to [/outsource](/outsource) to continue."
                 return ToolResult(success=True, data=msg)
 
             task = record["title"]
@@ -390,7 +390,26 @@ class DispatchTaskTool(BaseTool):
     def _resume(self, params: dict) -> ToolResult:
         task_id = params.get("task_id", "").strip()
         if not task_id:
-            return ToolResult(success=False, data="", error="Missing 'task_id' for resume.")
+            # Auto-find the latest suspended task
+            try:
+                from agent.storage import get_db_connection
+                conn = get_db_connection()
+                try:
+                    with conn.cursor() as cur:
+                        cur.execute("""
+                            SELECT task_id FROM outsource_tasks
+                            WHERE status = 'suspended' AND deleted_at IS NULL
+                            ORDER BY created_at DESC LIMIT 1
+                        """)
+                        row = cur.fetchone()
+                        if row:
+                            task_id = row[0]
+                        else:
+                            return ToolResult(success=False, data="", error="No suspended task found.")
+                finally:
+                    conn.close()
+            except Exception as e:
+                return ToolResult(success=False, data="", error=f"Failed to find suspended task: {e}")
         try:
             from agent.storage.outsource import get_task, update_task
             from agent.storage import get_db_connection

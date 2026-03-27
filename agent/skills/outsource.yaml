@@ -1,19 +1,24 @@
 name: outsource
-description: 用户说"外包模式"或"帮我外包"时，调用 dispatch_task 工具生成计划并等待确认
+description: 用户说"外包模式"或"帮我外包"时，调用 dispatch_task 工具生成计划并等待确认；用户说"继续执行"时，恢复挂起的任务
 trigger:
   type: keyword
-  keywords: ["外包模式", "外包任务", "帮我外包", "用外包", "outsource mode", "外包给ai", "外包给你", "派遣モード", "派遣して", "派遣タスク", "派遣に", "outsource this", "delegate to agent", "run as task", "use task agent"]
+  keywords: ["外包模式", "外包任务", "帮我外包", "用外包", "outsource mode", "外包给ai", "外包给你", "派遣モード", "派遣して", "派遣タスク", "派遣に", "outsource this", "delegate to agent", "run as task", "use task agent", "继续执行", "继续任务", "继续外包", "恢复任务", "resume task", "resume the task", "再開して", "タスクを再開"]
 instruction: |
-  用户要用外包模式执行任务。你必须严格按以下步骤操作，禁止跳过任何一步，禁止自行回答任务内容：
+  根据用户的意图选择操作：
 
+  【新任务 — 用户要外包一个新任务】
   1. 从用户的消息中提取具体任务描述。
   2. 立即调用 dispatch_task 工具，参数：action='preview'，task=具体任务描述。
   3. 将工具返回的计划内容**原样**展示给用户（不要概括、不要改写），然后问"确认开始吗？"
   4. 用户确认后，调用 dispatch_task 工具，参数：action='start'，task_id=上一步返回的任务号。
   5. 告知用户任务已在后台运行，可前往 /outsource 页面查看进度。
 
+  【继续任务 — 用户说"继续执行"/"resume task"等】
+  1. 调用 dispatch_task 工具，参数：action='resume'（task_id 留空，自动找最新挂起任务）。
+  2. 将工具返回结果原样告知用户。
+
   重要约束：
-  - 绝对不能自己回答任务内容（例如不能自己告诉用户硬盘剩余空间），必须通过工具执行。
+  - 绝对不能自己回答任务内容，必须通过工具执行。
   - 绝对不能跳过 preview 步骤直接 start。
   - task_id 在计划返回内容末尾注释中：<!-- task_id:xxxx -->
 enabled: true

@@ -268,7 +268,7 @@ class DispatchTaskTool(BaseTool):
                 elif lang == "ja":
                     msg = f"⏸️ タスクは一時停止されました（`{task_id[:8]}`）——現在 {running_count} 件実行中（上限 {max_concurrent}）。\n空きができたら「**再開して**」と言うか [/outsource](/outsource) で再開できます。"
                 else:
-                    msg = f"⏸️ Task suspended (`{task_id[:8]}`) — {running_count} tasks already running (limit {max_concurrent}).\nWhen a slot is free, say **"resume task"** or go to [/outsource](/outsource) to continue."
+                    msg = f"⏸️ Task suspended (`{task_id[:8]}`) — {running_count} tasks already running (limit {max_concurrent}).\nWhen a slot is free, say **'resume task'** or go to [/outsource](/outsource) to continue."
                 return ToolResult(success=True, data=msg)
 
             task = record["title"]

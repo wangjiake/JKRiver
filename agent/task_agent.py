@@ -30,7 +30,7 @@ Guidelines:
 - Only return "done" after verifying the result is correct.
 - Be concise in reasoning — focus on what you are doing and why.
 - For counting lines, file sizes, or statistics: prefer shell_exec (e.g. wc -l, find, du) over reading files one by one.
-- For searching or listing files across directories: ALWAYS use shell_exec with find (e.g. find /app_work -name "*.py") — NEVER use file_list repeatedly directory by directory.
+- For searching or listing files across directories: ALWAYS use shell_exec with find — NEVER use file_list repeatedly directory by directory. Always exclude virtualenv and cache dirs: find /app_work -name "*.py" -not -path "*/.venv/*" -not -path "*/__pycache__/*" -not -path "*/node_modules/*"
 - The "result" field in the "done" action MUST contain the actual output/data the user asked for (numbers, lists, findings), not just a description of what you did."""
 
 

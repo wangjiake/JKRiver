@@ -1619,6 +1619,9 @@ function updateTaskActions(taskId, status, resultText, filesChanged, stepsCount)
     if (stepsCount) summary += `\n\n步骤数：${stepsCount}`;
     if (filesChanged && filesChanged.length) summary += `\n\n修改文件：\n${filesChanged.map(f => '· ' + f).join('\n')}`;
     actions.innerHTML = `<span class="outsource-status confirmed" style="white-space:pre-wrap">✅ ${_L.task_done || '执行完成'}${summary}</span>`;
+  } else if (status === 'planning') {
+    actions.innerHTML = `<span class="outsource-status confirmed">🔄 ${_L.task_planning || '规划中…'}</span>`;
+    pollTaskUntilDone(taskId);
   } else if (status === 'failed') {
     const btnRetry = document.createElement('button');
     btnRetry.className = 'outsource-btn confirm';
@@ -1690,16 +1693,30 @@ async function outsourceResume(taskId, actions) {
 
 function pollTaskUntilDone(taskId) {
   if (_activePollers[taskId]) return;  // Already polling
+  let _pollErrors = 0;
+  const _maxErrors = 5;
+  const _maxPolls = 900;  // 60 minutes max (900 * 4s)
+  let _pollCount = 0;
   const timer = setInterval(() => {
+    _pollCount++;
+    if (_pollCount > _maxPolls) {
+      clearInterval(timer);
+      delete _activePollers[taskId];
+      return;
+    }
     fetch(`http://${location.hostname}:${API_PORT}/api/outsource/tasks/${taskId}`, { headers: authHeaders() })
-      .then(r => r.ok ? r.json() : null)
+      .then(r => {
+        if (!r.ok) { if (++_pollErrors >= _maxErrors) { clearInterval(timer); delete _activePollers[taskId]; } return null; }
+        _pollErrors = 0;
+        return r.json();
+      })
       .then(task => {
-        if (!task || task.status === 'running' || task.status === 'pending') return;
+        if (!task || task.status === 'running' || task.status === 'pending' || task.status === 'planning') return;
         clearInterval(timer);
         delete _activePollers[taskId];
         updateTaskActions(taskId, task.status, task.result, task.files_changed, (task.steps || []).length);
       })
-      .catch(() => { clearInterval(timer); delete _activePollers[taskId]; });
+      .catch(() => { if (++_pollErrors >= _maxErrors) { clearInterval(timer); delete _activePollers[taskId]; } });
   }, 4000);
   _activePollers[taskId] = timer;
 }

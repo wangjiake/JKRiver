@@ -382,7 +382,7 @@ class DispatchTaskTool(BaseTool):
                                 _self_tool = DispatchTaskTool(self.config)
                                 _self_tool._start({"task_id": _next_id})
                         except Exception:
-                            pass
+                            logging.getLogger(__name__).warning("Auto-resume failed", exc_info=True)
                 except Exception as e:
                     logging.getLogger(__name__).exception("Unhandled error in task %s", task_id)
                     try:
@@ -414,7 +414,7 @@ class DispatchTaskTool(BaseTool):
                             update_task(_next_id, status="pending")
                             DispatchTaskTool(self.config)._start({"task_id": _next_id})
                     except Exception:
-                        pass
+                        logging.getLogger(__name__).warning("Auto-resume failed (error path)", exc_info=True)
 
             _run_in_background(_run())
 

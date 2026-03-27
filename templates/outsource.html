@@ -295,6 +295,7 @@ const I18N = {
     task: 'task', tasks: 'tasks',
     pending: 'Pending', planning: 'Planning', running: 'Running', done: 'Done', failed: 'Failed', cancelled: 'Cancelled', suspended: 'Suspended',
     retry: 'Retry', task_retried: 'Task retried', could_not_retry: 'Could not retry task',
+    pending_question: 'Waiting for your answer', answer_placeholder: 'Type your answer…', send_answer: 'Send',
     progress: 'Progress', steps: 'steps', plan: 'Plan', execution_log: 'Execution Log',
     result: 'Result', files_changed: 'Files Changed',
     created: 'Created', updated: 'Updated', strict_mode: 'strict mode', loose_mode: 'loose mode',
@@ -311,6 +312,7 @@ const I18N = {
     task: '个外包', tasks: '个外包',
     pending: '待确认', planning: '规划中', running: '执行中', done: '完成', failed: '失败', cancelled: '已取消', suspended: '已挂起',
     retry: '重试', task_retried: '任务已重试', could_not_retry: '无法重试任务',
+    pending_question: '等待你的回答', answer_placeholder: '输入你的回答…', send_answer: '发送',
     progress: '进度', steps: '步', plan: '计划', execution_log: '执行日志',
     result: '结果', files_changed: '修改文件',
     created: '创建', updated: '更新', strict_mode: '严格模式', loose_mode: '宽松模式',
@@ -327,6 +329,7 @@ const I18N = {
     task: '派遣', tasks: '派遣',
     pending: '保留中', planning: '計画中', running: '実行中', done: '完了', failed: '失敗', cancelled: 'キャンセル済み', suspended: '一時停止',
     retry: '再試行', task_retried: 'タスクを再試行しました', could_not_retry: 'タスクを再試行できませんでした',
+    pending_question: '回答を待っています', answer_placeholder: '回答を入力…', send_answer: '送信',
     progress: '進捗', steps: 'ステップ', plan: 'プラン', execution_log: '実行ログ',
     result: '結果', files_changed: '変更ファイル',
     created: '作成', updated: '更新', strict_mode: 'strictモード', loose_mode: 'looseモード',
@@ -548,6 +551,21 @@ function renderDetail(task) {
       </div>
       <div class="detail-actions" style="margin-top:10px;">${detailResumeBtn}${detailRetryBtn}${detailCancelBtn}${detailDeleteBtn}</div>
     </div>`;
+  // Pending question (ask_user waiting for answer)
+  if (task.pending_question) {
+    html += `<div class="section-card" style="border-color:rgba(210,153,34,0.4);">
+      <h3 style="color:var(--yellow);">❓ ${t('pending_question') || 'Waiting for your answer'}</h3>
+      <div style="margin-bottom:10px;color:var(--text);">${escHtml(task.pending_question)}</div>
+      <div style="display:flex;gap:8px;">
+        <input id="answerInput_${task.task_id}" type="text" placeholder="${t('answer_placeholder') || 'Type your answer…'}"
+          style="flex:1;padding:6px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg-input);color:var(--text);font-size:13px;"
+          onkeydown="if(event.key==='Enter')sendTaskAnswer('${task.task_id}')">
+        <button class="detail-action-btn" onclick="sendTaskAnswer('${task.task_id}')" style="border-color:rgba(210,153,34,0.4);color:var(--yellow);">
+          ${t('send_answer') || 'Send'}
+        </button>
+      </div>
+    </div>`;
+  }
 
   // Progress bar (if has steps)
   if (task.total_steps > 0) {
@@ -665,6 +683,23 @@ async function deleteTask(taskId) {
       }
       await loadTaskList();
     } else showToast(t('could_not_delete'), 'var(--red)');
+  } catch(e) { showToast('Error: ' + e.message, 'var(--red)'); }
+}
+
+async function sendTaskAnswer(taskId) {
+  const input = document.getElementById(`answerInput_${taskId}`);
+  if (!input) return;
+  const answer = input.value.trim();
+  if (!answer) return;
+  try {
+    const r = await fetch(apiUrl(`/api/outsource/tasks/${taskId}/answer`), {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ answer }),
+    });
+    const data = await r.json();
+    if (data.ok) { input.value = ''; await loadTaskDetail(taskId); }
+    else showToast(data.reason || 'Failed to send answer', 'var(--red)');
   } catch(e) { showToast('Error: ' + e.message, 'var(--red)'); }
 }
 

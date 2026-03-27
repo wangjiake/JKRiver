@@ -373,6 +373,25 @@ async def api_cancel_task(task_id: str):
     return {"ok": True}
 
 
+@app.post("/api/outsource/tasks/{task_id}/answer")
+async def api_task_answer(task_id: str, request: Request):
+    body = await request.json()
+    answer = body.get("answer", "").strip()
+    if not answer:
+        return {"ok": False, "reason": "Missing 'answer'"}
+    if task_id not in _task_questions:
+        return {"ok": False, "reason": "No pending question for this task"}
+    event, holder = _task_questions[task_id]
+    holder["answer"] = answer
+    event.set()
+    try:
+        from agent.storage.outsource import update_task as _ot_upd
+        _ot_upd(task_id, pending_question=None)
+    except Exception:
+        pass
+    return {"ok": True}
+
+
 @app.post("/api/outsource/tasks/{task_id}/retry")
 async def api_retry_task(task_id: str):
     record = _ot_get(task_id)
@@ -380,8 +399,13 @@ async def api_retry_task(task_id: str):
         raise HTTPException(status_code=404, detail="Task not found")
     if record.get("status") not in ("failed", "cancelled"):
         return {"ok": False, "reason": f"Task is not failed or cancelled (status: {record.get('status')})"}
+    import copy
+    cfg = copy.deepcopy(_config)
+    task_session_id = record.get("session_id", "")
+    if task_session_id:
+        cfg["_session_id"] = task_session_id
     from agent.tools.dispatch_task import DispatchTaskTool
-    tool = DispatchTaskTool(_config)
+    tool = DispatchTaskTool(cfg)
     result = tool.execute({"action": "retry", "task_id": task_id})
     if result.success:
         return {"ok": True, "message": result.data}
@@ -395,8 +419,13 @@ async def api_resume_task(task_id: str):
         raise HTTPException(status_code=404, detail="Task not found")
     if record.get("status") != "suspended":
         return {"ok": False, "reason": f"Task is not suspended (status: {record.get('status')})"}
+    import copy
+    cfg = copy.deepcopy(_config)
+    task_session_id = record.get("session_id", "")
+    if task_session_id:
+        cfg["_session_id"] = task_session_id
     from agent.tools.dispatch_task import DispatchTaskTool
-    tool = DispatchTaskTool(_config)
+    tool = DispatchTaskTool(cfg)
     result = tool.execute({"action": "resume", "task_id": task_id})
     if result.success:
         return {"ok": True, "message": result.data}

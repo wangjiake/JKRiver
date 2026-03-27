@@ -364,13 +364,28 @@ async def api_cancel_task(task_id: str):
     if not record:
         raise HTTPException(status_code=404, detail="Task not found")
     status = record.get("status", "")
-    if status not in ("pending", "planning", "running"):
+    if status not in ("pending", "planning", "running", "suspended"):
         return {"ok": False, "reason": "Task is not active"}
     # Set cancel flag if running
     if task_id in _cancel_flags:
         _cancel_flags[task_id].set()
     _ot_update(task_id, status="cancelled", result="Cancelled by user")
     return {"ok": True}
+
+
+@app.post("/api/outsource/tasks/{task_id}/resume")
+async def api_resume_task(task_id: str):
+    record = _ot_get(task_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if record.get("status") != "suspended":
+        return {"ok": False, "reason": f"Task is not suspended (status: {record.get('status')})"}
+    from agent.tools.dispatch_task import DispatchTaskTool
+    tool = DispatchTaskTool(_config)
+    result = tool.execute({"action": "resume", "task_id": task_id})
+    if result.success:
+        return {"ok": True, "message": result.data}
+    return {"ok": False, "reason": result.error}
 
 
 @app.delete("/api/outsource/tasks/{task_id}")

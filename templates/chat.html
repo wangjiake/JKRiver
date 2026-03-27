@@ -1619,6 +1619,14 @@ function updateTaskActions(taskId, status, resultText, filesChanged, stepsCount)
     if (stepsCount) summary += `\n\n步骤数：${stepsCount}`;
     if (filesChanged && filesChanged.length) summary += `\n\n修改文件：\n${filesChanged.map(f => '· ' + f).join('\n')}`;
     actions.innerHTML = `<span class="outsource-status confirmed" style="white-space:pre-wrap">✅ ${_L.task_done || '执行完成'}${summary}</span>`;
+  } else if (status === 'suspended') {
+    const btnResume = document.createElement('button');
+    btnResume.className = 'outsource-btn confirm';
+    btnResume.textContent = _L.resume_task || '▶ 继续执行';
+    btnResume.style.cssText = 'border-color:rgba(130,80,200,0.5);color:#a78bfa;';
+    btnResume.onclick = () => outsourceResume(taskId, actions);
+    actions.innerHTML = `<span class="outsource-status" style="color:#a78bfa;">⏸ ${_L.task_suspended || '已挂起（并发上限）'}</span>`;
+    actions.appendChild(btnResume);
   } else {
     actions.innerHTML = `<span class="outsource-status cancelled">❌ ${_L.task_cancelled || '已取消'}</span>`;
   }
@@ -1626,6 +1634,31 @@ function updateTaskActions(taskId, status, resultText, filesChanged, stepsCount)
 
 // Poll task status every 4s when running (e.g. after page refresh)
 const _activePollers = {};  // taskId -> timer, prevent duplicate polls
+
+async function outsourceResume(taskId, actions) {
+  actions.querySelectorAll('button').forEach(b => b.disabled = true);
+  const _L = I18N[currentLang] || {};
+  try {
+    const r = await fetch(`http://${location.hostname}:${API_PORT}/api/outsource/tasks/${taskId}/resume`, {
+      method: 'POST',
+      headers: authHeaders(),
+    });
+    const data = await r.json();
+    if (data.ok) {
+      updateTaskActions(taskId, 'running');
+    } else {
+      actions.innerHTML = `<span class="outsource-status" style="color:#a78bfa;">⏸ ${_L.task_suspended || '已挂起'} — ${data.reason || ''}</span>`;
+      const btn = document.createElement('button');
+      btn.className = 'outsource-btn confirm';
+      btn.textContent = _L.resume_task || '▶ 继续执行';
+      btn.style.cssText = 'border-color:rgba(130,80,200,0.5);color:#a78bfa;';
+      btn.onclick = () => outsourceResume(taskId, actions);
+      actions.appendChild(btn);
+    }
+  } catch(e) {
+    updateTaskActions(taskId, 'suspended');
+  }
+}
 
 function pollTaskUntilDone(taskId) {
   if (_activePollers[taskId]) return;  // Already polling

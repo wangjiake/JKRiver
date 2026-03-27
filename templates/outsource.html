@@ -128,6 +128,7 @@ body.light .lang-btn.active { background: rgba(79,95,186,0.08); border-color: rg
 .badge-done { background: rgba(63,185,80,0.13); color: var(--green); border: 1px solid rgba(63,185,80,0.28); }
 .badge-failed { background: rgba(248,81,73,0.13); color: var(--red); border: 1px solid rgba(248,81,73,0.28); }
 .badge-cancelled { background: rgba(110,126,148,0.15); color: var(--text-muted); border: 1px solid rgba(110,126,148,0.28); }
+.badge-suspended { background: rgba(130,80,200,0.13); color: #a78bfa; border: 1px solid rgba(130,80,200,0.28); }
 @keyframes badge-pulse { 0%,100%{opacity:1} 50%{opacity:0.55} }
 
 /* Progress bar */
@@ -292,7 +293,7 @@ const I18N = {
     page_title: 'Tasks', all_tasks: 'All Tasks', clear_all: 'Clear All',
     select_task: 'Select a task to view details', loading: 'Loading tasks...', no_tasks: 'No tasks yet',
     task: 'task', tasks: 'tasks',
-    pending: 'Pending', planning: 'Planning', running: 'Running', done: 'Done', failed: 'Failed', cancelled: 'Cancelled',
+    pending: 'Pending', planning: 'Planning', running: 'Running', done: 'Done', failed: 'Failed', cancelled: 'Cancelled', suspended: 'Suspended',
     progress: 'Progress', steps: 'steps', plan: 'Plan', execution_log: 'Execution Log',
     result: 'Result', files_changed: 'Files Changed',
     created: 'Created', updated: 'Updated', strict_mode: 'strict mode', loose_mode: 'loose mode',
@@ -307,7 +308,7 @@ const I18N = {
     page_title: '外包', all_tasks: '所有外包', clear_all: '清空',
     select_task: '选择一个外包查看详情', loading: '加载中...', no_tasks: '暂无外包',
     task: '个外包', tasks: '个外包',
-    pending: '待确认', planning: '规划中', running: '执行中', done: '完成', failed: '失败', cancelled: '已取消',
+    pending: '待确认', planning: '规划中', running: '执行中', done: '完成', failed: '失败', cancelled: '已取消', suspended: '已挂起',
     progress: '进度', steps: '步', plan: '计划', execution_log: '执行日志',
     result: '结果', files_changed: '修改文件',
     created: '创建', updated: '更新', strict_mode: '严格模式', loose_mode: '宽松模式',
@@ -322,7 +323,7 @@ const I18N = {
     page_title: '派遣', all_tasks: 'すべての派遣', clear_all: '全削除',
     select_task: '派遣を選択して詳細を表示', loading: '読み込み中...', no_tasks: '派遣なし',
     task: '派遣', tasks: '派遣',
-    pending: '保留中', planning: '計画中', running: '実行中', done: '完了', failed: '失敗', cancelled: 'キャンセル済み',
+    pending: '保留中', planning: '計画中', running: '実行中', done: '完了', failed: '失敗', cancelled: 'キャンセル済み', suspended: '一時停止',
     progress: '進捗', steps: 'ステップ', plan: 'プラン', execution_log: '実行ログ',
     result: '結果', files_changed: '変更ファイル',
     created: '作成', updated: '更新', strict_mode: 'strictモード', loose_mode: 'looseモード',
@@ -419,6 +420,7 @@ function renderTaskList(tasks) {
     const isActive = tk.task_id === selectedTaskId;
     const isActive_ = ['pending','planning','running'].includes(tk.status);
     const cancelBtn = isActive_ ? `<button class="task-action-btn warning" onclick="event.stopPropagation();cancelTask('${tk.task_id}')">${t('stop')}</button>` : '';
+    const resumeBtn = tk.status === 'suspended' ? `<button class="task-action-btn" onclick="event.stopPropagation();resumeTask('${tk.task_id}')" style="border-color:rgba(130,80,200,0.4);color:#a78bfa;">▶ ${t('resume') || 'Resume'}</button>` : '';
     const deleteBtn = `<button class="task-action-btn danger" onclick="event.stopPropagation();deleteTask('${tk.task_id}')">${t('delete')}</button>`;
     return `<div class="task-item${isActive ? ' active' : ''}" onclick="selectTask('${tk.task_id}')">
       <div class="task-item-title" title="${escHtml(tk.title)}">${escHtml(tk.title)}</div>
@@ -427,7 +429,7 @@ function renderTaskList(tasks) {
         <span class="task-item-time">${formatTime(tk.created_at)}</span>
       </div>
       ${tk.total_steps > 0 ? `<div class="progress-wrap"><div class="progress-bar ${barClass}" style="width:${pct}%"></div></div>` : ''}
-      <div class="task-actions">${cancelBtn}${deleteBtn}</div>
+      <div class="task-actions">${resumeBtn}${cancelBtn}${deleteBtn}</div>
     </div>`;
   }).join('');
 }
@@ -452,7 +454,7 @@ async function loadTaskList() {
     renderTaskList(allTasks);
 
     // Check if there are active tasks
-    hasActiveTask = allTasks.some(t => ['pending','planning','running'].includes(t.status));
+    hasActiveTask = allTasks.some(t => ['pending','planning','running','suspended'].includes(t.status));
 
     // Update badge in this page's nav
     updateNavBadge();
@@ -528,6 +530,7 @@ function renderDetail(task) {
 
   const isActive = ['pending','planning','running'].includes(task.status);
   const detailCancelBtn = isActive ? `<button class="detail-action-btn warning" onclick="cancelTask('${task.task_id}')">⏹ ${t('stop')}</button>` : '';
+  const detailResumeBtn = task.status === 'suspended' ? `<button class="detail-action-btn" onclick="resumeTask('${task.task_id}')" style="border-color:rgba(130,80,200,0.4);color:#a78bfa;">▶ ${t('resume') || 'Resume'}</button>` : '';
   const detailDeleteBtn = `<button class="detail-action-btn danger" onclick="deleteTask('${task.task_id}')">🗑 ${t('delete')}</button>`;
   let html = `
     <div>
@@ -538,7 +541,7 @@ function renderDetail(task) {
         <span class="ts">${t('updated')} ${formatTime(task.updated_at)}</span>
         ${task.strict_mode ? `<span class="ts">${t('strict_mode')}</span>` : `<span class="ts">${t('loose_mode')}</span>`}
       </div>
-      <div class="detail-actions" style="margin-top:10px;">${detailCancelBtn}${detailDeleteBtn}</div>
+      <div class="detail-actions" style="margin-top:10px;">${detailResumeBtn}${detailCancelBtn}${detailDeleteBtn}</div>
     </div>`;
 
   // Progress bar (if has steps)
@@ -657,6 +660,17 @@ async function deleteTask(taskId) {
       }
       await loadTaskList();
     } else showToast(t('could_not_delete'), 'var(--red)');
+  } catch(e) { showToast('Error: ' + e.message, 'var(--red)'); }
+}
+
+async function resumeTask(taskId) {
+  try {
+    const r = await fetch(apiUrl(`/api/outsource/tasks/${taskId}/resume`), {
+      method: 'POST', headers: authHeaders()
+    });
+    const data = await r.json();
+    if (data.ok) { showToast((t('resume') || 'Resume') + ' OK', '#a78bfa'); await loadTaskList(); if (selectedTaskId === taskId) await loadTaskDetail(taskId); }
+    else showToast(data.reason || 'Cannot resume', 'var(--red)');
   } catch(e) { showToast('Error: ' + e.message, 'var(--red)'); }
 }
 

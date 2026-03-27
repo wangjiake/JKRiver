@@ -122,8 +122,10 @@ class DispatchTaskTool(BaseTool):
             return self._preview(params)
         elif action == "start":
             return self._start(params)
+        elif action == "resume":
+            return self._resume(params)
         else:
-            return ToolResult(success=False, data="", error=f"Unknown action '{action}'. Use 'preview' or 'start'.")
+            return ToolResult(success=False, data="", error=f"Unknown action '{action}'. Use 'preview', 'start', or 'resume'.")
 
     def _preview(self, params: dict) -> ToolResult:
         task = params.get("task", "").strip()
@@ -243,8 +245,29 @@ class DispatchTaskTool(BaseTool):
             status = record.get("status", "")
             if status == "running":
                 return ToolResult(success=True, data=f"Task `{task_id[:8]}` is already running.")
-            if status in ("done", "failed"):
+            if status in ("done", "failed", "cancelled"):
                 return ToolResult(success=False, data="", error=f"Task `{task_id[:8]}` already finished (status: {status}). Use preview to create a new task.")
+
+            # Check concurrent task limit
+            max_concurrent = self._tool_cfg.get("max_concurrent", 6)
+            conn = get_db_connection()
+            try:
+                with conn.cursor() as cur:
+                    cur.execute("SELECT COUNT(*) FROM outsource_tasks WHERE status = 'running' AND deleted_at IS NULL")
+                    running_count = cur.fetchone()[0]
+            finally:
+                conn.close()
+
+            if running_count >= max_concurrent:
+                update_task(task_id, status="suspended")
+                lang = self.config.get("language", "en")
+                if lang == "zh":
+                    msg = f"⏸️ 任务已挂起（`{task_id[:8]}`）——当前已有 {running_count} 个任务在执行（上限 {max_concurrent}）。\n前往 [/outsource](/outsource) 在任务完成后手动继续。"
+                elif lang == "ja":
+                    msg = f"⏸️ タスクは一時停止されました（`{task_id[:8]}`）——現在 {running_count} 件実行中（上限 {max_concurrent}）。\n[/outsource](/outsource) で他のタスク完了後に再開できます。"
+                else:
+                    msg = f"⏸️ Task suspended (`{task_id[:8]}`) — {running_count} tasks already running (limit {max_concurrent}).\nGo to [/outsource](/outsource) to resume it when a slot is free."
+                return ToolResult(success=True, data=msg)
 
             task = record["title"]
 
@@ -363,3 +386,37 @@ class DispatchTaskTool(BaseTool):
 
         except Exception as e:
             return ToolResult(success=False, data="", error=f"Failed to start task: {e}")
+
+    def _resume(self, params: dict) -> ToolResult:
+        task_id = params.get("task_id", "").strip()
+        if not task_id:
+            return ToolResult(success=False, data="", error="Missing 'task_id' for resume.")
+        try:
+            from agent.storage.outsource import get_task, update_task
+            from agent.storage import get_db_connection
+            record = get_task(task_id)
+            if not record:
+                return ToolResult(success=False, data="", error=f"Task {task_id} not found.")
+            if record.get("status") != "suspended":
+                return ToolResult(success=False, data="", error=f"Task `{task_id[:8]}` is not suspended (status: {record.get('status')}).")
+            max_concurrent = self._tool_cfg.get("max_concurrent", 6)
+            conn = get_db_connection()
+            try:
+                with conn.cursor() as cur:
+                    cur.execute("SELECT COUNT(*) FROM outsource_tasks WHERE status = 'running' AND deleted_at IS NULL")
+                    running_count = cur.fetchone()[0]
+            finally:
+                conn.close()
+            if running_count >= max_concurrent:
+                lang = self.config.get("language", "en")
+                if lang == "zh":
+                    return ToolResult(success=False, data="", error=f"当前仍有 {running_count} 个任务在执行（上限 {max_concurrent}），请等待任务完成后再继续。")
+                elif lang == "ja":
+                    return ToolResult(success=False, data="", error=f"現在 {running_count} 件実行中（上限 {max_concurrent}）。他のタスク完了後に再開してください。")
+                else:
+                    return ToolResult(success=False, data="", error=f"Still {running_count} tasks running (limit {max_concurrent}). Wait for one to finish before resuming.")
+            # Reset to pending and delegate to _start
+            update_task(task_id, status="pending")
+            return self._start({"task_id": task_id})
+        except Exception as e:
+            return ToolResult(success=False, data="", error=f"Failed to resume task: {e}")

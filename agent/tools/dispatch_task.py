@@ -9,6 +9,13 @@ import threading
 
 from agent.tools import BaseTool, ToolManifest, ToolResult
 
+_STRICT_SHELL_WHITELIST = [
+    "ls", "dir", "cat", "head", "tail", "find", "grep", "wc -l", "wc -c", "wc", "date",
+    "df", "df -h", "du", "du -sh", "free", "free -h", "uname", "uptime", "ps",
+    "python3 -m py_compile", "python3 -m pytest", "python3 -m unittest",
+    "git status", "git log", "git diff", "git branch",
+]
+
 _LOOSE_SHELL_WHITELIST = [
     "ls", "dir", "cat", "head", "tail", "find", "grep", "wc -l", "wc -c", "wc", "date",
     "df", "df -h", "du", "du -sh", "free", "free -h", "uname", "uptime", "ps", "top", "htop",
@@ -246,7 +253,13 @@ class DispatchTaskTool(BaseTool):
             task_max_tokens = self._tool_cfg.get("max_tokens", 8192)
             agent_config.setdefault("llm", {})["max_tokens"] = task_max_tokens
 
-            if not strict_mode:
+            if strict_mode:
+                agent_config.setdefault("tools", {}).setdefault("shell_exec", {}).update({
+                    "enabled": True,
+                    "whitelist": _STRICT_SHELL_WHITELIST,
+                    "timeout": 30,
+                })
+            else:
                 agent_config.setdefault("tools", {}).setdefault("shell_exec", {}).update({
                     "enabled": True,
                     "whitelist": _LOOSE_SHELL_WHITELIST,

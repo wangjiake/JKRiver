@@ -851,8 +851,14 @@ def _set_settings_list_item_field(section: str, list_key: str, index: int, field
     except FileNotFoundError:
         return False, ""
 
+    _ALWAYS_STRING_FIELDS = {
+        "api_key", "api_base", "model", "token", "bot_token",
+        "name", "host", "user", "password", "language",
+    }
     if value in ("true", "false"):
         new_val = value
+    elif field in _ALWAYS_STRING_FIELDS:
+        new_val = f'"{value.replace(chr(92), chr(92)*2).replace(chr(34), chr(92)+chr(34))}"'
     else:
         try:
             float(value)
@@ -1002,8 +1008,16 @@ def _set_settings_field(path_parts: list[str], value: str) -> tuple[bool, str]:
             old_value = m.group(1) if m else rest
             comment_match = re.search(r'\s+(#.*)$', line[line.index(':') + 1:])
             comment = "  " + comment_match.group(1) if comment_match else ""
+            # Fields that must always be strings (never treated as numeric)
+            _ALWAYS_STRING_FIELDS = {
+                "api_key", "api_base", "model", "token", "bot_token",
+                "name", "host", "user", "password", "language",
+            }
+            field_name = path_parts[-1]
             if value in ("true", "false"):
                 new_val = value
+            elif field_name in _ALWAYS_STRING_FIELDS:
+                new_val = f'"{value.replace(chr(92), chr(92)*2).replace(chr(34), chr(92)+chr(34))}"'
             else:
                 try:
                     float(value)

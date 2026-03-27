@@ -1619,6 +1619,14 @@ function updateTaskActions(taskId, status, resultText, filesChanged, stepsCount)
     if (stepsCount) summary += `\n\n步骤数：${stepsCount}`;
     if (filesChanged && filesChanged.length) summary += `\n\n修改文件：\n${filesChanged.map(f => '· ' + f).join('\n')}`;
     actions.innerHTML = `<span class="outsource-status confirmed" style="white-space:pre-wrap">✅ ${_L.task_done || '执行完成'}${summary}</span>`;
+  } else if (status === 'failed') {
+    const btnRetry = document.createElement('button');
+    btnRetry.className = 'outsource-btn confirm';
+    btnRetry.textContent = _L.retry_task || '↺ 重试';
+    btnRetry.style.cssText = 'border-color:rgba(63,185,80,0.4);color:var(--green,#3fb950);';
+    btnRetry.onclick = () => outsourceRetry(taskId, actions);
+    actions.innerHTML = `<span class="outsource-status cancelled">❌ ${_L.task_failed || '执行失败'}</span>`;
+    actions.appendChild(btnRetry);
   } else if (status === 'suspended') {
     const btnResume = document.createElement('button');
     btnResume.className = 'outsource-btn confirm';
@@ -1634,6 +1642,26 @@ function updateTaskActions(taskId, status, resultText, filesChanged, stepsCount)
 
 // Poll task status every 4s when running (e.g. after page refresh)
 const _activePollers = {};  // taskId -> timer, prevent duplicate polls
+
+async function outsourceRetry(taskId, actions) {
+  actions.querySelectorAll('button').forEach(b => b.disabled = true);
+  const _L = I18N[currentLang] || {};
+  try {
+    const r = await fetch(`http://${location.hostname}:${API_PORT}/api/outsource/tasks/${taskId}/retry`, {
+      method: 'POST',
+      headers: authHeaders(),
+    });
+    const data = await r.json();
+    if (data.ok) {
+      updateTaskActions(taskId, 'running');
+    } else {
+      actions.innerHTML = `<span class="outsource-status cancelled">❌ ${data.reason || 'Retry failed'}</span>`;
+      setTimeout(() => updateTaskActions(taskId, 'failed'), 2000);
+    }
+  } catch(e) {
+    updateTaskActions(taskId, 'failed');
+  }
+}
 
 async function outsourceResume(taskId, actions) {
   actions.querySelectorAll('button').forEach(b => b.disabled = true);

@@ -124,8 +124,10 @@ class DispatchTaskTool(BaseTool):
             return self._start(params)
         elif action == "resume":
             return self._resume(params)
+        elif action == "retry":
+            return self._retry(params)
         else:
-            return ToolResult(success=False, data="", error=f"Unknown action '{action}'. Use 'preview', 'start', or 'resume'.")
+            return ToolResult(success=False, data="", error=f"Unknown action '{action}'. Use 'preview', 'start', 'resume', or 'retry'.")
 
     def _preview(self, params: dict) -> ToolResult:
         task = params.get("task", "").strip()
@@ -359,6 +361,28 @@ class DispatchTaskTool(BaseTool):
                             )
                         except Exception:
                             pass
+                    # Auto-resume oldest suspended task if slot is now free
+                    if final_status in ("done", "failed"):
+                        try:
+                            from agent.storage import get_db_connection as _gdc
+                            _conn = _gdc()
+                            try:
+                                with _conn.cursor() as _cur:
+                                    _cur.execute("""
+                                        SELECT task_id FROM outsource_tasks
+                                        WHERE status = 'suspended' AND deleted_at IS NULL
+                                        ORDER BY created_at ASC LIMIT 1
+                                    """)
+                                    _row = _cur.fetchone()
+                            finally:
+                                _conn.close()
+                            if _row:
+                                _next_id = _row[0]
+                                update_task(_next_id, status="pending")
+                                _self_tool = DispatchTaskTool(self.config)
+                                _self_tool._start({"task_id": _next_id})
+                        except Exception:
+                            pass
                 except Exception as e:
                     logging.getLogger(__name__).exception("Unhandled error in task %s", task_id)
                     try:
@@ -369,6 +393,26 @@ class DispatchTaskTool(BaseTool):
                     try:
                         if os.path.exists(_tmp_dir):
                             shutil.rmtree(_tmp_dir, ignore_errors=True)
+                    except Exception:
+                        pass
+                    # Auto-resume on failure too
+                    try:
+                        from agent.storage import get_db_connection as _gdc
+                        _conn = _gdc()
+                        try:
+                            with _conn.cursor() as _cur:
+                                _cur.execute("""
+                                    SELECT task_id FROM outsource_tasks
+                                    WHERE status = 'suspended' AND deleted_at IS NULL
+                                    ORDER BY created_at ASC LIMIT 1
+                                """)
+                                _row = _cur.fetchone()
+                        finally:
+                            _conn.close()
+                        if _row:
+                            _next_id = _row[0]
+                            update_task(_next_id, status="pending")
+                            DispatchTaskTool(self.config)._start({"task_id": _next_id})
                     except Exception:
                         pass
 
@@ -386,6 +430,23 @@ class DispatchTaskTool(BaseTool):
 
         except Exception as e:
             return ToolResult(success=False, data="", error=f"Failed to start task: {e}")
+
+    def _retry(self, params: dict) -> ToolResult:
+        task_id = params.get("task_id", "").strip()
+        if not task_id:
+            return ToolResult(success=False, data="", error="Missing 'task_id' for retry.")
+        try:
+            from agent.storage.outsource import get_task, update_task
+            record = get_task(task_id)
+            if not record:
+                return ToolResult(success=False, data="", error=f"Task {task_id} not found.")
+            if record.get("status") not in ("failed", "cancelled"):
+                return ToolResult(success=False, data="", error=f"Task `{task_id[:8]}` is not failed or cancelled (status: {record.get('status')}).")
+            # Reset task state and re-run
+            update_task(task_id, status="pending", result="", steps=[], current_step=0)
+            return self._start({"task_id": task_id})
+        except Exception as e:
+            return ToolResult(success=False, data="", error=f"Failed to retry task: {e}")
 
     def _resume(self, params: dict) -> ToolResult:
         task_id = params.get("task_id", "").strip()

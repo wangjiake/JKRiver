@@ -373,6 +373,21 @@ async def api_cancel_task(task_id: str):
     return {"ok": True}
 
 
+@app.post("/api/outsource/tasks/{task_id}/retry")
+async def api_retry_task(task_id: str):
+    record = _ot_get(task_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if record.get("status") not in ("failed", "cancelled"):
+        return {"ok": False, "reason": f"Task is not failed or cancelled (status: {record.get('status')})"}
+    from agent.tools.dispatch_task import DispatchTaskTool
+    tool = DispatchTaskTool(_config)
+    result = tool.execute({"action": "retry", "task_id": task_id})
+    if result.success:
+        return {"ok": True, "message": result.data}
+    return {"ok": False, "reason": result.error}
+
+
 @app.post("/api/outsource/tasks/{task_id}/resume")
 async def api_resume_task(task_id: str):
     record = _ot_get(task_id)

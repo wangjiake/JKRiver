@@ -294,6 +294,7 @@ const I18N = {
     select_task: 'Select a task to view details', loading: 'Loading tasks...', no_tasks: 'No tasks yet',
     task: 'task', tasks: 'tasks',
     pending: 'Pending', planning: 'Planning', running: 'Running', done: 'Done', failed: 'Failed', cancelled: 'Cancelled', suspended: 'Suspended',
+    retry: 'Retry', task_retried: 'Task retried', could_not_retry: 'Could not retry task',
     progress: 'Progress', steps: 'steps', plan: 'Plan', execution_log: 'Execution Log',
     result: 'Result', files_changed: 'Files Changed',
     created: 'Created', updated: 'Updated', strict_mode: 'strict mode', loose_mode: 'loose mode',
@@ -309,6 +310,7 @@ const I18N = {
     select_task: '选择一个外包查看详情', loading: '加载中...', no_tasks: '暂无外包',
     task: '个外包', tasks: '个外包',
     pending: '待确认', planning: '规划中', running: '执行中', done: '完成', failed: '失败', cancelled: '已取消', suspended: '已挂起',
+    retry: '重试', task_retried: '任务已重试', could_not_retry: '无法重试任务',
     progress: '进度', steps: '步', plan: '计划', execution_log: '执行日志',
     result: '结果', files_changed: '修改文件',
     created: '创建', updated: '更新', strict_mode: '严格模式', loose_mode: '宽松模式',
@@ -324,6 +326,7 @@ const I18N = {
     select_task: '派遣を選択して詳細を表示', loading: '読み込み中...', no_tasks: '派遣なし',
     task: '派遣', tasks: '派遣',
     pending: '保留中', planning: '計画中', running: '実行中', done: '完了', failed: '失敗', cancelled: 'キャンセル済み', suspended: '一時停止',
+    retry: '再試行', task_retried: 'タスクを再試行しました', could_not_retry: 'タスクを再試行できませんでした',
     progress: '進捗', steps: 'ステップ', plan: 'プラン', execution_log: '実行ログ',
     result: '結果', files_changed: '変更ファイル',
     created: '作成', updated: '更新', strict_mode: 'strictモード', loose_mode: 'looseモード',
@@ -421,6 +424,7 @@ function renderTaskList(tasks) {
     const isActive_ = ['pending','planning','running'].includes(tk.status);
     const cancelBtn = isActive_ ? `<button class="task-action-btn warning" onclick="event.stopPropagation();cancelTask('${tk.task_id}')">${t('stop')}</button>` : '';
     const resumeBtn = tk.status === 'suspended' ? `<button class="task-action-btn" onclick="event.stopPropagation();resumeTask('${tk.task_id}')" style="border-color:rgba(130,80,200,0.4);color:#a78bfa;">▶ ${t('resume') || 'Resume'}</button>` : '';
+    const retryBtn = ['failed','cancelled'].includes(tk.status) ? `<button class="task-action-btn" onclick="event.stopPropagation();retryTask('${tk.task_id}')" style="border-color:rgba(63,185,80,0.4);color:var(--green);">↺ ${t('retry') || 'Retry'}</button>` : '';
     const deleteBtn = `<button class="task-action-btn danger" onclick="event.stopPropagation();deleteTask('${tk.task_id}')">${t('delete')}</button>`;
     return `<div class="task-item${isActive ? ' active' : ''}" onclick="selectTask('${tk.task_id}')">
       <div class="task-item-title" title="${escHtml(tk.title)}">${escHtml(tk.title)}</div>
@@ -429,7 +433,7 @@ function renderTaskList(tasks) {
         <span class="task-item-time">${formatTime(tk.created_at)}</span>
       </div>
       ${tk.total_steps > 0 ? `<div class="progress-wrap"><div class="progress-bar ${barClass}" style="width:${pct}%"></div></div>` : ''}
-      <div class="task-actions">${resumeBtn}${cancelBtn}${deleteBtn}</div>
+      <div class="task-actions">${resumeBtn}${retryBtn}${cancelBtn}${deleteBtn}</div>
     </div>`;
   }).join('');
 }
@@ -531,6 +535,7 @@ function renderDetail(task) {
   const isActive = ['pending','planning','running'].includes(task.status);
   const detailCancelBtn = isActive ? `<button class="detail-action-btn warning" onclick="cancelTask('${task.task_id}')">⏹ ${t('stop')}</button>` : '';
   const detailResumeBtn = task.status === 'suspended' ? `<button class="detail-action-btn" onclick="resumeTask('${task.task_id}')" style="border-color:rgba(130,80,200,0.4);color:#a78bfa;">▶ ${t('resume') || 'Resume'}</button>` : '';
+  const detailRetryBtn = ['failed','cancelled'].includes(task.status) ? `<button class="detail-action-btn" onclick="retryTask('${task.task_id}')" style="border-color:rgba(63,185,80,0.4);color:var(--green);">↺ ${t('retry') || 'Retry'}</button>` : '';
   const detailDeleteBtn = `<button class="detail-action-btn danger" onclick="deleteTask('${task.task_id}')">🗑 ${t('delete')}</button>`;
   let html = `
     <div>
@@ -541,7 +546,7 @@ function renderDetail(task) {
         <span class="ts">${t('updated')} ${formatTime(task.updated_at)}</span>
         ${task.strict_mode ? `<span class="ts">${t('strict_mode')}</span>` : `<span class="ts">${t('loose_mode')}</span>`}
       </div>
-      <div class="detail-actions" style="margin-top:10px;">${detailResumeBtn}${detailCancelBtn}${detailDeleteBtn}</div>
+      <div class="detail-actions" style="margin-top:10px;">${detailResumeBtn}${detailRetryBtn}${detailCancelBtn}${detailDeleteBtn}</div>
     </div>`;
 
   // Progress bar (if has steps)
@@ -660,6 +665,17 @@ async function deleteTask(taskId) {
       }
       await loadTaskList();
     } else showToast(t('could_not_delete'), 'var(--red)');
+  } catch(e) { showToast('Error: ' + e.message, 'var(--red)'); }
+}
+
+async function retryTask(taskId) {
+  try {
+    const r = await fetch(apiUrl(`/api/outsource/tasks/${taskId}/retry`), {
+      method: 'POST', headers: authHeaders()
+    });
+    const data = await r.json();
+    if (data.ok) { showToast(t('task_retried'), 'var(--green)'); await loadTaskList(); if (selectedTaskId === taskId) await loadTaskDetail(taskId); }
+    else showToast(data.reason || t('could_not_retry'), 'var(--red)');
   } catch(e) { showToast('Error: ' + e.message, 'var(--red)'); }
 }
 

@@ -1,0 +1,3 @@
+services:
+  jkriver:
+    image: jkriver-local:latest

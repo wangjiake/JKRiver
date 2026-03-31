@@ -103,7 +103,9 @@ async def resolve_tools_async(user_input: str, perception: dict,
     if messages is None:
         return []
 
-    raw = (await call_llm_async(messages, llm_config)).strip()
+    _resolver_cfg = dict(llm_config)
+    _resolver_cfg["temperature"] = 0  # deterministic tool/query selection
+    raw = (await call_llm_async(messages, _resolver_cfg)).strip()
 
     tool_calls = _parse_resolver_output(raw)
     if not tool_calls:

@@ -21,7 +21,7 @@ ln -sf /app_config/tools.yaml /app/agent/tools/tools.yaml
 
 # skills — copy defaults to /app_config/skills/ (SKILLS_DIR)
 # discovery and new skill creation both use SKILLS_DIR directly, no symlinks needed
-for f in skills_en.yaml skills_zh.yaml skills_ja.yaml explain_code.yaml weekly_summary.yaml; do
+for f in skills_en.yaml skills_zh.yaml skills_ja.yaml explain_code.yaml weekly_summary.yaml outsource.yaml; do
     [ -f /app_config/skills/${f} ] || cp /app/agent/skills/${f} /app_config/skills/${f}
 done
 

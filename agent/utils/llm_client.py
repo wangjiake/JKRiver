@@ -1,6 +1,7 @@
 
 import logging
 import re
+import threading
 import time
 import requests
 import httpx
@@ -83,11 +84,24 @@ def _parse_responses_response(data: dict, config: dict) -> str | None:
     return None
 
 
-def _log_success(tag: str, model: str, t0: float, data: dict):
+def _record_usage_bg(model: str, usage: dict, source: str):
+    try:
+        from agent.storage.token_usage import record_usage
+        prompt = int(usage.get("prompt_tokens", 0) or 0)
+        completion = int(usage.get("completion_tokens", 0) or 0)
+        total = int(usage.get("total_tokens", 0) or 0)
+        if total > 0:
+            record_usage(model, prompt, completion, total, source)
+    except Exception:
+        pass
+
+
+def _log_success(tag: str, model: str, t0: float, data: dict, source: str = "chat"):
     duration_ms = (time.monotonic() - t0) * 1000
     usage = data.get("usage", {})
     logger.debug("LLM %s ok model=%s duration_ms=%.0f tokens=%s",
                   tag, model, duration_ms, usage.get("total_tokens", "?"))
+    threading.Thread(target=_record_usage_bg, args=(model, usage, source), daemon=True).start()
 
 
 def _log_failure(tag: str, model: str, t0: float, error: Exception):
@@ -119,12 +133,13 @@ def call_llm(messages: list[dict], config: dict) -> str:
 def _call_chat_completions(messages: list[dict], config: dict) -> str:
     url, headers, body = _build_chat_request(messages, config)
     model = config.get("model", "")
+    source = str(config.get("_source", "chat"))
     t0 = time.monotonic()
     try:
         resp = requests.post(url, headers=headers, json=body, timeout=120)
         resp.raise_for_status()
         data = resp.json()
-        _log_success("chat", model, t0, data)
+        _log_success("chat", model, t0, data, source)
         return _parse_chat_response(data)
     except Exception as e:
         _log_failure("chat", model, t0, e)
@@ -134,12 +149,13 @@ def _call_chat_completions(messages: list[dict], config: dict) -> str:
 def _call_responses_api(messages: list[dict], config: dict) -> str:
     url, headers, body = _build_responses_request(messages, config)
     model = config.get("model", "")
+    source = str(config.get("_source", "chat"))
     t0 = time.monotonic()
     try:
         resp = requests.post(url, headers=headers, json=body, timeout=120)
         resp.raise_for_status()
         data = resp.json()
-        _log_success("responses", model, t0, data)
+        _log_success("responses", model, t0, data, source)
         text = _parse_responses_response(data, config)
         if text is not None:
             return text
@@ -161,13 +177,14 @@ async def call_llm_async(messages: list[dict], config: dict) -> str:
 async def _call_chat_completions_async(messages: list[dict], config: dict) -> str:
     url, headers, body = _build_chat_request(messages, config)
     model = config.get("model", "")
+    source = str(config.get("_source", "chat"))
     t0 = time.monotonic()
     try:
         async with httpx.AsyncClient(timeout=120) as client:
             resp = await client.post(url, headers=headers, json=body)
             resp.raise_for_status()
             data = resp.json()
-            _log_success("chat_async", model, t0, data)
+            _log_success("chat_async", model, t0, data, source)
             return _parse_chat_response(data)
     except Exception as e:
         _log_failure("chat_async", model, t0, e)
@@ -177,13 +194,14 @@ async def _call_chat_completions_async(messages: list[dict], config: dict) -> st
 async def _call_responses_api_async(messages: list[dict], config: dict) -> str:
     url, headers, body = _build_responses_request(messages, config)
     model = config.get("model", "")
+    source = str(config.get("_source", "chat"))
     t0 = time.monotonic()
     try:
         async with httpx.AsyncClient(timeout=120) as client:
             resp = await client.post(url, headers=headers, json=body)
             resp.raise_for_status()
             data = resp.json()
-        _log_success("responses_async", model, t0, data)
+        _log_success("responses_async", model, t0, data, source)
         text = _parse_responses_response(data, config)
         if text is not None:
             return text

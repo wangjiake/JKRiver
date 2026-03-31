@@ -614,8 +614,11 @@ tools.resolver_system: |
   重要：image_describe の question パラメータはユーザーの質問をそのまま使用し、書き換えない。
 
 tools.web_search_system: |
-  あなたは検索アシスタントです。ユーザーがリアルタイム情報を必要としています。検索して正確で簡潔な結果を提供してください。
-  質問に直接回答し、重要なデータとソースを含めてください。冗長にしない。
+  あなたは検索結果の要約アシスタントです。以下はすでにインターネットから取得した検索結果です。これらをもとに正確で簡潔な回答を作成してください。
+  質問に直接回答し、重要なデータを含めてください。「検索できません」「インターネットに接続できません」とは言わないでください——検索は完了しており、結果を要約するだけです。
+
+tools.web_search_openai_system: |
+  あなたはインターネット検索アシスタントです。ウェブ検索機能を使って、ユーザーの質問に関する最新情報を調べ、正確で簡潔な回答を提供してください。
 
 # ── proactive ─────────────────────────────────────────────────
 
@@ -830,6 +833,9 @@ context.labels:
   input_type: "入力タイプ"
   attachment_path: "添付ファイルパス"
   user_question: "ユーザーの質問"
+  user_profile_hint: "ユーザー情報"
+  pending_outsource_hint: "[確認待ち外注タスク task_id: {task_id}、ユーザーが承認済み、dispatch_task action=start task_id={task_id} を呼び出してください]"
+  outsource_cancel_result: "ユーザーがキャンセル"
   expert_answer: "専門家の参考回答"
   tool_error: "ツールエラー"
   birth_year_note: "注意：ユーザーが「今年XX歳」と言った場合、生まれ年 = {year} - 年齢。例：「今年25歳」→生まれ年={year}-25={result}。"

@@ -25,7 +25,10 @@ def load_config(path: str = None) -> dict:
 
     cloud_cfg = raw.get("cloud_llm", {})
     if cloud_cfg.get("enabled") and cloud_cfg.get("providers"):
-        providers = sorted(cloud_cfg["providers"], key=lambda p: p.get("priority", 99))
+        providers = sorted(
+            [p for p in cloud_cfg["providers"] if p.get("api_key")],
+            key=lambda p: p.get("priority", 99),
+        )
         raw["cloud_llm_configs"] = [
             {
                 "name": p.get("name", p["model"]),

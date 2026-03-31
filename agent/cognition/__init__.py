@@ -73,7 +73,8 @@ class CognitionEngine:
         return parse_verify_raw(raw)
 
     async def think_async(self, user_input: str, perception: dict,
-              memories: dict, use_cloud: bool = False,
+              memories: dict,
+              skip_escalation: bool = False,
               user_input_at: datetime | None = None) -> dict:
         query_text = perception.get("ai_summary", user_input)
         session_context = await asyncio.to_thread(
@@ -82,12 +83,9 @@ class CognitionEngine:
             user_input, perception, memories, session_context, self.language)
         memory_text = memories.get("memory_text", "")
 
-        if use_cloud and self.cloud_configs:
+        raw_response = await call_llm_async(messages, self.config)
+        if not skip_escalation and self._escalation_auto and self.cloud_configs and self._should_escalate(raw_response):
             raw_response = await call_llm_async(messages, self.cloud_configs[0])
-        else:
-            raw_response = await call_llm_async(messages, self.config)
-            if self._escalation_auto and self.cloud_configs and self._should_escalate(raw_response):
-                raw_response = await call_llm_async(messages, self.cloud_configs[0])
         raw_response_at = get_now()
 
         if perception.get("category") == "personal":

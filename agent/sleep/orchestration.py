@@ -62,6 +62,7 @@ def _safe_int(val, default=None):
 
 def run():
     config = load_config()
+    config.setdefault("llm", {})["_source"] = "sleep"
     language = config.get("language", "en")
     L = get_labels("context.labels", language)
 

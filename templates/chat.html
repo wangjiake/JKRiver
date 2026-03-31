@@ -123,6 +123,15 @@ body.light .theme-btn:hover { background: rgba(0,0,0,0.05); border-color: rgba(0
 .status-dot.sleeping { background: var(--yellow); animation: blink 1s ease-in-out infinite; }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
+/* Token usage bar */
+.token-usage-bar {
+  display: none; align-items: center; gap: 10px;
+  font-size: 11px; color: var(--text-faint); font-variant-numeric: tabular-nums;
+  margin-left: auto; padding-right: 10px; margin-right: 4px; border-right: 1px solid var(--border);
+}
+.token-usage-bar.visible { display: flex; }
+.token-usage-stat { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+
 /* Sys stats */
 .sys-stats {
   display: none; align-items: center; gap: 10px;
@@ -188,6 +197,8 @@ body.light .theme-btn:hover { background: rgba(0,0,0,0.05); border-color: rgba(0
 .task-card-title { font-size: 11px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 600px) {
   .status-bar-row { padding: 4px 16px; flex-wrap: wrap; row-gap: 4px; }
+  .token-usage-bar { margin-left: 0; border-right: none; border-top: 1px solid var(--border); padding-right: 0; margin-right: 0; padding-top: 4px; width: 100%; }
+  .token-usage-bar.visible { display: flex; gap: 16px; }
   .sys-stats { margin-left: 0; border-right: none; border-top: 1px solid var(--border); padding-right: 0; margin-right: 0; padding-top: 4px; width: 100%; }
   .sys-stats.visible { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
   #ssCpu, #ssMem, #ssDisk, #ssNet { min-width: unset; }
@@ -265,6 +276,8 @@ body.light .theme-btn:hover { background: rgba(0,0,0,0.05); border-color: rgba(0
 .bubble { padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
 .msg.user .bubble { background: var(--bg-accent); border: 1px solid var(--border-accent); color: var(--text-2); border-bottom-right-radius: 3px; }
 .msg.agent .bubble { background: var(--bg-card); border: 1px solid var(--border); color: var(--text); border-bottom-left-radius: 3px; }
+.bubble a { color: var(--blue, #4a9eff); text-decoration: underline; text-underline-offset: 2px; word-break: break-all; }
+.bubble a:hover { opacity: 0.8; }
 .msg-meta { font-size: 11px; color: var(--text-faint); margin-top: 3px; display: flex; gap: 6px; }
 .meta-tag { background: var(--bg-header-end); padding: 1px 7px; border-radius: 10px; }
 .msg-time { font-size: 10px; color: var(--text-faint2); margin-top: 2px; }
@@ -453,6 +466,11 @@ input[type="number"].config-input::-webkit-inner-spin-button { -webkit-appearanc
       <div class="status-dot" id="statusDot"></div>
       <span id="statusText" data-i18n="connecting">Connecting...</span>
     </div>
+    <div class="token-usage-bar" id="tokenUsageBar">
+      <span class="token-usage-stat"><span style="color:var(--text-muted)" data-i18n="token_today">今天</span> <span id="tuBarToday">–</span></span>
+      <span class="token-usage-stat"><span style="color:var(--text-muted)" data-i18n="token_week">本周</span> <span id="tuBarWeek">–</span></span>
+      <span class="token-usage-stat"><span style="color:var(--text-muted)" data-i18n="token_month">本月</span> <span id="tuBarMonth">–</span></span>
+    </div>
     <div class="sys-stats" id="sysStats">
       <span class="sys-stat" id="ssCpu" data-i18n-title="ss_cpu" title="CPU">–</span>
       <span class="sys-stat" id="ssMem" data-i18n-title="ss_mem" title="Memory">–</span>
@@ -568,6 +586,19 @@ input[type="number"].config-input::-webkit-inner-spin-button { -webkit-appearanc
           </select>
         </div>
       </div>
+      <div class="settings-section">
+        <h4 data-i18n="section_token_usage">Token Usage</h4>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label" data-i18n="token_usage_label">Show token usage in status bar</div>
+            <div class="toggle-sub" data-i18n="token_usage_sub">Today / This week / This month</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="tokenUsageToggle" onchange="onTokenUsageChange()">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
       <div class="session-info">
         <h4 data-i18n="section_session">Session</h4>
         <div style="font-size:12px;color:var(--text-faint);" data-i18n="session_label">Current session ID</div>
@@ -658,6 +689,8 @@ const I18N = {
     delete_confirm: '确定删除这个会话？',
     section_sys_stats: '系统状态', sys_stats_label: '状态栏显示系统信息', sys_stats_sub: '显示 CPU / 内存 / 硬盘 / 网速', sys_stats_interval: '刷新间隔',
     ss_cpu: 'CPU', ss_mem: '内存', ss_disk: '磁盘', ss_net: '网络',
+    section_token_usage: 'Token 用量', token_today: '今天', token_week: '本周', token_month: '本月',
+    token_usage_label: '状态栏显示 Token 用量', token_usage_sub: '今天 / 本周 / 本月',
   },
   en: {
     title: 'Chat', nav_chat: 'Chat', nav_profile: 'Profile', nav_tasks: 'Tasks', nav_system: 'System', settings_title: 'Settings',
@@ -693,6 +726,8 @@ const I18N = {
     delete_confirm: 'Delete this session?',
     section_sys_stats: 'System Stats', sys_stats_label: 'Show system info in status bar', sys_stats_sub: 'CPU / Memory / Disk / Network speed', sys_stats_interval: 'Refresh interval',
     ss_cpu: 'CPU', ss_mem: 'Memory', ss_disk: 'Disk', ss_net: 'Network',
+    section_token_usage: 'Token Usage', token_today: 'Today', token_week: 'Week', token_month: 'Month',
+    token_usage_label: 'Show token usage in status bar', token_usage_sub: 'Today / This week / This month',
   },
   ja: {
     title: 'チャット', nav_chat: 'チャット', nav_profile: 'プロフィール', nav_tasks: '派遣', nav_system: 'システム', settings_title: '設定',
@@ -727,6 +762,8 @@ const I18N = {
     delete_confirm: 'このセッションを削除しますか？',
     section_sys_stats: 'システム状態', sys_stats_label: 'ステータスバーにシステム情報を表示', sys_stats_sub: 'CPU / メモリ / ディスク / 通信速度', sys_stats_interval: '更新間隔',
     ss_cpu: 'CPU', ss_mem: 'メモリ', ss_disk: 'ディスク', ss_net: 'ネットワーク',
+    section_token_usage: 'Token 使用量', token_today: '今日', token_week: '今週', token_month: '今月',
+    token_usage_label: 'ステータスバーにToken使用量を表示', token_usage_sub: '今日 / 今週 / 今月',
   },
 };
 
@@ -820,6 +857,45 @@ function loadSysStatsSetting() {
 }
 
 loadSysStatsSetting();
+
+const TOKEN_USAGE_KEY = 'jkriver_token_usage';
+
+function fmtTokens(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
+  return String(n);
+}
+
+async function fetchTokenUsage() {
+  try {
+    const res = await fetch(`http://${location.hostname}:${API_PORT}/api/token-usage`, { headers: authHeaders() });
+    if (!res.ok) return;
+    const data = await res.json();
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = fmtTokens(val); };
+    set('tuBarToday', data.today?.total ?? 0);
+    set('tuBarWeek',  data.week?.total  ?? 0);
+    set('tuBarMonth', data.month?.total ?? 0);
+  } catch (e) {}
+}
+
+function onTokenUsageChange() {
+  const on = document.getElementById('tokenUsageToggle').checked;
+  localStorage.setItem(TOKEN_USAGE_KEY, on ? '1' : '0');
+  const bar = document.getElementById('tokenUsageBar');
+  if (bar) bar.classList.toggle('visible', on);
+  if (on) fetchTokenUsage();
+}
+
+function loadTokenUsageSetting() {
+  const on = localStorage.getItem(TOKEN_USAGE_KEY) === '1';
+  const cb = document.getElementById('tokenUsageToggle');
+  if (cb) cb.checked = on;
+  const bar = document.getElementById('tokenUsageBar');
+  if (bar) bar.classList.toggle('visible', on);
+  if (on) fetchTokenUsage();
+}
+
+loadTokenUsageSetting();
 
 let _taskTrayExpanded = false;
 
@@ -1543,6 +1619,28 @@ function showToast(msg, success) {
   setTimeout(() => t.remove(), 3000);
 }
 
+function linkify(text) {
+  const safe = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  // [label](url) markdown links
+  const withMd = safe.replace(
+    /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+    '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
+  );
+  // bare URLs not already inside href="..."
+  return withMd.replace(
+    /((?:^|[^"=])(https?:\/\/[^\s<,，。！？\)）]+))/g,
+    (match, full, url, offset, str) => {
+      const before = str.slice(0, offset + full.length - url.length);
+      if (/href="$/.test(before)) return match;
+      const prefix = full.slice(0, full.length - url.length);
+      return `${prefix}<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+    }
+  );
+}
+
 function appendMessage(role, text, category, intent, at) {
   const container = document.getElementById('messages');
   const div = document.createElement('div');
@@ -1555,7 +1653,7 @@ function appendMessage(role, text, category, intent, at) {
   const taskId = taskIdMatches.length ? taskIdMatches[taskIdMatches.length - 1][1] : null;
   const displayText = taskId ? text.replace(/<!--[\s\S]*?-->/g, '').trimEnd() : text;
 
-  bubble.textContent = displayText;
+  bubble.innerHTML = linkify(displayText);
 
   // Append confirm/cancel buttons for outsource plan messages
   if (taskId && role === 'agent') {

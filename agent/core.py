@@ -862,6 +862,12 @@ async def run_cycle_async(user_input: str | dict, session: Session,
     llm_input = _inject_tool_context(tool_results, memories, llm_input, L, log_fn)
     _handle_skills(processed_text, session, memories, L, log_fn)
 
+    # Short-circuit: web_search result is the final response — skip LLM think step
+    _web_search_result = next(
+        (t for t in (tool_results or [])
+         if t["tool"] == "web_search" and t["result"].success),
+        None,
+    )
     # Short-circuit: dispatch_task preview result is the final response — skip LLM think step
     # Check both: skill handler direct execution (memories["_outsource_preview"]) and tool_results
     _outsource_preview_data = memories.get("_outsource_preview")
@@ -871,7 +877,21 @@ async def run_cycle_async(user_input: str | dict, session: Session,
          "task_id" in (t["result"].data or "")),
         None,
     )
-    if _outsource_preview_data or _dispatch_preview:
+    if _web_search_result:
+        logger.info("[core] web_search short-circuit: skipping think step, data length=%d", len(_web_search_result["result"].data))
+        now = get_now()
+        think_result = {
+            "raw_response": _web_search_result["result"].data,
+            "raw_response_at": now,
+            "final_response": _web_search_result["result"].data,
+            "final_response_at": now,
+            "verification_result": "SKIP",
+            "verification_result_at": now,
+            "thinking_notes": "web_search直接输出",
+            "thinking_notes_at": now,
+        }
+        final_response = _finalize_response(think_result, tool_results, language)
+    elif _outsource_preview_data or _dispatch_preview:
         now = get_now()
         _preview_data = _outsource_preview_data or _dispatch_preview["result"].data
         think_result = {
@@ -887,10 +907,12 @@ async def run_cycle_async(user_input: str | dict, session: Session,
         # Use empty tool_results to prevent _finalize_response from appending task_id again
         final_response = _finalize_response(think_result, tool_results if _dispatch_preview else [], language)
     else:
-        has_tool_data = any(t["result"].success and t["result"].data for t in tool_results) if tool_results else False
-        log("info", f"思考中...{'(云端)' if has_tool_data else '(本地)'}")
+        _failed_search = next((t for t in (tool_results or []) if t["tool"] == "web_search"), None)
+        if _failed_search:
+            logger.warning("[core] web_search failed (success=False), falling through to think. error: %s", _failed_search["result"].error)
+        log("info", "思考中...")
         think_result = await session.cognition.think_async(
-            llm_input, perception, memories, use_cloud=has_tool_data,
+            llm_input, perception, memories,
             user_input_at=user_input_at)
         final_response = _finalize_response(think_result, tool_results, language)
 

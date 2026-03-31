@@ -140,11 +140,11 @@ body.light .badge-off     { background: #f1f5f9; color: #64748b; }
 .restart-banner { position: sticky; top: 0; z-index: 100; background: #2d2000; border-bottom: 1px solid var(--yellow); padding: 10px 24px; display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--yellow); }
 .restart-banner .banner-msg { flex: 1; }
 .banner-btn { padding: 5px 14px; border-radius: 4px; border: 1px solid; cursor: pointer; font-size: 12px; font-weight: 600; }
-.banner-btn.restart { background: var(--yellow); border-color: var(--yellow); color: var(--bg); }
+.banner-btn.restart { background: var(--yellow); border-color: var(--yellow); color: #fff; }
 .banner-btn.revert { background: transparent; border-color: var(--yellow); color: var(--yellow); }
 .banner-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .info-card.editable { cursor: pointer; transition: border-color 0.15s; }
-.info-card.editable:hover { border-color: #444c5e; }
+.info-card.editable:hover { border-color: var(--border-accent); }
 .info-card.editable:hover .edit-icon { opacity: 1; }
 .edit-icon { opacity: 0; font-size: 10px; color: var(--accent); margin-left: 4px; transition: opacity 0.15s; }
 .info-card.editing { border-color: var(--accent) !important; background: var(--bg-hover2); }
@@ -153,7 +153,7 @@ body.light .badge-off     { background: #f1f5f9; color: #64748b; }
 .edit-actions { display: flex; gap: 6px; margin-top: 6px; }
 .edit-btn { padding: 2px 10px; font-size: 11px; border-radius: 3px; border: 1px solid; cursor: pointer; font-weight: 600; }
 .edit-btn.confirm { background: #238636; border-color: #238636; color: #fff; }
-.edit-btn.cancel { background: transparent; border-color: #444c5e; color: var(--text-muted); }
+.edit-btn.cancel { background: transparent; border-color: var(--border); color: var(--text-muted); }
 .config-section { background: var(--glass-card); border: 1px solid var(--card-border); border-radius: 10px; overflow: hidden; align-self: start; box-shadow: var(--card-shadow); }
 .config-section-header { padding: 12px 16px; display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
 .config-section-header:hover { background: var(--bg-hover2); }
@@ -167,8 +167,8 @@ body.light .badge-off     { background: #f1f5f9; color: #64748b; }
 .config-field-label { font-size: 11px; color: var(--text-faint); width: 130px; flex-shrink: 0; padding-top: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
 .config-field-value { font-size: 13px; color: var(--text); flex: 1; }
 .config-field.editable .config-field-value { cursor: pointer; padding: 1px 4px; border-radius: 3px; }
-.config-field.editable:hover .config-field-value { background: #1e2a3a; color: var(--accent); }
-.config-field.editing .config-field-value { background: #1e2a3a; }
+.config-field.editable:hover .config-field-value { background: var(--bg-hover2); color: var(--accent); }
+.config-field.editing .config-field-value { background: var(--bg-hover2); }
 .config-field-hint { font-size: 10px; color: var(--text-faint); margin-top: 2px; }
 .config-field .edit-input { background: var(--bg-input); border: 1px solid var(--accent); color: var(--text); font-size: 13px; width: 100%; outline: none; padding: 2px 6px; border-radius: 3px; }
 .config-field .edit-input option { background: var(--bg-input); }
@@ -221,7 +221,7 @@ body.light .badge-file     { background: #dcfce7; color: #166534; }
 .cp-add-btn:hover { border-color: var(--accent); color: var(--accent); }
 .choice-group { display: flex; gap: 4px; }
 .choice-btn { padding: 3px 14px; border-radius: 4px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); cursor: pointer; font-size: 12px; font-weight: 500; transition: all 0.15s; }
-.choice-btn:hover:not(.active) { border-color: #444c5e; color: var(--text-2); }
+.choice-btn:hover:not(.active) { border-color: var(--border-accent); color: var(--text-2); }
 .choice-btn.active { background: var(--bg-accent2); border-color: var(--accent); color: var(--accent); }
 
 /* ── Mobile ─────────────────────────────────────────────── */
@@ -288,7 +288,7 @@ const I18N = {
     label_llm_model: 'LLM 模型', label_llm_api: 'LLM API',
     label_llm_key: 'LLM 密钥', label_telegram_token: 'Telegram Token',
     label_discord_token: 'Discord Token',
-    label_embedding: '语义搜索', label_embedding_model: '向量模型', label_cloud_llm: '云端备用模型',
+    label_embedding: '语义搜索', label_embedding_model: '向量模型', label_cloud_llm: '云兜底模型',
     label_public_mode: '公网访问', label_proactive: '主动推送',
     label_tts: '语音合成', label_telegram: 'Telegram Bot',
     label_discord: 'Discord Bot', label_mcp: 'MCP',
@@ -328,6 +328,7 @@ const I18N = {
     label_recall_max: '记忆召回上限', label_recall_min_score: '最低记忆匹配度',
     section_tools_config: '工具配置', label_tools_enabled: '工具总开关',
     web_search_unsupported: '需要在 Cloud LLM 中配置一个支持联网的 provider（search: true），且 Cloud LLM 已启用',
+    web_search_backend: '搜索方式', web_search_backend_ddg: 'DuckDuckGo（本地模型，无需 API Key）', web_search_backend_openai: '云兜底模型（需要配置支持联网的 provider）',
     label_voice_model: '语音模型', label_voice_lang: '语音语言',
     label_image_provider: '图像提供商', label_image_model: '图像模型',
     label_file_max_size: '最大文件大小(字节)', label_shell_timeout: 'Shell 超时(秒)',
@@ -356,7 +357,7 @@ const I18N = {
     label_llm_model: 'LLM Model', label_llm_api: 'LLM API',
     label_llm_key: 'LLM API Key', label_telegram_token: 'Telegram Token',
     label_discord_token: 'Discord Token',
-    label_embedding: 'Semantic Search', label_embedding_model: 'Embedding Model', label_cloud_llm: 'Cloud Fallback Model',
+    label_embedding: 'Semantic Search', label_embedding_model: 'Embedding Model', label_cloud_llm: 'Cloud Fallback',
     label_public_mode: 'Public Access', label_proactive: 'Proactive Messages',
     label_tts: 'TTS', label_telegram: 'Telegram Bot',
     label_discord: 'Discord Bot', label_mcp: 'MCP',
@@ -396,6 +397,7 @@ const I18N = {
     label_recall_max: 'Max Memory Recall', label_recall_min_score: 'Min Memory Match Score',
     section_tools_config: 'Tools Config', label_tools_enabled: 'Tools Enabled',
     web_search_unsupported: 'Requires a Cloud LLM provider with search: true configured and Cloud LLM enabled',
+    web_search_backend: 'Search backend', web_search_backend_ddg: 'DuckDuckGo (local model, no API key)', web_search_backend_openai: 'Cloud Fallback (requires a provider with search enabled)',
     label_voice_model: 'Voice Model', label_voice_lang: 'Voice Language',
     label_image_provider: 'Image Provider', label_image_model: 'Image Model',
     label_file_max_size: 'Max File Size (bytes)', label_shell_timeout: 'Shell Timeout (s)',
@@ -424,7 +426,7 @@ const I18N = {
     label_llm_model: 'LLMモデル', label_llm_api: 'LLM API',
     label_llm_key: 'LLM APIキー', label_telegram_token: 'Telegram Token',
     label_discord_token: 'Discord Token',
-    label_embedding: 'セマンティック検索', label_embedding_model: '埋め込みモデル', label_cloud_llm: 'クラウド予備モデル',
+    label_embedding: 'セマンティック検索', label_embedding_model: '埋め込みモデル', label_cloud_llm: 'クラウドフォールバック',
     label_public_mode: '公開アクセス', label_proactive: 'プロアクティブ通知',
     label_tts: '音声合成', label_telegram: 'Telegram Bot',
     label_discord: 'Discord Bot', label_mcp: 'MCP',
@@ -464,6 +466,7 @@ const I18N = {
     label_recall_max: '最大記憶召回数', label_recall_min_score: '最小記憶マッチスコア',
     section_tools_config: 'ツール設定', label_tools_enabled: 'ツール有効',
     web_search_unsupported: 'Cloud LLM で search: true のプロバイダーを設定し、Cloud LLM を有効にしてください',
+    web_search_backend: '検索方式', web_search_backend_ddg: 'DuckDuckGo（ローカルモデル、APIキー不要）', web_search_backend_openai: 'クラウドフォールバック（検索対応プロバイダーが必要）',
     label_voice_model: '音声モデル', label_voice_lang: '音声言語',
     label_image_provider: '画像プロバイダー', label_image_model: '画像モデル',
     label_file_max_size: '最大ファイルサイズ(bytes)', label_shell_timeout: 'Shellタイムアウト(秒)',
@@ -888,7 +891,7 @@ async function addCloudProvider() {
       body: JSON.stringify({ name, model, api_base: base }),
     });
     if (!res.ok) throw new Error(await res.text());
-    showBanner(); load();
+    showBanner(); load({ silent: true });
   } catch(err) { alert('Failed: ' + err.message); }
 }
 
@@ -1095,6 +1098,15 @@ function renderToolCard(tool) {
   const warningEl = (tool.name === 'web_search' && tool.enabled && tool.search_supported === false)
     ? `<div style="margin-top:6px;padding:5px 8px;background:#2a2000;border:1px solid var(--yellow);border-radius:4px;color:var(--yellow);font-size:12px">⚠ ${t('web_search_unsupported')}</div>`
     : '';
+  const backendEl = tool.name === 'web_search'
+    ? `<div style="margin-top:8px;font-size:12px;">
+        <div style="color:var(--text-muted);margin-bottom:4px;">${t('web_search_backend')}</div>
+        <select style="width:100%;background:var(--bg-input);border:1px solid var(--border);color:var(--text-2);border-radius:4px;padding:4px 6px;font-size:12px;cursor:pointer;" onchange="setWebSearchBackend(this.value)">
+          <option value="duckduckgo" ${tool.search_backend === 'duckduckgo' ? 'selected' : ''}>${t('web_search_backend_ddg')}</option>
+          <option value="openai_responses" ${tool.search_backend === 'openai_responses' ? 'selected' : ''}>${t('web_search_backend_openai')}</option>
+        </select>
+      </div>`
+    : '';
   return `
     <div class="card ${tool.enabled ? '' : 'disabled'}" id="card-tool-${eid}">
       <div class="card-header">
@@ -1103,7 +1115,7 @@ function renderToolCard(tool) {
         ${tool.type === 'builtin' ? `<button class="delete-btn" data-type="tool" data-name="${escHtml(tool.name)}" title="${t('delete_tip')}">✕</button>` : ''}
       </div>
       ${tool.description ? `<div class="card-desc">${escHtml(tool.description)}</div>` : ''}
-      ${params}${examples}${warningEl}
+      ${params}${examples}${backendEl}${warningEl}
     </div>`;
 }
 
@@ -1201,9 +1213,9 @@ function render(d) {
   `;
 }
 
-async function load() {
+async function load({ silent = false } = {}) {
   const contentEl = document.getElementById('content');
-  contentEl.innerHTML = `<div class="loading" id="loading-text">${t('loading')}</div>`;
+  if (!silent) contentEl.innerHTML = `<div class="loading" id="loading-text">${t('loading')}</div>`;
   try {
     const res = await fetch(`http://${location.hostname}:${API_PORT}/system`, { headers: authHeaders() });
     if (!res.ok) throw new Error(res.status);
@@ -1223,6 +1235,18 @@ function showBanner() {
 }
 function hideBanner() {
   document.getElementById('restart-banner').style.display = 'none';
+}
+
+async function setWebSearchBackend(backend) {
+  try {
+    const res = await fetch(`http://${location.hostname}:${API_PORT}/system/config`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ path: 'tools.web_search.backend', value: backend }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    showBanner();
+  } catch(e) { console.error(e); }
 }
 
 async function doRestart() {
@@ -1263,7 +1287,7 @@ async function doRevert() {
       method: 'POST', headers: authHeaders(),
     });
     hideBanner();
-    load();
+    load({ silent: true });
   } catch(e) {
     alert('Failed: ' + e.message);
   } finally {
@@ -1291,7 +1315,7 @@ document.getElementById('content').addEventListener('click', async function(e) {
     if (!res.ok) throw new Error(await res.text());
     const json = await res.json();
     if (type === 'cloud_provider') {
-      showBanner(); load();
+      showBanner(); load({ silent: true });
     } else {
       const eid = encodeURIComponent(name);
       const cardType = type === 'skill-file' ? 'skill' : type;
@@ -1449,7 +1473,7 @@ async function doInstallSkill() {
     const data = await res.json();
     if (!res.ok) { alert('Failed: ' + (data.detail || res.status)); return; }
     closeInstallSkill();
-    load();
+    load({ silent: true });
   } catch(e) { alert('Error: ' + e.message); }
 }
 async function doFetchFromHub() {
@@ -1478,7 +1502,7 @@ async function doFetchFromHub() {
     } else {
       statusEl.textContent = '✓ ' + data.name;
       statusEl.className = 'hub-status ok';
-      setTimeout(() => { closeInstallSkill(); load(); }, 800);
+      setTimeout(() => { closeInstallSkill(); load({ silent: true }); }, 800);
     }
   } catch(e) {
     statusEl.textContent = e.message;

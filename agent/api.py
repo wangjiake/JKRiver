@@ -68,7 +68,7 @@ def _api_token_valid(token: str) -> bool:
     except Exception:
         return False
 
-app = FastAPI(title="Riverse Agent API", version="2.2.0", lifespan=lifespan)
+app = FastAPI(title="Riverse Agent API", version="2.4.0", lifespan=lifespan)
 
 
 @app.middleware("http")
@@ -488,6 +488,16 @@ async def system_stats():
         return {"error": str(e)}
 
 
+@app.get("/api/token-usage")
+async def token_usage_stats():
+    try:
+        from agent.storage.token_usage import get_stats
+        timezone = _config.get("timezone", "UTC") if _config else "UTC"
+        return get_stats(timezone)
+    except Exception as e:
+        return {"error": str(e)}
+
+
 @app.get("/health")
 async def health_check():
     """Check DB connectivity and LLM API reachability."""
@@ -664,14 +674,19 @@ async def get_system():
     llm = _config.get(_llm_provider, {})
     cloud_cfg = _config.get("cloud_llm", {})
 
-    # Mark web_search tool with whether a search-capable provider is configured
-    _web_search_supported = (
+    # Mark web_search tool with backend info and whether it's supported
+    _ws_backend = _config.get("tools", {}).get("web_search", {}).get("backend", "openai_responses")
+    _openai_search_supported = (
         cloud_cfg.get("enabled", False) and
         any(p.get("search") and p.get("api_key") for p in cloud_cfg.get("providers", []))
     )
+    _ddg_supported = True
+    _web_search_supported = (_ws_backend == "duckduckgo" and _ddg_supported) or \
+                            (_ws_backend == "openai_responses" and _openai_search_supported)
     for _t in tools:
         if _t["name"] == "web_search":
             _t["search_supported"] = _web_search_supported
+            _t["search_backend"] = _ws_backend
     cloud_providers = [
         p.get("model", "") for p in cloud_cfg.get("providers", [])
         if p.get("api_key")
@@ -1004,8 +1019,10 @@ def _set_settings_field(path_parts: list[str], value: str) -> tuple[bool, str]:
         if depth == len(path_parts) - 1:
             # Found the final field — update it
             rest = stripped[len(target) + 1:].strip()
-            m = re.match(r'^"(.*)"$', rest) or re.match(r"^'(.*)'$", rest)
-            old_value = m.group(1) if m else rest
+            # Strip inline comment before unquoting so old_value is always the raw value
+            rest_value = re.sub(r'\s+#.*$', '', rest).strip()
+            m = re.match(r'^"(.*)"$', rest_value) or re.match(r"^'(.*)'$", rest_value)
+            old_value = m.group(1) if m else rest_value
             comment_match = re.search(r'\s+(#.*)$', line[line.index(':') + 1:])
             comment = "  " + comment_match.group(1) if comment_match else ""
             # Fields that must always be strings (never treated as numeric)

@@ -69,7 +69,8 @@ class AskUserTool(BaseTool):
             return ToolResult(success=False, data="", error="Missing session context — cannot ask user")
 
         try:
-            from agent.api import _task_questions, push_task_question_to_session
+            from agent.routers._state import _task_questions
+            from agent.routers.outsource import push_task_question_to_session
         except ImportError as e:
             return ToolResult(success=False, data="", error=f"Import error: {e}")
 

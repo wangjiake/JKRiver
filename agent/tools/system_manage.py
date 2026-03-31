@@ -284,7 +284,7 @@ class SystemManageTool(BaseTool):
             if _set_skill_enabled_in_file(name, enabled):
                 return f"Skill '{name}' set to {'enabled' if enabled else 'disabled'}."
             # Try SKILL.md subdirectory (SkillHub)
-            from agent.api import _set_skill_md_enabled
+            from agent.services.settings_writer import _set_skill_md_enabled
             if _set_skill_md_enabled(name, enabled):
                 return f"Skill '{name}' set to {'enabled' if enabled else 'disabled'}."
             # Fall back to bundled YAML
@@ -292,7 +292,7 @@ class SystemManageTool(BaseTool):
             skill_file = os.path.join(_SKILLS_DIR, f"skills_{lang}.yaml")
             if not os.path.exists(skill_file):
                 skill_file = os.path.join(_SKILLS_DIR, "skills_en.yaml")
-            from agent.api import _set_yaml_enabled
+            from agent.services.settings_writer import _set_yaml_enabled
             if _set_yaml_enabled(skill_file, name, enabled):
                 return f"Skill '{name}' set to {'enabled' if enabled else 'disabled'}."
             return f"Skill '{name}' not found."
@@ -338,7 +338,7 @@ class SystemManageTool(BaseTool):
             agents_path = os.path.join(_AGENT_CONFIG_DIR, f"agents_{lang}.yaml")
             if not os.path.exists(agents_path):
                 agents_path = os.path.join(_AGENT_CONFIG_DIR, "agents_en.yaml")
-            from agent.api import _set_yaml_enabled
+            from agent.services.settings_writer import _set_yaml_enabled
             if _set_yaml_enabled(agents_path, name, enabled):
                 return f"Agent '{name}' set to {'enabled' if enabled else 'disabled'}. Restart required."
             return f"Agent '{name}' not found."

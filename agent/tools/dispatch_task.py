@@ -306,7 +306,7 @@ class DispatchTaskTool(BaseTool):
             agent_config["_main_loop"] = _main_loop
             agent_config["_tmp_dir"] = _tmp_dir
 
-            from agent.api import _cancel_flags
+            from agent.routers._state import _cancel_flags
             cancel_event = threading.Event()
             _cancel_flags[task_id] = cancel_event
 
@@ -348,7 +348,7 @@ class DispatchTaskTool(BaseTool):
                     _session_id = self.config.get("_session_id", "")
                     if _session_id and _main_loop and _main_loop.is_running():
                         try:
-                            from agent.api import push_task_result_to_session
+                            from agent.routers.outsource import push_task_result_to_session
                             asyncio.run_coroutine_threadsafe(
                                 push_task_result_to_session(
                                     _session_id, task_id,

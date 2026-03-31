@@ -166,6 +166,7 @@ tools:
     # Web search (auto-picks search-enabled model from cloud_llm)
     # ウェブ検索（cloud_llm の search=true のモデルを自動使用）
     web_search:
+        backend: "duckduckgo"             # "duckduckgo" 或 "openai_responses" | "duckduckgo" or "openai_responses"
 
 
 # ─── Telegram Bot ─────────────────────────────────────────

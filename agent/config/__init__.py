@@ -46,6 +46,12 @@ def load_config(path: str = None) -> dict:
 
     if "tools" not in raw:
         raw["tools"] = {"enabled": True}
+    # Normalize any None tool sub-configs to {} so callers can safely call .get()
+    tools = raw["tools"]
+    if isinstance(tools, dict):
+        for key, val in tools.items():
+            if val is None:
+                tools[key] = {}
 
     if "embedding" not in raw:
         raw["embedding"] = {"enabled": False}

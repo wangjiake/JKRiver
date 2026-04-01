@@ -11,3 +11,5 @@ _revert_ops: list[dict] = []
 _ws_connections: dict[str, list] = {}   # session_id -> [WebSocket, ...]
 _cancel_flags: dict[str, object] = {}   # task_id -> threading.Event
 _task_questions: dict[str, tuple] = {}  # task_id -> (threading.Event, holder dict)
+_telegram_proc = None   # subprocess.Popen | None
+_discord_proc = None    # subprocess.Popen | None

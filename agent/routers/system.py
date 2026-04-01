@@ -3,6 +3,8 @@ import asyncio
 import importlib
 import os
 import shutil
+import subprocess
+import sys
 
 from fastapi import APIRouter, HTTPException, Request
 
@@ -587,11 +589,51 @@ async def revert_changes():
     return {"status": "reverted"}
 
 
+def _start_bot(key: str, module: str):
+    """Start a bot subprocess, killing any existing one first."""
+    proc_attr = f"_{key}_proc"
+    existing = getattr(_state, proc_attr, None)
+    if existing and existing.poll() is None:
+        existing.terminate()
+        try:
+            existing.wait(timeout=5)
+        except Exception:
+            existing.kill()
+    cfg = (_state._config or {}).get(key, {})
+    if cfg.get("enabled") and cfg.get("bot_token"):
+        proc = subprocess.Popen([sys.executable, "-m", module])
+        setattr(_state, proc_attr, proc)
+        return True
+    return False
+
+
+def _stop_bot(key: str):
+    """Stop a bot subprocess if running."""
+    proc_attr = f"_{key}_proc"
+    existing = getattr(_state, proc_attr, None)
+    if existing and existing.poll() is None:
+        existing.terminate()
+        try:
+            existing.wait(timeout=5)
+        except Exception:
+            existing.kill()
+    setattr(_state, proc_attr, None)
+
+
+def _sync_bots():
+    """Start/stop bots based on current config."""
+    _start_bot("telegram", "agent.telegram_bot")
+    _start_bot("discord", "agent.discord_bot")
+
+
 @router.post("/system/restart")
 async def restart_service():
-    import sys
     async def _do_restart():
         await asyncio.sleep(0.5)
+        # Reload config so bot changes take effect immediately
+        from agent.config import load_config
+        _state._config = load_config()
+        _sync_bots()
         os.execv(sys.executable, [sys.executable, "-m", "uvicorn", "agent.api:app",
                                    "--host", "0.0.0.0", "--port", "8400"])
     asyncio.create_task(_do_restart())

@@ -259,6 +259,7 @@ async def get_system():
         "image_model": _state._config.get("tools", {}).get("image_describe", {}).get("model", ""),
         "file_read_max_size": str(_state._config.get("tools", {}).get("file_read", {}).get("max_file_size", 1048576)),
         "shell_timeout": str(_state._config.get("tools", {}).get("shell_exec", {}).get("timeout", 30)),
+        "dispatch_strict_mode": bool(_state._config.get("tools", {}).get("dispatch_task", {}).get("strict_mode", True)),
         "embedding_top_k": str(_state._config.get("embedding", {}).get("search", {}).get("top_k", 5)),
         "embedding_min_score": str(_state._config.get("embedding", {}).get("search", {}).get("min_score", 0.40)),
         "embedding_clustering": _state._config.get("embedding", {}).get("clustering", {}).get("enabled", False),

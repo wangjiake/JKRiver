@@ -42,6 +42,7 @@ class HealthQueryTool(BaseTool):
             description=m.get("description", fb["description"]),
             parameters=m.get("parameters", fb["parameters"]),
             examples=m.get("examples", fb["examples"]),
+            parameter_types={"data_type": "string"},
         )
 
     def execute(self, params: dict) -> ToolResult:

@@ -1035,44 +1035,44 @@ cli.labels:
 
 tools.manifests:
   web_search:
-    description: "搜索互联网获取实时信息、天气、新闻、价格等"
+    description: "搜索互联网获取实时信息：当前天气、突发新闻、实时价格、最新事件等。当答案需要最新数据时使用（如今天天气、最新发布、当前汇率）。对于稳定的知识性问题无需搜索。"
     parameters:
-      query: "搜索关键词"
-    examples: ["今天东京天气", "iPhone最新价格", "北京飞日本机票"]
+      query: "自然语言搜索词（越具体结果越准确）"
+    examples: ["东京今天天气怎么样", "GPT-4o 最新版本更新了什么", "美元对日元今日汇率", "苹果 WWDC 2025 发布了什么"]
   image_describe:
-    description: "描述图片内容，识别图片中的物体、场景、文字等"
+    description: "分析图片内容并回答问题。支持识别物体、场景、文字、图表、截图等。可提供具体问题以获得针对性分析。"
     parameters:
-      file_path: "图片文件路径"
-      question: "关于图片的具体问题（可选，默认描述图片内容）"
-    examples: ["这张图片是什么", "图片里有什么花", "帮我看看这张截图"]
+      file_path: "图片文件路径（支持 jpg/png/gif/webp）"
+      question: "关于图片的具体问题（可选，默认描述图片全部内容）"
+    examples: ["这张图片里有什么", "图片中的文字是什么", "帮我看看这张截图", "这个图表说明了什么"]
     default_question: "请描述这张图片的内容。"
   voice_transcribe:
-    description: "将语音/音频文件转为文字"
+    description: "将语音/音频文件转写为文字。支持 mp3/wav/ogg/m4a 等常见格式。"
     parameters:
-      file_path: "音频文件路径（支持 mp3/wav/ogg/m4a 等）"
-    examples: ["转写语音消息", "将录音转为文字"]
+      file_path: "音频文件路径（string，支持 mp3/wav/ogg/m4a 等）"
+    examples: ["转写这段语音消息", "把录音转成文字", "帮我听写这个 m4a 文件"]
   finance_query:
-    description: "查询用户信用卡消费记录（支持按月份、商家筛选）。总是返回全部匹配记录和合计金额。"
+    description: "查询用户信用卡/银行卡消费记录，支持按年月、商家关键词筛选。返回全部匹配记录及合计金额。"
     parameters:
-      year: "年份（可选）"
-      month: "月份（可选）"
-      merchant: "商家名关键词（可选）"
-    examples: ["最近一笔信用卡消费", "2月份消费情况", "上个月消费了多少", "亚马逊消费记录"]
+      year: "年份（int，可选，如 2025）"
+      month: "月份（int，可选，如 3 表示3月）"
+      merchant: "商家名关键词（string，可选，如 Amazon）"
+    examples: ["上个月消费了多少", "2月份的消费记录", "亚马逊的购买记录", "最近的信用卡账单"]
   health_query:
-    description: "查询用户健康数据：体重、体脂、每日步数/活动量。总是返回最近90天全部数据。"
+    description: "查询用户体重、体脂、步数等健康数据，返回最近90天全部记录。"
     parameters:
-      data_type: "weight(体重) | fat(体脂) | activity(步数/活动) | all(全部)"
-    examples: ["我最近体重多少", "最近30天步数", "体脂变化趋势"]
+      data_type: "数据类型（string）：weight（体重）| fat（体脂）| activity（步数/活动）| all（全部）"
+    examples: ["我最近体重多少", "最近30天步数", "体脂变化趋势", "查看所有健康数据"]
   file_read:
-    description: "读取本地文本文件内容（支持 .txt/.py/.yaml/.json/.md 等）"
+    description: "读取本地文本文件内容。支持 .txt/.py/.yaml/.json/.md/.log 等格式，大文件自动截断。"
     parameters:
-      path: "文件路径（绝对路径或相对路径）"
+      path: "文件路径（string，支持绝对路径或相对路径）"
     examples: ["读一下 settings.yaml", "查看 README.md 的内容", "帮我看看 src/main.py 里写了什么"]
   shell_exec:
-    description: "执行安全的 shell 命令（仅限只读命令，如 ls/grep/git status 等）"
+    description: "执行 shell 命令并返回输出。允许：ls/cat/head/tail/find/grep/wc/date/df/du、git status/log/diff/branch/remote、python/pip/node/npm 版本查看。安装命令（pip install、npm install）需先通过 ask_user 获得用户确认。禁止：rm、sudo、dd、mkfs 及含 ;|&`$> 的命令。"
     parameters:
-      command: "要执行的 shell 命令"
-    examples: ["执行 git status", "查看当前目录文件列表", "运行 python --version"]
+      command: "要执行的 shell 命令（string）"
+    examples: ["git log --oneline -10", "find . -name '*.py' | head -20", "pip list | grep requests", "df -h"]
 
 tools.labels:
   no_transactions: "该期间无消费记录。"

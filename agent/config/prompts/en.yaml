@@ -1023,44 +1023,44 @@ cli.labels:
 
 tools.manifests:
   web_search:
-    description: "Search the internet for real-time information, weather, news, prices, etc."
+    description: "Search the internet for real-time information: current weather, breaking news, live prices, recent events. Use when the answer requires up-to-date data (e.g. today's weather, latest releases, current exchange rates). Not needed for stable facts or knowledge questions."
     parameters:
-      query: "Search keywords"
-    examples: ["Tokyo weather today", "latest iPhone price", "flights from NYC to Tokyo"]
+      query: "Natural language search query (be specific for better results)"
+    examples: ["Tokyo weather today", "Latest GPT-4o release notes", "Current USD to JPY exchange rate", "Apple WWDC 2025 announcements"]
   image_describe:
-    description: "Describe image content, recognize objects, scenes, text in images"
+    description: "Analyze image content and answer questions about it. Recognizes objects, scenes, text, charts, screenshots, etc. Provide a specific question for targeted analysis."
     parameters:
-      file_path: "Image file path"
-      question: "Specific question about the image (optional, defaults to describing content)"
-    examples: ["What is this image", "What flowers are in the picture", "Help me read this screenshot"]
+      file_path: "Image file path (string, supports jpg/png/gif/webp)"
+      question: "Specific question about the image (string, optional — defaults to describing all content)"
+    examples: ["What's in this image", "What does the text in this picture say", "Help me read this screenshot", "What does this chart show"]
     default_question: "Please describe the content of this image."
   voice_transcribe:
-    description: "Convert voice/audio files to text"
+    description: "Transcribe voice/audio files to text. Supports mp3/wav/ogg/m4a and other common audio formats."
     parameters:
-      file_path: "Audio file path (supports mp3/wav/ogg/m4a etc.)"
-    examples: ["Transcribe voice message", "Convert recording to text"]
+      file_path: "Audio file path (string, supports mp3/wav/ogg/m4a etc.)"
+    examples: ["Transcribe this voice message", "Convert recording to text", "Transcribe this m4a file"]
   finance_query:
-    description: "Query user credit card spending records (filter by month, merchant). Always returns all matching records and totals."
+    description: "Query credit card/bank transaction records. Filter by year, month, or merchant keyword. Returns all matching records with totals."
     parameters:
-      year: "Year (optional)"
-      month: "Month (optional)"
-      merchant: "Merchant name keyword (optional)"
-    examples: ["Latest credit card transaction", "February spending", "How much did I spend last month", "Amazon purchases"]
+      year: "Year (int, optional, e.g. 2025)"
+      month: "Month (int, optional, e.g. 3 for March)"
+      merchant: "Merchant name keyword (string, optional, e.g. Amazon)"
+    examples: ["How much did I spend last month", "February spending summary", "Amazon purchases", "Recent credit card transactions"]
   health_query:
-    description: "Query user health data: weight, body fat, daily steps/activity. Always returns all data from the last 90 days."
+    description: "Query weight, body fat, steps and other health data. Returns all records from the last 90 days."
     parameters:
-      data_type: "weight | fat | activity | all"
-    examples: ["My recent weight", "Steps in the last 30 days", "Body fat trend"]
+      data_type: "Data type (string): weight | fat | activity (steps) | all"
+    examples: ["My recent weight", "Steps in the last 30 days", "Body fat trend", "Show all health data"]
   file_read:
-    description: "Read local text file content (supports .txt/.py/.yaml/.json/.md etc.)"
+    description: "Read local text file content. Supports .txt/.py/.yaml/.json/.md/.log etc. Large files are automatically truncated."
     parameters:
-      path: "File path (absolute or relative)"
+      path: "File path (string, absolute or relative)"
     examples: ["Read settings.yaml", "View README.md content", "Show me what's in src/main.py"]
   shell_exec:
-    description: "Execute safe shell commands (read-only commands only, such as ls/grep/git status)"
+    description: "Execute shell commands and return output. Allowed: ls/cat/head/tail/find/grep/wc/date/df/du, git status/log/diff/branch/remote, python/pip/node/npm version checks. Install commands (pip install, npm install) require user confirmation via ask_user first. Forbidden: rm, sudo, dd, mkfs, and commands containing ;|&`$>."
     parameters:
-      command: "Shell command to execute"
-    examples: ["Run git status", "List files in current directory", "Run python --version"]
+      command: "Shell command to execute (string)"
+    examples: ["git log --oneline -10", "find . -name '*.py' | head -20", "pip list | grep requests", "df -h"]
 
 tools.labels:
   no_transactions: "No transactions found for this period."

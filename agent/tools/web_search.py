@@ -8,19 +8,46 @@ logger = logging.getLogger(__name__)
 
 _FALLBACK = {
     "en": {
-        "description": "Search the internet for real-time info: weather, news, prices, etc.",
-        "parameters": {"query": "Search keywords"},
-        "examples": ["Weather in Tokyo today", "Latest iPhone price", "Flights from NYC to London"],
+        "description": (
+            "Search the internet for real-time information: current weather, breaking news, live prices, recent events. "
+            "Use this when the answer requires up-to-date data that may have changed since training. "
+            "Not needed for stable facts or knowledge questions."
+        ),
+        "parameters": {"query": "Natural language search query (be specific for better results)"},
+        "examples": [
+            "Tokyo weather today",
+            "Latest GPT-4o release notes",
+            "Current USD to JPY exchange rate",
+            "Apple WWDC 2025 announcements",
+        ],
     },
     "zh": {
-        "description": "搜索互联网获取实时信息、天气、新闻、价格等",
-        "parameters": {"query": "搜索关键词"},
-        "examples": ["今天东京天气", "iPhone最新价格", "北京飞日本机票"],
+        "description": (
+            "搜索互联网获取实时信息：当前天气、突发新闻、实时价格、最新事件等。"
+            "当答案需要最新数据时使用（如今天天气、最新发布、当前汇率）。"
+            "对于稳定的知识性问题无需搜索。"
+        ),
+        "parameters": {"query": "自然语言搜索词（越具体结果越准确）"},
+        "examples": [
+            "东京今天天气怎么样",
+            "GPT-4o 最新版本更新了什么",
+            "美元对日元今日汇率",
+            "苹果 WWDC 2025 发布了什么",
+        ],
     },
     "ja": {
-        "description": "インターネットでリアルタイム情報を検索：天気、ニュース、価格など",
-        "parameters": {"query": "検索キーワード"},
-        "examples": ["東京の今日の天気", "iPhone最新価格", "東京からロンドンへのフライト"],
+        "description": (
+            "インターネットでリアルタイム情報を検索：現在の天気、速報ニュース、リアルタイム価格、最新イベントなど。"
+            "学習データ以降に変化している可能性のある最新データが必要な場合に使用してください。"
+            "安定した知識や事実に関する質問には不要です。"
+        ),
+        "parameters": {"query": "自然言語の検索クエリ（具体的なほど精度が上がります）"},
+        "examples": [
+            "東京の今日の天気",
+            "GPT-4o の最新リリースノート",
+            "現在のドル円レート",
+            "Apple WWDC 2025 の発表内容",
+        ],
     },
 }
 
@@ -75,6 +102,7 @@ class WebSearchTool(BaseTool):
             description=m.get("description", fb["description"]),
             parameters=m.get("parameters", fb["parameters"]),
             examples=m.get("examples", fb["examples"]),
+            parameter_types={"query": "string"},
         )
 
     def is_available(self) -> bool:

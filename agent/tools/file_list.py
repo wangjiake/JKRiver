@@ -5,25 +5,52 @@ from agent.tools import BaseTool, ToolManifest, ToolResult
 
 _FALLBACK = {
     "en": {
-        "description": "List directory contents (files and subdirectories, one level deep)",
+        "description": (
+            "List the immediate contents of a directory (one level deep, non-recursive). "
+            "Returns subdirectories (with trailing /) and files with their sizes in bytes, "
+            "followed by a summary line: `N directories, M files`. "
+            "Use grep or shell_exec (find) for recursive or filtered listings."
+        ),
         "parameters": {
-            "path": "Directory path to list (default: current working directory)",
+            "path": "Directory path to list (string, default: current working directory)",
         },
-        "examples": ["List files in .", "What's in the src/ directory?", "Show me the contents of /tmp"],
+        "examples": [
+            "list files in the current project root",
+            "what's inside the src/ directory?",
+            "show contents of /tmp",
+        ],
     },
     "zh": {
-        "description": "列出目录内容（文件和子目录，单层）",
+        "description": (
+            "列出目录的直接内容（单层，非递归）。"
+            "返回子目录（以 / 结尾）和文件（附文件大小，单位 bytes），"
+            "末尾附汇总行：`N 个目录，M 个文件`。"
+            "递归列目录或按条件筛选请用 grep 或 shell_exec（find）。"
+        ),
         "parameters": {
-            "path": "要列出的目录路径（默认：当前工作目录）",
+            "path": "要列出的目录路径（string，默认：当前工作目录）",
         },
-        "examples": ["列出 . 目录的文件", "src/ 目录里有什么？", "显示 /tmp 的内容"],
+        "examples": [
+            "列出项目根目录的文件",
+            "src/ 目录里有什么？",
+            "显示 /tmp 的内容",
+        ],
     },
     "ja": {
-        "description": "ディレクトリの内容を一覧表示する（ファイルとサブディレクトリ、1レベルのみ）",
+        "description": (
+            "ディレクトリの直下の内容を一覧表示します（1レベルのみ、再帰なし）。"
+            "サブディレクトリ（末尾 /）とファイル（サイズ bytes 付き）を返し、"
+            "末尾に `N directories, M files` のサマリ行が付きます。"
+            "再帰的な一覧や条件絞り込みは grep または shell_exec（find）を使ってください。"
+        ),
         "parameters": {
-            "path": "一覧表示するディレクトリパス（デフォルト：カレントディレクトリ）",
+            "path": "一覧表示するディレクトリパス（string、デフォルト：カレントディレクトリ）",
         },
-        "examples": [". の中のファイルを一覧表示", "src/ ディレクトリの中身は？", "/tmp の内容を見せて"],
+        "examples": [
+            "プロジェクトルートのファイルを一覧表示",
+            "src/ ディレクトリの中身は？",
+            "/tmp の内容を見せて",
+        ],
     },
 }
 
@@ -42,6 +69,7 @@ class FileListTool(BaseTool):
             description=fb["description"],
             parameters=fb["parameters"],
             examples=fb["examples"],
+            parameter_types={"path": "string"},
         )
 
     def is_available(self) -> bool:

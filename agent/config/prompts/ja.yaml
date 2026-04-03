@@ -1019,44 +1019,44 @@ cli.labels:
 
 tools.manifests:
   web_search:
-    description: "インターネットでリアルタイム情報、天気、ニュース、価格などを検索"
+    description: "インターネットでリアルタイム情報を検索：現在の天気、速報、リアルタイム価格、最新イベントなど。最新データが必要な場合に使用（今日の天気、最新リリース、現在の為替レートなど）。安定した知識や事実の質問には不要。"
     parameters:
-      query: "検索キーワード"
-    examples: ["今日の東京の天気", "iPhone最新価格", "東京発大阪行きの航空券"]
+      query: "自然言語の検索クエリ（具体的に書くとより良い結果が得られる）"
+    examples: ["今日の東京の天気", "GPT-4oの最新リリースノート", "現在のドル円レート", "Apple WWDC 2025の発表内容"]
   image_describe:
-    description: "画像の内容を説明し、物体、シーン、テキストを認識"
+    description: "画像の内容を分析し、質問に答える。物体・シーン・テキスト・グラフ・スクリーンショットなどを認識可能。具体的な質問を指定すると、より的確な分析が得られる。"
     parameters:
-      file_path: "画像ファイルパス"
-      question: "画像についての具体的な質問（オプション、デフォルトで内容を説明）"
-    examples: ["この画像は何ですか", "画像に何の花がありますか", "このスクリーンショットを見てください"]
+      file_path: "画像ファイルパス（string、jpg/png/gif/webp対応）"
+      question: "画像に関する具体的な質問（string、任意 — デフォルトは全体を説明）"
+    examples: ["この画像に何がある", "写真のテキストは何と書いてある", "このスクリーンショットを読んで", "このグラフは何を示している"]
     default_question: "この画像の内容を説明してください。"
   voice_transcribe:
-    description: "音声/オーディオファイルをテキストに変換"
+    description: "音声・オーディオファイルをテキストに文字起こしする。mp3/wav/ogg/m4aなど一般的な音声フォーマットに対応。"
     parameters:
-      file_path: "オーディオファイルパス（mp3/wav/ogg/m4a等対応）"
-    examples: ["音声メッセージを文字起こし", "録音をテキストに変換"]
+      file_path: "音声ファイルパス（string、mp3/wav/ogg/m4a等対応）"
+    examples: ["この音声メッセージを文字起こして", "録音をテキストに変換して", "このm4aファイルを書き起こして"]
   finance_query:
-    description: "ユーザーのクレジットカード消費記録を照会（月別、加盟店別フィルター対応）。常にすべての該当記録と合計金額を返却。"
+    description: "クレジットカード・銀行の取引履歴を照会。年月・加盟店キーワードで絞り込み可能。一致する全記録と合計金額を返す。"
     parameters:
-      year: "年（オプション）"
-      month: "月（オプション）"
-      merchant: "加盟店名キーワード（オプション）"
-    examples: ["最新のクレジットカード消費", "2月の消費状況", "先月いくら使った", "アマゾンの消費記録"]
+      year: "年（int、任意、例：2025）"
+      month: "月（int、任意、例：3は3月）"
+      merchant: "加盟店名キーワード（string、任意、例：Amazon）"
+    examples: ["先月いくら使った", "2月の支出まとめ", "Amazonの購入履歴", "最近のカード利用"]
   health_query:
-    description: "ユーザーの健康データを照会：体重、体脂肪、日々の歩数/活動量。常に最近90日分の全データを返却。"
+    description: "体重・体脂肪・歩数などの健康データを照会。直近90日分の全記録を返す。"
     parameters:
-      data_type: "weight(体重) | fat(体脂肪) | activity(歩数/活動) | all(すべて)"
-    examples: ["最近の体重はいくら", "最近30日の歩数", "体脂肪の変化傾向"]
+      data_type: "データ種別（string）：weight（体重）| fat（体脂肪）| activity（歩数/活動）| all（すべて）"
+    examples: ["最近の体重は", "過去30日の歩数", "体脂肪の推移", "全健康データを表示"]
   file_read:
-    description: "ローカルテキストファイルの内容を読み取り（.txt/.py/.yaml/.json/.md等対応）"
+    description: "ローカルテキストファイルの内容を読み取る。.txt/.py/.yaml/.json/.md/.log等に対応。大きなファイルは自動的に切り詰められる。"
     parameters:
-      path: "ファイルパス（絶対パスまたは相対パス）"
-    examples: ["settings.yamlを読んで", "README.mdの内容を確認", "src/main.pyに何が書いてあるか見て"]
+      path: "ファイルパス（string、絶対パスまたは相対パス）"
+    examples: ["settings.yamlを読んで", "README.mdの内容を確認して", "src/main.pyに何が書いてあるか見て"]
   shell_exec:
-    description: "安全なshellコマンドを実行（読み取り専用コマンドのみ、ls/grep/git status等）"
+    description: "shellコマンドを実行して出力を返す。許可：ls/cat/head/tail/find/grep/wc/date/df/du、git status/log/diff/branch/remote、python/pip/node/npmのバージョン確認。インストールコマンド（pip install、npm install）はask_userで事前にユーザー確認が必要。禁止：rm、sudo、dd、mkfs、;|&`$>を含むコマンド。"
     parameters:
-      command: "実行するshellコマンド"
-    examples: ["git statusを実行", "現在のディレクトリのファイル一覧", "python --versionを実行"]
+      command: "実行するshellコマンド（string）"
+    examples: ["git log --oneline -10", "find . -name '*.py' | head -20", "pip list | grep requests", "df -h"]
 
 tools.labels:
   no_transactions: "該当期間の消費記録はありません。"

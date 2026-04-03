@@ -5,28 +5,55 @@ from agent.tools import BaseTool, ToolManifest, ToolResult
 
 _FALLBACK = {
     "en": {
-        "description": "Write content to a local file (restricted to current working directory and /tmp)",
+        "description": (
+            "Write text content to a local file. "
+            "Creates the file if it does not exist; overwrites it silently if it does. "
+            "Parent directories are created automatically. "
+            "Writes are restricted to the current working directory and /tmp."
+        ),
         "parameters": {
-            "path": "File path to write (absolute or relative)",
-            "content": "Text content to write to the file",
+            "path": "File path to write (string, absolute or relative)",
+            "content": "Text content to write to the file (string, UTF-8)",
         },
-        "examples": ["Write 'hello' to output.txt", "Save the result to /tmp/result.json"],
+        "examples": [
+            "write JSON result to /tmp/output.json",
+            "save generated README to ./README.md",
+            "create config file at config/settings.yaml",
+        ],
     },
     "zh": {
-        "description": "将内容写入本地文件（限制在当前工作目录和 /tmp 内）",
+        "description": (
+            "将文本内容写入本地文件。"
+            "文件不存在时自动创建，已存在时直接覆盖（无确认提示）。"
+            "父级目录不存在时自动创建。"
+            "写入路径限制在当前工作目录和 /tmp 内。"
+        ),
         "parameters": {
-            "path": "要写入的文件路径（绝对路径或相对路径）",
-            "content": "要写入文件的文本内容",
+            "path": "要写入的文件路径（string，绝对路径或相对路径）",
+            "content": "要写入文件的文本内容（string，UTF-8 编码）",
         },
-        "examples": ["将 'hello' 写入 output.txt", "将结果保存到 /tmp/result.json"],
+        "examples": [
+            "将 JSON 结果写入 /tmp/output.json",
+            "将生成的 README 保存到 ./README.md",
+            "在 config/settings.yaml 创建配置文件",
+        ],
     },
     "ja": {
-        "description": "ローカルファイルにコンテンツを書き込む（カレントディレクトリと /tmp に制限）",
+        "description": (
+            "テキストをローカルファイルに書き込みます。"
+            "ファイルが存在しない場合は作成し、存在する場合は確認なしで上書きします。"
+            "親ディレクトリが存在しない場合は自動的に作成されます。"
+            "書き込み先はカレントディレクトリと /tmp に制限されています。"
+        ),
         "parameters": {
-            "path": "書き込むファイルパス（絶対パスまたは相対パス）",
-            "content": "ファイルに書き込むテキスト内容",
+            "path": "書き込むファイルパス（string、絶対パスまたは相対パス）",
+            "content": "ファイルに書き込むテキスト内容（string、UTF-8）",
         },
-        "examples": ["output.txt に 'hello' を書き込む", "結果を /tmp/result.json に保存する"],
+        "examples": [
+            "JSON 結果を /tmp/output.json に書き込む",
+            "生成した README を ./README.md に保存する",
+            "config/settings.yaml に設定ファイルを作成する",
+        ],
     },
 }
 
@@ -45,6 +72,7 @@ class FileWriteTool(BaseTool):
             description=fb["description"],
             parameters=fb["parameters"],
             examples=fb["examples"],
+            parameter_types={"path": "string", "content": "string"},
         )
 
     def is_available(self) -> bool:
@@ -58,10 +86,12 @@ class FileWriteTool(BaseTool):
             return ToolResult(success=False, data="", error="Missing required parameter: path")
 
         abs_path = os.path.realpath(os.path.abspath(path))
+        abs_path_raw = os.path.abspath(path)
         cwd = os.path.realpath(os.getcwd())
 
-        # Allow writes only within cwd or /tmp
-        in_cwd = abs_path.startswith(cwd + os.sep) or abs_path == cwd
+        # Allow writes within cwd (check both resolved and unresolved paths to support symlinks)
+        in_cwd = (abs_path.startswith(cwd + os.sep) or abs_path == cwd or
+                  abs_path_raw.startswith(cwd + os.sep) or abs_path_raw == cwd)
         in_tmp = abs_path.startswith("/tmp" + os.sep) or abs_path == "/tmp"
         if not (in_cwd or in_tmp):
             return ToolResult(

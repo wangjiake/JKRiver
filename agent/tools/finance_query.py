@@ -39,6 +39,7 @@ class FinanceQueryTool(BaseTool):
             description=m.get("description", fb["description"]),
             parameters=m.get("parameters", fb["parameters"]),
             examples=m.get("examples", fb["examples"]),
+            parameter_types={"year": "int", "month": "int", "merchant": "string"},
         )
 
     def execute(self, params: dict) -> ToolResult:

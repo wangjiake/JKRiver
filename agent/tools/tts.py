@@ -17,9 +17,20 @@ class TTSTool(BaseTool):
         self._tts_cfg = config.get("tts", {})
         lang = config.get("language", "en")
         self._desc = {
-            "zh": "将 AI 回复转换为语音播放（需要 Edge TTS）",
-            "en": "Convert AI replies to speech (requires Edge TTS)",
-            "ja": "AI の返答を音声に変換（Edge TTS が必要）",
+            "zh": (
+                "将 AI 文字回复自动合成语音发送给用户。"
+                "由系统在每次回复后自动调用，无需手动触发。"
+                "自动识别中英文并切换对应音色。超过 max_chars 的内容会被截断。"
+            ),
+            "en": (
+                "Automatically synthesizes AI text replies into speech. "
+                "Called by the system after each reply — do not invoke manually. "
+                "Auto-detects Chinese vs English and switches voice accordingly."
+            ),
+            "ja": (
+                "AI のテキスト返答を自動的に音声合成してユーザーに送信します。"
+                "毎回の返答後にシステムが自動呼び出しします。手動呼び出し不要。"
+            ),
         }.get(lang, "Convert AI replies to speech (requires Edge TTS)")
 
     def manifest(self) -> ToolManifest:

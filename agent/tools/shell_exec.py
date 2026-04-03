@@ -28,14 +28,36 @@ _FALLBACK = {
         "examples": ["Run git status", "List files in current directory", "Run python --version"],
     },
     "zh": {
-        "description": "执行安全的 shell 命令（仅限只读命令，如 ls/grep/git status 等）",
+        "description": (
+            "执行 shell 命令并返回输出。"
+            "允许：ls/cat/head/tail/find/grep/wc/date/df/du、"
+            "git status/log/diff/branch/remote、python/pip/node/npm 版本查看。"
+            "安装命令（pip install、npm install）需先通过 ask_user 获得用户确认。"
+            "禁止：rm、sudo、dd、mkfs 及含 ;|&`$> 的命令。"
+        ),
         "parameters": {"command": "要执行的 shell 命令"},
-        "examples": ["执行 git status", "查看当前目录文件列表", "运行 python --version"],
+        "examples": [
+            "git log --oneline -10",
+            "find . -name '*.py' | head -20",
+            "pip list | grep requests",
+            "df -h",
+        ],
     },
     "ja": {
-        "description": "安全なシェルコマンドを実行（読み取り専用コマンドのみ: ls/grep/git status 等）",
-        "parameters": {"command": "実行するシェルコマンド"},
-        "examples": ["git status を実行", "現在のディレクトリのファイル一覧", "python --version を実行"],
+        "description": (
+            "シェルコマンドを実行して出力を返します。"
+            "許可：ls/cat/head/tail/find/grep/wc/date/df/du、"
+            "git status/log/diff/branch/remote、python/pip/node/npm バージョン確認。"
+            "インストールコマンド（pip install、npm install）は事前に ask_user でユーザー確認が必要。"
+            "禁止：rm、sudo、dd、mkfs および ;|&`$> を含むコマンド。"
+        ),
+        "parameters": {"command": "実行するシェルコマンド（string）"},
+        "examples": [
+            "git log --oneline -10",
+            "find . -name '*.py' | head -20",
+            "pip list | grep requests",
+            "df -h",
+        ],
     },
 }
 
@@ -54,6 +76,7 @@ class ShellExecTool(BaseTool):
             description=m.get("description", fb["description"]),
             parameters=m.get("parameters", fb["parameters"]),
             examples=m.get("examples", fb["examples"]),
+            parameter_types={"command": "string"},
         )
 
     def is_available(self) -> bool:

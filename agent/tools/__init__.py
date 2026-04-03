@@ -16,6 +16,7 @@ class ToolManifest:
     description: str
     parameters: dict
     examples: list[str] = field(default_factory=list)
+    parameter_types: dict = field(default_factory=dict)  # {param_name: "bool"|"int"|"float"|"string"}
 
 @dataclass
 class ToolResult:

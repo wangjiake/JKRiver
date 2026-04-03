@@ -44,6 +44,7 @@ class VoiceTranscribeTool(BaseTool):
             description=m.get("description", fb["description"]),
             parameters=m.get("parameters", fb["parameters"]),
             examples=m.get("examples", fb["examples"]),
+            parameter_types={"file_path": "string"},
         )
 
     def is_available(self) -> bool:

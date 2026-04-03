@@ -44,6 +44,7 @@ class AskUserTool(BaseTool):
             description=fb["description"],
             parameters={"question": fb["param"]},
             examples=[fb["example"]],
+            parameter_types={"question": "string"},
         )
 
     def is_available(self) -> bool:

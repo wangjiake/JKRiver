@@ -9,42 +9,60 @@ _MAX_LINES = 100
 
 _FALLBACK = {
     "en": {
-        "description": "Search for a pattern in files using regular expressions",
+        "description": (
+            "Search for a regex pattern across files. "
+            "Returns matching lines in `file:line_number: content` format. "
+            "Results are capped at 100 lines; if truncated, a notice is appended. "
+            "Use file_glob to narrow the search (e.g. '*.py') and avoid scanning binaries."
+        ),
         "parameters": {
-            "pattern": "Regular expression pattern to search for",
-            "path": "Directory or file to search in (default: current working directory)",
-            "file_glob": "Glob pattern to filter files (default: *, matches all files)",
+            "pattern": "Regular expression pattern to search for (required)",
+            "path": "Directory or file to search in (string, default: current working directory)",
+            "file_glob": "Glob pattern to restrict which files are searched (string, default: * — all files). Example: '*.py', '*.yaml'",
         },
         "examples": [
-            "Search for 'def run' in *.py files",
-            "Find all TODO comments in src/",
-            "Look for 'import asyncio' in the project",
+            "find all TODO comments across the project",
+            "search for 'def run' in *.py files under src/",
+            "locate config key 'api_key' in *.yaml files",
+            "grep 'import asyncio' in Python files",
         ],
     },
     "zh": {
-        "description": "使用正则表达式在文件中搜索模式",
+        "description": (
+            "使用正则表达式在文件中搜索内容。"
+            "返回格式为 `文件名:行号: 内容`。"
+            "最多返回 100 行，超出时末尾附加截断提示。"
+            "建议用 file_glob 限定文件类型（如 '*.py'），避免扫描二进制文件。"
+        ),
         "parameters": {
-            "pattern": "要搜索的正则表达式模式",
-            "path": "要搜索的目录或文件（默认：当前工作目录）",
-            "file_glob": "过滤文件的 glob 模式（默认：*，匹配所有文件）",
+            "pattern": "要搜索的正则表达式（必填）",
+            "path": "搜索目录或文件路径（string，默认：当前工作目录）",
+            "file_glob": "限定搜索范围的 glob 模式（string，默认：* 匹配所有文件），如 '*.py'、'*.yaml'",
         },
         "examples": [
-            "在 *.py 文件中搜索 'def run'",
-            "在 src/ 中查找所有 TODO 注释",
-            "在项目中查找 'import asyncio'",
+            "在整个项目中查找所有 TODO 注释",
+            "在 src/ 下的 *.py 文件中搜索 'def run'",
+            "在 *.yaml 文件中定位配置键 'api_key'",
+            "在 Python 文件中查找 'import asyncio'",
         ],
     },
     "ja": {
-        "description": "正規表現を使ってファイル内のパターンを検索する",
+        "description": (
+            "正規表現を使ってファイル内のパターンを検索します。"
+            "結果は `ファイル名:行番号: 内容` 形式で返されます。"
+            "最大100行まで返し、超過した場合は末尾に切り捨て通知が付きます。"
+            "file_glob でファイル種別を絞り込むことを推奨します（例: '*.py'）。"
+        ),
         "parameters": {
-            "pattern": "検索する正規表現パターン",
-            "path": "検索するディレクトリまたはファイル（デフォルト：カレントディレクトリ）",
-            "file_glob": "ファイルを絞り込む glob パターン（デフォルト：*、全ファイルにマッチ）",
+            "pattern": "検索する正規表現パターン（必須）",
+            "path": "検索対象のディレクトリまたはファイル（string、デフォルト：カレントディレクトリ）",
+            "file_glob": "検索対象ファイルを絞り込む glob パターン（string、デフォルト：* 全ファイル）。例: '*.py'、'*.yaml'",
         },
         "examples": [
-            "*.py ファイルで 'def run' を検索",
-            "src/ 内の TODO コメントをすべて探す",
-            "プロジェクト内で 'import asyncio' を探す",
+            "プロジェクト全体から TODO コメントを探す",
+            "src/ 以下の *.py ファイルで 'def run' を検索",
+            "*.yaml ファイルで設定キー 'api_key' を探す",
+            "Python ファイルで 'import asyncio' を検索",
         ],
     },
 }
@@ -64,6 +82,7 @@ class GrepTool(BaseTool):
             description=fb["description"],
             parameters=fb["parameters"],
             examples=fb["examples"],
+            parameter_types={"pattern": "string", "path": "string", "file_glob": "string"},
         )
 
     def is_available(self) -> bool:

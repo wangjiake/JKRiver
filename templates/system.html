@@ -114,6 +114,11 @@ body.light .theme-btn:hover { background: rgba(0,0,0,0.05); border-color: rgba(0
 
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
 .card { background: var(--glass-card); border: 1px solid var(--card-border); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 8px; box-shadow: var(--card-shadow); }
+.card-collapsible { overflow: hidden; transition: max-height 0.25s ease; }
+.card-collapsible.collapsed { max-height: 185px; }
+.card-expand-btn { display: none; align-self: flex-start; margin-top: 4px; background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--text-muted); font-size: 11px; padding: 3px 10px; cursor: pointer; }
+.card-expand-btn:hover { color: var(--text); border-color: var(--text-muted); }
+.card.needs-collapse .card-expand-btn { display: inline-block; }
 .card.disabled { opacity: 0.65; filter: grayscale(50%); }
 .card-header { display: flex; align-items: center; gap: 8px; }
 .card-name { font-size: 14px; font-weight: 600; color: var(--text); flex: 1; }
@@ -276,7 +281,7 @@ const I18N = {
     section_agents: '智能体',
     section_skills: '技能',
     section_mcp: 'MCP 服务',
-    empty_tools: '无内置工具', empty_agents: '无已配置 Agent', empty_skills: '暂无技能',
+    empty_tools: '无内置工具', empty_agents: '无已配置 Agent', empty_skills: '暂无技能', show_more: '展开', show_less: '收起',
     install_skill: '安装技能', install_skill_tip: '安装技能', install_skill_title: '安装技能',
     install_skill_desc: '粘贴 YAML 或 SKILL.md 格式内容，安装后立即生效。',
     install_skill_placeholder: '粘贴技能 YAML 或 SKILL.md…', badge_file: '已安装', badge_skillhub: 'SkillHub',
@@ -331,7 +336,7 @@ const I18N = {
     web_search_backend: '搜索方式', web_search_backend_ddg: 'DuckDuckGo（本地模型，无需 API Key）', web_search_backend_openai: '云兜底模型（需要配置支持联网的 provider）',
     label_voice_model: '语音模型', label_voice_lang: '语音语言',
     label_image_provider: '图像提供商', label_image_model: '图像模型',
-    label_file_max_size: '最大文件大小(字节)', label_shell_timeout: 'Shell 超时(秒)', label_dispatch_strict: '外包严格模式',
+    label_file_max_size: '最大文件大小(字节)', label_shell_timeout: 'Shell 超时(秒)', label_dispatch_strict: '外包子智能体只读模式（开启后禁止写文件和安装包）', label_agent_doc_scan: '系统能力定时扫描（自动更新 AI 对工具/智能体/技能的理解）',
     label_emb_top_k: '搜索结果数', label_emb_min_score: '最低相似度', label_emb_clustering: '聚类去重',
     section_triggers: '触发器', label_followup: '事件跟进', label_followup_importance: '最低重要性',
     label_followup_after: '跟进延迟(小时)', label_followup_max_age: '最大追溯(天)',
@@ -345,7 +350,7 @@ const I18N = {
     section_agents: 'Agents',
     section_skills: 'Skills',
     section_mcp: 'MCP Servers',
-    empty_tools: 'No built-in tools', empty_agents: 'No agents configured', empty_skills: 'No skills yet',
+    empty_tools: 'No built-in tools', empty_agents: 'No agents configured', empty_skills: 'No skills yet', show_more: 'Show more', show_less: 'Show less',
     install_skill: 'Install', install_skill_tip: 'Install skill', install_skill_title: 'Install Skill',
     install_skill_desc: 'Paste YAML or SKILL.md content. Takes effect immediately.',
     install_skill_placeholder: 'Paste skill YAML or SKILL.md…', badge_file: 'Installed', badge_skillhub: 'SkillHub',
@@ -400,7 +405,7 @@ const I18N = {
     web_search_backend: 'Search backend', web_search_backend_ddg: 'DuckDuckGo (local model, no API key)', web_search_backend_openai: 'Cloud Fallback (requires a provider with search enabled)',
     label_voice_model: 'Voice Model', label_voice_lang: 'Voice Language',
     label_image_provider: 'Image Provider', label_image_model: 'Image Model',
-    label_file_max_size: 'Max File Size (bytes)', label_shell_timeout: 'Shell Timeout (s)', label_dispatch_strict: 'Outsource Strict Mode',
+    label_file_max_size: 'Max File Size (bytes)', label_shell_timeout: 'Shell Timeout (s)', label_dispatch_strict: 'Outsource Sub-Agent Read-Only Mode (when on, disables file writes and package installs)', label_agent_doc_scan: 'Scheduled System Capability Scan (auto-updates AI knowledge of tools/agents/skills)',
     label_emb_top_k: 'Max Results', label_emb_min_score: 'Min Score', label_emb_clustering: 'Cluster Dedup',
     section_triggers: 'Triggers', label_followup: 'Event Follow-up', label_followup_importance: 'Min Importance',
     label_followup_after: 'Follow-up Delay (hrs)', label_followup_max_age: 'Max Age (days)',
@@ -414,7 +419,7 @@ const I18N = {
     section_agents: 'エージェント',
     section_skills: 'スキル',
     section_mcp: 'MCPサーバー',
-    empty_tools: '組み込みツールなし', empty_agents: 'エージェント未設定', empty_skills: 'スキルなし',
+    empty_tools: '組み込みツールなし', empty_agents: 'エージェント未設定', empty_skills: 'スキルなし', show_more: '展開', show_less: '折りたたむ',
     install_skill: 'インストール', install_skill_tip: 'スキルをインストール', install_skill_title: 'スキルのインストール',
     install_skill_desc: 'YAMLまたはSKILL.md形式を貼り付けてください。インストール後すぐに有効になります。',
     install_skill_placeholder: 'スキル YAMLまたはSKILL.mdを貼り付け…', badge_file: 'インストール済', badge_skillhub: 'SkillHub',
@@ -469,7 +474,7 @@ const I18N = {
     web_search_backend: '検索方式', web_search_backend_ddg: 'DuckDuckGo（ローカルモデル、APIキー不要）', web_search_backend_openai: 'クラウドフォールバック（検索対応プロバイダーが必要）',
     label_voice_model: '音声モデル', label_voice_lang: '音声言語',
     label_image_provider: '画像プロバイダー', label_image_model: '画像モデル',
-    label_file_max_size: '最大ファイルサイズ(bytes)', label_shell_timeout: 'Shellタイムアウト(秒)', label_dispatch_strict: '外注ストリクトモード',
+    label_file_max_size: '最大ファイルサイズ(bytes)', label_shell_timeout: 'Shellタイムアウト(秒)', label_dispatch_strict: '外注サブエージェント読み取り専用モード（オンでファイル書込・パッケージ導入を禁止）', label_agent_doc_scan: 'システム能力定期スキャン（ツール/エージェント/スキルのAI理解を自動更新）',
     label_emb_top_k: '最大結果数', label_emb_min_score: '最小スコア', label_emb_clustering: 'クラスタ重複排除',
     section_triggers: 'トリガー', label_followup: 'イベントフォロー', label_followup_importance: '最小重要度',
     label_followup_after: 'フォロー待機時間(時間)', label_followup_max_age: '最大追跡日数',
@@ -556,10 +561,12 @@ function renderInfoCard(r) {
   // Boolean toggle card (ON/OFF clickable)
   if (r.toggle) {
     const curOn = r.on;
+    const badgeCls = curOn ? 'badge-on' : 'badge-off';
+    const badgeTxt = curOn ? t('on') : t('off');
     return `
     <div class="info-card editable" data-path="${escHtml(r.path)}" data-current="${curOn}" onclick="toggleConfig(this)">
       <div class="label">${t(r.key)}<span class="edit-icon">✎</span></div>
-      <div class="value ${onClass}"><span>${escHtml(r.value)}</span></div>
+      <div class="value"><span class="badge ${badgeCls}">${badgeTxt}</span></div>
     </div>`;
   }
   // Read-only card
@@ -700,6 +707,8 @@ function renderSystem(sys, cloudProviders) {
   const topRows = [
     { key: 'label_language', value: sys.language, choice: true, path: 'language', options: ['en', 'zh', 'ja'] },
     { key: 'label_timezone', value: sys.timezone, editable: true, path: 'timezone' },
+    { key: 'label_dispatch_strict', toggle: true, on: sys.dispatch_strict_mode, path: 'tools.dispatch_task.strict_mode' },
+    { key: 'label_agent_doc_scan', toggle: true, on: sys.agent_doc_scan_enabled, path: 'agent_doc_scan.enabled' },
   ];
 
   const sections = [
@@ -844,6 +853,41 @@ function renderSystem(sys, cloudProviders) {
   return `
     <div class="info-grid" style="margin-bottom:14px">${topRows.map(renderInfoCard).join('')}</div>
     <div class="cards">${sections.map(s => s._html ? s._html : renderConfigSection(s)).join('')}</div>`;
+}
+
+function expandCard(btn) {
+  const card = btn.closest('.card');
+  const body = card.querySelector('.card-collapsible');
+  const expanded = !body.classList.contains('collapsed');
+  if (expanded) {
+    body.style.maxHeight = '';
+    body.classList.add('collapsed');
+    btn.textContent = '▼ ' + t('show_more');
+  } else {
+    body.classList.remove('collapsed');
+    body.style.maxHeight = body.scrollHeight + 'px';
+    btn.textContent = '▲ ' + t('show_less');
+  }
+}
+
+function applyCardCollapse() {
+  document.querySelectorAll('.card').forEach(card => {
+    const body = card.querySelector('.card-collapsible');
+    const btn = card.querySelector('.card-expand-btn');
+    if (!body || !btn) return;
+    // Temporarily expand to measure real height
+    body.classList.remove('collapsed');
+    body.style.maxHeight = 'none';
+    const fullH = body.scrollHeight;
+    if (fullH > 185) {
+      body.classList.add('collapsed');
+      body.style.maxHeight = '';
+      card.classList.add('needs-collapse');
+    } else {
+      body.style.maxHeight = 'none';
+      btn.style.display = 'none';
+    }
+  });
 }
 
 async function toggleConfig(el) {
@@ -1116,8 +1160,11 @@ function renderToolCard(tool) {
         ${badge(tool.type)}${statusEl}
         ${tool.type === 'builtin' ? `<button class="delete-btn" data-type="tool" data-name="${escHtml(tool.name)}" title="${t('delete_tip')}">✕</button>` : ''}
       </div>
-      ${tool.description ? `<div class="card-desc">${escHtml(tool.description)}</div>` : ''}
-      ${params}${examples}${backendEl}${warningEl}
+      <div class="card-collapsible collapsed">
+        ${tool.description ? `<div class="card-desc">${escHtml(tool.description)}</div>` : ''}
+        ${params}${examples}${backendEl}${warningEl}
+      </div>
+      <button class="card-expand-btn" onclick="expandCard(this)">▼ ${t('show_more')}</button>
     </div>`;
 }
 
@@ -1134,8 +1181,11 @@ function renderAgentCard(a) {
         ${toggleBadge('agent', a.name, a.enabled)}
         <button class="delete-btn" data-type="agent" data-name="${escHtml(a.name)}" title="${t('delete_tip')}">✕</button>
       </div>
-      ${a.description ? `<div class="card-desc">${escHtml(a.description)}</div>` : ''}
-      ${examples}
+      <div class="card-collapsible collapsed">
+        ${a.description ? `<div class="card-desc">${escHtml(a.description)}</div>` : ''}
+        ${examples}
+      </div>
+      <button class="card-expand-btn" onclick="expandCard(this)">▼ ${t('show_more')}</button>
     </div>`;
 }
 
@@ -1157,8 +1207,11 @@ function renderSkillCard(s) {
         ${badge('skill')}${sourceBadge}${toggleBadge('skill', s.name, s.enabled)}
         ${deletable ? `<button class="delete-btn" data-type="skill-file" data-name="${escHtml(s.name)}" title="${t('delete_tip')}">✕</button>` : ''}
       </div>
-      ${s.description ? `<div class="card-desc">${escHtml(s.description)}</div>` : ''}
-      <div class="card-examples">${trigger}</div>
+      <div class="card-collapsible collapsed">
+        ${s.description ? `<div class="card-desc">${escHtml(s.description)}</div>` : ''}
+        <div class="card-examples">${trigger}</div>
+      </div>
+      <button class="card-expand-btn" onclick="expandCard(this)">▼ ${t('show_more')}</button>
     </div>`;
 }
 
@@ -1213,6 +1266,7 @@ function render(d) {
       ${mcpTools.length ? `<div class="cards" style="margin-top:12px">${mcpTools.map(renderToolCard).join('')}</div>` : ''}
     </div>` : ''}
   `;
+  requestAnimationFrame(applyCardCollapse);
 }
 
 async function load({ silent = false } = {}) {

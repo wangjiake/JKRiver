@@ -38,6 +38,31 @@ async def lifespan(app: FastAPI):
                            result="Server restarted — task was interrupted.")
     except Exception:
         pass
+    # Auto-update AGENT.md on startup (if scan is enabled)
+    scan_cfg = (_state._config or {}).get("agent_doc_scan", {}) or {}
+    if scan_cfg.get("enabled", True):
+        try:
+            from agent.tools.system_manage import _update_agent_doc
+            _update_agent_doc(_state._config)
+        except Exception as e:
+            logger.warning("Failed to update AGENT.md on startup: %s", e)
+
+        # Schedule periodic re-scan
+        async def _periodic_scan():
+            import asyncio as _asyncio
+            while True:
+                cfg2 = (_state._config or {}).get("agent_doc_scan", {}) or {}
+                interval_hours = cfg2.get("interval_hours", 24)
+                await _asyncio.sleep(interval_hours * 3600)
+                try:
+                    cfg2 = (_state._config or {}).get("agent_doc_scan", {}) or {}
+                    if cfg2.get("enabled", True):
+                        from agent.tools.system_manage import _update_agent_doc
+                        _update_agent_doc(_state._config)
+                        logger.info("AGENT.md periodic scan complete.")
+                except Exception as e:
+                    logger.warning("AGENT.md periodic scan failed: %s", e)
+        asyncio.create_task(_periodic_scan())
     yield
 
 

@@ -9,6 +9,10 @@ mkdir -p /app_config/skills /app_config/prompts
 # settings.yaml — generated from env vars by gen_settings.py below
 ln -sf /app_config/settings.yaml /app/settings.yaml
 
+# AGENT.md — auto-updated by system scan, persisted across restarts
+[ -f /app_config/AGENT.md ] || cp /app/AGENT.md /app_config/AGENT.md
+ln -sf /app_config/AGENT.md /app/AGENT.md
+
 # agents config
 for lang in en zh ja; do
     [ -f /app_config/agents_${lang}.yaml ] || cp /app/agent/config/agents_${lang}.yaml /app_config/agents_${lang}.yaml

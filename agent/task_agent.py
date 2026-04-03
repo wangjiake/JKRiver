@@ -26,12 +26,29 @@ Always use: {"action": "tool", "tool": "<tool_name>", "params": {...}, "reasonin
 
 Guidelines:
 - Always read a file before modifying it.
-- After writing or modifying files, use shell_exec to verify: run syntax checks (python3 -m py_compile), tests (python3 -m pytest), or re-read the file to confirm correctness.
+- After writing or modifying files, verify correctness by re-reading the file with file_read. For .py files only, you may also run `python3 -m py_compile <file>`. Never run python3 -m py_compile on YAML, JSON, or other non-Python files.
 - Only return "done" after verifying the result is correct.
 - Be concise in reasoning — focus on what you are doing and why.
 - For counting lines, file sizes, or statistics: prefer shell_exec (e.g. wc -l, find, du) over reading files one by one.
 - For searching or listing files across directories: ALWAYS use shell_exec with find — NEVER use file_list repeatedly directory by directory. Always exclude virtualenv and cache dirs: find /app_work -name "*.py" -not -path "*/.venv/*" -not -path "*/__pycache__/*" -not -path "*/node_modules/*"
 - The "result" field in the "done" action MUST contain the actual output/data the user asked for (numbers, lists, findings), not just a description of what you did."""
+
+
+def _load_agent_md() -> str:
+    """Read AGENT.md and return it as a formatted context block, or empty string if not found."""
+    import os
+    cwd = os.getcwd()
+    for candidate in [
+        os.path.join(cwd, "AGENT.md"),
+        "/src/AGENT.md",
+        os.path.join(os.path.dirname(__file__), "..", "AGENT.md"),
+    ]:
+        try:
+            with open(os.path.normpath(candidate), encoding="utf-8") as f:
+                return f"\n\n--- Project Context (AGENT.md) ---\n{f.read().strip()}\n--- End of Project Context ---\n"
+        except FileNotFoundError:
+            continue
+    return ""
 
 
 def _build_system_prompt() -> str:
@@ -42,7 +59,7 @@ def _build_system_prompt() -> str:
         "All file operations MUST use local paths. Do NOT access GitHub, URLs, or remote resources "
         "unless the task explicitly requires it.\n\n"
     )
-    return prefix + _SYSTEM_PROMPT_BASE[_SYSTEM_PROMPT_BASE.index("You have access"):]
+    return prefix + _SYSTEM_PROMPT_BASE[_SYSTEM_PROMPT_BASE.index("You have access"):] + _load_agent_md()
 
 _STRICT_SUFFIX = """
 Mode: STRICT — You may only read files, search code, run syntax checks and tests.
@@ -146,6 +163,7 @@ async def plan_task_async(task: str, config: dict) -> list[dict]:
         "ja": "各ステップを日本語で説明してください。",
         "en": "Describe each step in English.",
     }.get(lang, "Describe each step in English.")
+    agent_context = _load_agent_md()
     messages = [
         {"role": "system", "content": (
             "You are a task planning agent. Given a task, output a JSON array of planned steps. "
@@ -156,6 +174,7 @@ async def plan_task_async(task: str, config: dict) -> list[dict]:
             "All file operations should be done on local files, NOT via GitHub or any remote URL.\n"
             "For counting lines/files/statistics: plan to use shell commands (wc -l, find, du, grep -c) — NOT reading files one by one.\n"
             "Keep steps high-level and practical. Do NOT include steps like 'clean up variables' or 'close files'."
+            f"{agent_context}"
         )},
         {"role": "user", "content": f"Task: {task}"}
     ]
@@ -311,6 +330,17 @@ async def run_task_async(
                 fp = tool_params.get("path", "")
                 if fp and tool_result.success:
                     files_changed.append(fp)
+
+            # If a restart was triggered successfully, mark done before the process dies
+            if (tool_name == "system_manage"
+                    and tool_params.get("action") == "restart"
+                    and tool_result.success):
+                return {
+                    "success": True,
+                    "result": "Task completed. Service is restarting to apply changes.",
+                    "steps": steps,
+                    "files_changed": list(dict.fromkeys(files_changed)),
+                }
 
             if progress_callback:
                 await progress_callback(steps[-1])

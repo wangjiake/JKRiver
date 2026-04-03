@@ -78,6 +78,29 @@ def _set_settings_field(path_parts: list[str], value: str) -> tuple[bool, str]:
             parent_indent = indent
             depth += 1
 
+    # Key not found — append new section if path is 2 levels deep.
+    # Guard: only append if parent key does not already exist anywhere in the file,
+    # to avoid creating duplicate top-level sections.
+    if len(path_parts) == 2:
+        parent_key = path_parts[0]
+        parent_exists = any(
+            line.strip() and not line.strip().startswith("#")
+            and re.match(rf"^{re.escape(parent_key)}\s*:", line)
+            for line in lines
+        )
+        new_val = _yaml_value(path_parts[-1], value)
+        if parent_exists:
+            # Parent section exists but child key was not found — append child under parent
+            for i in range(len(lines) - 1, -1, -1):
+                if re.match(rf"^{re.escape(parent_key)}\s*:", lines[i].strip() and lines[i]):
+                    lines.insert(i + 1, f"  {path_parts[1]}: {new_val}\n")
+                    break
+        else:
+            lines.append(f"\n{parent_key}:\n  {path_parts[1]}: {new_val}\n")
+        with open(_SETTINGS_PATH, "w", encoding="utf-8") as f:
+            f.writelines(lines)
+        return True, ""
+
     return False, ""
 
 

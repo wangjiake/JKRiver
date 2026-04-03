@@ -273,3 +273,11 @@ proactive:
         idle_checkin:                   # 长时间没聊自动关心 | Check in after long silence | 長時間の沈黙後にチェックイン
             enabled: true
             idle_hours: 48
+
+
+# ─── 系统文档自动扫描 | Agent Doc Auto-Scan ──────────────────
+#  定时扫描工具/智能体/技能，自动更新 AGENT.md 让 LLM 了解系统能力
+#  Periodically scan tools/agents/skills and update AGENT.md
+agent_doc_scan:
+    enabled: true                        # 是否启用定时扫描 | Enable scheduled scan
+    interval_hours: 24                   # 扫描间隔小时数 | Scan interval in hours

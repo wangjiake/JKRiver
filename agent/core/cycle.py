@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import re
 
 from agent.utils.time_context import get_now
 from agent.tools.preprocess import preprocess_input
@@ -17,8 +16,109 @@ from agent.core.handlers import (
     _save_turn_data,
     _finalize_response,
 )
+from agent.core._outsource import (
+    OUTSOURCE_TRIGGER_RE,
+    OUTSOURCE_RESUME_KEYWORDS,
+    OUTSOURCE_CONFIRM_WORDS,
+)
 
 logger = logging.getLogger(__name__)
+
+
+def _try_outsource_intercept(
+    processed_text: str,
+    perception: dict,
+    session: Session,
+    input_metadata: dict,
+    user_input_at,
+    raw_user_input: str,
+    L: dict,
+) -> dict | None:
+    """
+    Check if this turn should be handled entirely by the outsource pipeline
+    without going through the normal memory-build + LLM think cycle.
+
+    Returns a result dict (same shape as run_cycle_async return value) if
+    intercepted, or None to let the normal pipeline continue.
+    """
+    _stripped = processed_text.strip()
+
+    # If user sent a short confirmation and there is exactly 1 pending outsource
+    # task for this session, force tool resolution so dispatch_task(start) can run.
+    if (not perception.get("need_tools")
+            and _stripped.lower() in OUTSOURCE_CONFIRM_WORDS
+            and len(_stripped) <= 10):
+        try:
+            from agent.storage.outsource import list_tasks
+            _pending = [
+                t for t in list_tasks(limit=20)
+                if t.get("status") == "pending"
+                and t.get("session_id") == session.id
+            ]
+            if len(_pending) == 1:
+                perception["need_tools"] = True
+                perception["_outsource_pending_id"] = _pending[0]["task_id"]
+        except Exception:
+            pass
+        return None  # let normal pipeline run with updated perception
+
+    # If outsource skill matched, directly run dispatch_task preview/resume
+    # and short-circuit everything else (resolver, memory build, think step).
+    _outsource_skills = session.skill_registry.match_keywords(processed_text)
+    _outsource_skill = next((s for s in _outsource_skills if s.name == "outsource"), None)
+    if not _outsource_skill:
+        return None
+
+    _is_resume = any(kw in processed_text.lower() for kw in OUTSOURCE_RESUME_KEYWORDS)
+    _dispatch_tool = session.tool_registry.get_tool("dispatch_task")
+
+    if _dispatch_tool and _is_resume:
+        _resume_result = _dispatch_tool.execute({"action": "resume"})
+        _resume_data = _resume_result.data if _resume_result.success else (_resume_result.error or "Resume failed")
+        now = get_now()
+        think_result = {
+            "raw_response": _resume_data, "raw_response_at": now,
+            "final_response": _resume_data, "final_response_at": now,
+            "verification_result": "", "verification_result_at": now,
+            "thinking_notes": "", "thinking_notes_at": now,
+        }
+        _save_turn_data(
+            session, {"intent": "outsource_resume", "need_memory": False, "memory_type": "无",
+                      "ai_summary": processed_text, "perception_at": now,
+                      "topic_keywords": [], "category": "chat"},
+            think_result,
+            {"profile": [], "hypotheses": [], "strategies": [], "user_model": [],
+             "events": [], "strategy_ids": [], "memory_text": ""},
+            now, user_input_at, raw_user_input, _resume_data, [], input_metadata, L,
+        )
+        return {"response": _resume_data, "perception": {}, "memories": {},
+                "trajectory": None, "think_result": think_result}
+
+    _task_desc = OUTSOURCE_TRIGGER_RE.sub('', processed_text).strip() or processed_text
+    if _dispatch_tool:
+        _preview_result = _dispatch_tool.execute({"action": "preview", "task": _task_desc})
+        if _preview_result.success:
+            now = get_now()
+            _preview_data = _preview_result.data
+            think_result = {
+                "raw_response": _preview_data, "raw_response_at": now,
+                "final_response": _preview_data, "final_response_at": now,
+                "verification_result": "", "verification_result_at": now,
+                "thinking_notes": "", "thinking_notes_at": now,
+            }
+            _save_turn_data(
+                session, {"intent": "outsource", "need_memory": False, "memory_type": "无",
+                          "ai_summary": _task_desc, "perception_at": now,
+                          "topic_keywords": [], "category": "chat"},
+                think_result,
+                {"profile": [], "hypotheses": [], "strategies": [], "user_model": [],
+                 "events": [], "strategy_ids": [], "memory_text": ""},
+                now, user_input_at, raw_user_input, _preview_data, [], input_metadata, L,
+            )
+            return {"response": _preview_data, "perception": {}, "memories": {},
+                    "trajectory": None, "think_result": think_result}
+
+    return None
 
 
 async def run_cycle_async(user_input: str | dict, session: Session,
@@ -62,81 +162,13 @@ async def run_cycle_async(user_input: str | dict, session: Session,
     # Inject session_id into tool config so dispatch_task can push results back
     session.tool_registry.config["_session_id"] = session.id
 
-    # If user sent a short confirmation and there's exactly 1 pending outsource task
-    # belonging to this session, force tool resolution so dispatch_task(action=start) can run.
-    _CONFIRM_WORDS = {"是", "好", "开始", "确认", "ok", "yes", "好的", "行", "嗯", "可以", "start", "confirm"}
-    _stripped = processed_text.strip()
-    if (not perception.get("need_tools")
-            and _stripped.lower() in _CONFIRM_WORDS
-            and len(_stripped) <= 10):
-        try:
-            from agent.storage.outsource import list_tasks
-            _pending = [
-                t for t in list_tasks(limit=20)
-                if t.get("status") == "pending"
-                and t.get("session_id") == session.id
-            ]
-            if len(_pending) == 1:
-                perception["need_tools"] = True
-                perception["_outsource_pending_id"] = _pending[0]["task_id"]
-        except Exception:
-            pass
-
-    # Early outsource detection: if outsource skill matched, directly run dispatch_task preview
-    # and short-circuit everything (resolver, memory build, think step)
-    _outsource_skills = session.skill_registry.match_keywords(processed_text)
-    _outsource_skill = next((s for s in _outsource_skills if s.name == "outsource"), None)
-    if _outsource_skill:
-        _resume_keywords = ["继续执行", "继续任务", "继续外包", "恢复任务", "resume task", "resume the task", "再開して", "タスクを再開"]
-        _is_resume = any(kw in processed_text.lower() for kw in _resume_keywords)
-        _dispatch_tool = session.tool_registry.get_tool("dispatch_task")
-        if _dispatch_tool and _is_resume:
-            _resume_result = _dispatch_tool.execute({"action": "resume"})
-            _resume_data = _resume_result.data if _resume_result.success else (_resume_result.error or "Resume failed")
-            now = get_now()
-            think_result = {
-                "raw_response": _resume_data, "raw_response_at": now,
-                "final_response": _resume_data, "final_response_at": now,
-                "verification_result": "", "verification_result_at": now,
-                "thinking_notes": "", "thinking_notes_at": now,
-            }
-            _save_turn_data(
-                session, {"intent": "outsource_resume", "need_memory": False, "memory_type": "无",
-                          "ai_summary": processed_text, "perception_at": now,
-                          "topic_keywords": [], "category": "chat"},
-                think_result,
-                {"profile": [], "hypotheses": [], "strategies": [], "user_model": [],
-                 "events": [], "strategy_ids": [], "memory_text": ""},
-                now, user_input_at, raw_user_input, _resume_data, [], input_metadata, L,
-            )
-            return {"response": _resume_data, "perception": {}, "memories": {},
-                    "trajectory": None, "think_result": think_result}
-        _task_desc = re.sub(
-            r'^(外包模式|外包任务|帮我外包|用外包|outsource mode|outsource this|外包给ai|外包给你|delegate to agent|run as task|use task agent|派遣モード|派遣して|派遣タスク|派遣に)[：:：\s]*',
-            '', processed_text, flags=re.IGNORECASE
-        ).strip() or processed_text
-        if _dispatch_tool:
-            _preview_result = _dispatch_tool.execute({"action": "preview", "task": _task_desc})
-            if _preview_result.success:
-                now = get_now()
-                _preview_data = _preview_result.data
-                think_result = {
-                    "raw_response": _preview_data, "raw_response_at": now,
-                    "final_response": _preview_data, "final_response_at": now,
-                    "verification_result": "", "verification_result_at": now,
-                    "thinking_notes": "", "thinking_notes_at": now,
-                }
-                _save_turn_data(
-                    session, {"intent": "outsource", "need_memory": False, "memory_type": "无",
-                              "ai_summary": _task_desc, "perception_at": now,
-                              "topic_keywords": [], "category": "chat"},
-                    think_result,
-                    {"profile": [], "hypotheses": [], "strategies": [], "user_model": [],
-                     "events": [], "strategy_ids": [], "memory_text": ""},
-                    now, user_input_at, raw_user_input, _preview_data, [], input_metadata, L,
-                )
-                return {"response": _preview_data, "perception": {}, "memories": {},
-                        "trajectory": None, "think_result": think_result}
+    # Check if the outsource pipeline should handle this turn entirely
+    _intercept = _try_outsource_intercept(
+        processed_text, perception, session,
+        input_metadata, user_input_at, raw_user_input, L,
+    )
+    if _intercept is not None:
+        return _intercept
 
     if category == "knowledge":
         memories = {

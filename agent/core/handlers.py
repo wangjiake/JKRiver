@@ -7,6 +7,7 @@ from agent.storage import save_raw_conversation, save_conversation_turn, mark_st
 from agent.config.prompts import get_labels
 from agent.skills.creator import detect_skill_request, create_skill_from_chat, delete_skill, extract_skill_name
 from agent.skills.executor import execute_skill
+from agent.core._outsource import OUTSOURCE_TRIGGER_RE
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +59,29 @@ def _inject_tool_context(tool_results: list[dict], memories: dict, llm_input: st
     return llm_input
 
 
+def _try_handle_outsource_skill(skill, processed_text: str, session, memories: dict, log_fn) -> bool:
+    """
+    If the outsource skill matched, call dispatch_task preview directly instead of
+    relying on the LLM. Mutates memories in place. Returns True if handled.
+    """
+    try:
+        dispatch_tool = session.tool_registry.get_tool("dispatch_task")
+        if not dispatch_tool:
+            return False
+        task_desc = OUTSOURCE_TRIGGER_RE.sub('', processed_text).strip() or processed_text
+        preview_result = dispatch_tool.execute({"action": "preview", "task": task_desc})
+        if preview_result.success:
+            memories["_outsource_preview"] = preview_result.data
+            memories["memory_text"] += f"\n\n{preview_result.data}"
+            if log_fn:
+                log_fn("info", f"外包预览已生成: {task_desc[:60]}")
+            return True
+    except Exception as _e:
+        if log_fn:
+            log_fn("info", f"外包直接预览失败，回退到指令注入: {_e}")
+    return False
+
+
 def _handle_skills(processed_text: str, session, memories: dict, L: dict, log_fn):
     """Handle skill creation, deletion, and matching."""
     language = session.full_config.get("language", "en")
@@ -98,28 +122,9 @@ def _handle_skills(processed_text: str, session, memories: dict, L: dict, log_fn
     matched_skills = session.skill_registry.match_keywords(processed_text)
     for skill in matched_skills:
         try:
-            # Outsource skill: directly call dispatch_task preview instead of relying on LLM
             if skill.name == "outsource":
-                try:
-                    dispatch_tool = session.tool_registry.get_tool("dispatch_task")
-                    if dispatch_tool:
-                        task_desc = processed_text
-                        # Strip trigger keywords to get clean task description
-                        import re as _re
-                        task_desc = _re.sub(
-                            r'^(外包模式|外包任务|帮我外包|用外包|outsource mode|outsource this|外包给ai|外包给你|delegate to agent|run as task|use task agent|派遣モード|派遣して|派遣タスク|派遣に)[：:：\s]*',
-                            '', task_desc, flags=_re.IGNORECASE
-                        ).strip()
-                        preview_result = dispatch_tool.execute({"action": "preview", "task": task_desc})
-                        if preview_result.success:
-                            memories["_outsource_preview"] = preview_result.data
-                            memories["memory_text"] += f"\n\n{preview_result.data}"
-                            if log_fn:
-                                log_fn("info", f"外包预览已生成: {task_desc[:60]}")
-                            continue
-                except Exception as _e:
-                    if log_fn:
-                        log_fn("info", f"外包直接预览失败，回退到指令注入: {_e}")
+                if _try_handle_outsource_skill(skill, processed_text, session, memories, log_fn):
+                    continue
 
             if skill.is_simple:
                 inject = f"\n\n{L['skill_guide_header'].format(description=skill.description)}\n{skill.instruction}"

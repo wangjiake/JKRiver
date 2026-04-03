@@ -15,7 +15,7 @@ To use a tool:
 {"action": "tool", "tool": "<tool_name>", "params": {...}, "reasoning": "<why>"}
 
 When the task is complete:
-{"action": "done", "result": "<summary of what was done>", "files_changed": ["list of files"]}
+{"action": "done", "result": "<the actual data/content/output the user asked for>", "files_changed": ["list of files"]}
 
 If you cannot complete the task:
 {"action": "error", "reason": "<explanation>"}
@@ -31,7 +31,7 @@ Guidelines:
 - Be concise in reasoning — focus on what you are doing and why.
 - For counting lines, file sizes, or statistics: prefer shell_exec (e.g. wc -l, find, du) over reading files one by one.
 - For searching or listing files across directories: ALWAYS use shell_exec with find — NEVER use file_list repeatedly directory by directory. Always exclude virtualenv and cache dirs: find /app_work -name "*.py" -not -path "*/.venv/*" -not -path "*/__pycache__/*" -not -path "*/node_modules/*"
-- The "result" field in the "done" action MUST contain the actual output/data the user asked for (numbers, lists, findings), not just a description of what you did."""
+- The "result" field MUST contain the actual data the user asked for — file contents, query results, numbers, lists. NEVER write a description of what you did (e.g. "File has been read" is wrong; paste the actual content instead)."""
 
 
 def _load_agent_md() -> str:

@@ -68,7 +68,7 @@ def _try_handle_outsource_skill(skill, processed_text: str, session, memories: d
         dispatch_tool = session.tool_registry.get_tool("dispatch_task")
         if not dispatch_tool:
             return False
-        task_desc = OUTSOURCE_TRIGGER_RE.sub('', processed_text).strip() or processed_text
+        task_desc = OUTSOURCE_TRIGGER_RE.sub('', processed_text).strip()
         preview_result = dispatch_tool.execute({"action": "preview", "task": task_desc})
         if preview_result.success:
             memories["_outsource_preview"] = preview_result.data

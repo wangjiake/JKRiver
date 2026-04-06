@@ -115,7 +115,7 @@ Conversation flows in ──→ Erosion ──→ Sedimentation ──→ Shapes
 - **Semantic Search** — BGE-M3 embeddings, retrieves relevant memories by meaning
 - **Multi-language Prompts** — English, Chinese, Japanese — switch with one setting
 
-> **On accuracy:** No LLM today is specifically trained for personal profile extraction, so results may occasionally be off. You can **reject** incorrect memories or **close** outdated ones in the Web Dashboard. As conversations accumulate, the River Algorithm continuously self-corrects through multi-turn verification and contradiction detection.
+> **On accuracy:** No LLM today is specifically trained for personal profile extraction, so results may occasionally be off. You can **mark incorrect memories as error** or **manually close outdated ones** in the Web Dashboard — but memories cannot be deleted or edited directly. This is by design: the River Algorithm treats your memory as an audit trail. Bad extractions reflect your LLM's understanding, not a bug. If you see too many errors, try switching to a stronger model — the memory pipeline is also a practical benchmark for evaluating how well your LLM understands natural language. As conversations accumulate, the algorithm continuously self-corrects through multi-turn verification and contradiction detection.
 
 **The demo includes 20 casual conversations with a fictional character. From raw chat history like this:**
 

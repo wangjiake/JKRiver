@@ -107,16 +107,16 @@ Conversation flows in ──→ Erosion ──→ Sedimentation ──→ Shapes
 
 **The demo includes 20 casual conversations with a fictional character. From raw chat history like this:**
 
-![Demo raw conversations — natural language, no special formatting](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-raw-data.png)
+[![Demo raw conversations — natural language, no special formatting](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-raw-data.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-raw-data.png)
 
 **The River Algorithm extracts a structured, evolving profile:**
 
-![Confirmed facts extracted from conversations](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-confirmed.png)
-![Suspected facts pending verification](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-suspected.png)
-![Timeline — how facts changed over time](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-timeline.png)
-![Snapshots — profile state at each point in time](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-snapshots.png)
-![Observations — raw statements extracted from conversations](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-observations.png)
-![Relationships — people mentioned across conversations](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-relationships.png)
+[![Confirmed facts extracted from conversations](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-confirmed.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-confirmed.png)
+[![Suspected facts pending verification](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-suspected.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-suspected.png)
+[![Timeline — how facts changed over time](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-timeline.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-timeline.png)
+[![Snapshots — profile state at each point in time](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-snapshots.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-snapshots.png)
+[![Observations — raw statements extracted from conversations](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-observations.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-observations.png)
+[![Relationships — people mentioned across conversations](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-relationships.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-relationships.png)
 
 ---
 
@@ -146,10 +146,10 @@ Open `http://localhost:1234` in your browser, enter the access token, then go to
 | **RiverHistory** | http://localhost:2345 | Profile viewer |
 | **API Docs** | http://localhost:8400/docs | REST API reference |
 
-![Chat](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-chat-empty.png)
-![Profile](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-empty.png)
-![System](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-system.png)
-![Tasks](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-tasks.png)
+[![Chat](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-chat-empty.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-chat-empty.png)
+[![Profile](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-empty.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-empty.png)
+[![System](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-system.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-system.png)
+[![Tasks](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-tasks.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-tasks.png)
 
 Full Docker guide (chat bots, data import, demo, configuration): **[docker/README.md](docker/README.md)**
 

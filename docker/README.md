@@ -45,6 +45,12 @@ Open `http://localhost:1234`, enter the token, then go to **System** to configur
 
 > Token is saved in `./config/settings.yaml`. As long as `config/` exists, you won't need to look it up again.
 
+After logging in, you'll see three main tabs:
+
+![Chat](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-chat-empty.png)
+![Profile](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-empty.png)
+![Tasks](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-tasks.png)
+
 ### System Page Configuration
 
 All settings are configured through the **System** page at http://localhost:1234 — no config file editing required.
@@ -60,6 +66,8 @@ All settings are configured through the **System** page at http://localhost:1234
 | **Cloud LLM** | Additional providers for web search and fallback |
 
 Settings are saved immediately to `./config/settings.yaml` and take effect after restart.
+
+![System page](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-system.png)
 
 ### How to Chat
 
@@ -88,15 +96,34 @@ Configure in the **System** page, or set environment variables before first star
 
 ### Try the Demo
 
-Demo conversations load automatically. Process them:
+The demo includes 20 casual conversations with a fictional character — Jake Morrison, a software engineer in Austin. The conversations cover his career, relationships, hobbies, and daily life in natural language:
+
+![Demo raw conversations](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-raw-data.png)
+
+Process them with the River Algorithm:
+
+> **Note:** RiverHistory reads the API key from the `.env` file, not from the System page. Before running, make sure your `.env` contains `OPENAI_API_KEY=sk-...`. If you just added it, restart the container first:
+> ```bash
+> echo 'OPENAI_API_KEY=sk-your-key' >> .env
+> docker compose up -d --force-recreate riverhistory
+> ```
 
 ```bash
 docker compose exec riverhistory bash -c "cd /app_work && python run.py demo max"
 ```
 
-Open http://localhost:2345 to see the extracted profile.
+Open http://localhost:2345 to see the extracted profile:
+
+![Confirmed facts](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-confirmed.png)
+![Suspected facts](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-suspected.png)
+![Timeline](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-timeline.png)
+![Snapshots](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-snapshots.png)
+![Observations](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-observations.png)
+![Relationships](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-relationships.png)
 
 ### Import Your Own Data
+
+> **Note:** RiverHistory reads the API key from the `.env` file. Make sure `.env` contains `OPENAI_API_KEY=sk-...` before running `run.py`.
 
 Place exported files in a `data/` folder:
 
@@ -222,6 +249,12 @@ docker compose exec jkriver bash -c "cd /app && python -m agent.main"
 
 Demo 对话启动时自动导入，运行处理：
 
+> **注意：** RiverHistory 从 `.env` 文件读取 API Key，而不是 System 页面的配置。运行前请确认 `.env` 中包含 `OPENAI_API_KEY=sk-...`。如果刚刚添加，需要重启容器：
+> ```bash
+> echo 'OPENAI_API_KEY=sk-your-key' >> .env
+> docker compose up -d --force-recreate riverhistory
+> ```
+
 ```bash
 docker compose exec riverhistory bash -c "cd /app_work && python run.py demo max"
 ```
@@ -229,6 +262,8 @@ docker compose exec riverhistory bash -c "cd /app_work && python run.py demo max
 打开 http://localhost:2345 查看提取的画像。
 
 ### 导入自己的数据
+
+> **注意：** RiverHistory 从 `.env` 文件读取 API Key，运行 `run.py` 前请确认 `.env` 中包含 `OPENAI_API_KEY=sk-...`。
 
 在 `data/` 文件夹放入导出文件：
 
@@ -354,6 +389,12 @@ docker compose exec jkriver bash -c "cd /app && python -m agent.main"
 
 デモ会話は起動時に自動インポートされます：
 
+> **注意：** RiverHistory は System ページではなく `.env` ファイルから API キーを読み込みます。実行前に `.env` に `OPENAI_API_KEY=sk-...` が含まれていることを確認してください。追加した場合はコンテナを再起動してください：
+> ```bash
+> echo 'OPENAI_API_KEY=sk-your-key' >> .env
+> docker compose up -d --force-recreate riverhistory
+> ```
+
 ```bash
 docker compose exec riverhistory bash -c "cd /app_work && python run.py demo max"
 ```
@@ -361,6 +402,8 @@ docker compose exec riverhistory bash -c "cd /app_work && python run.py demo max
 http://localhost:2345 を開いてプロフィールを確認。
 
 ### 自分のデータをインポート
+
+> **注意：** RiverHistory は `.env` ファイルから API キーを読み込みます。`run.py` を実行する前に `.env` に `OPENAI_API_KEY=sk-...` が含まれていることを確認してください。
 
 `data/` フォルダにエクスポートファイルを配置：
 

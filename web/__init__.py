@@ -5,8 +5,10 @@ from flask import Flask
 
 
 def create_app():
-    template_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "templates")
-    app = Flask(__name__, template_folder=template_dir)
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    template_dir = os.path.join(base_dir, "templates")
+    static_dir = os.path.join(base_dir, "static")
+    app = Flask(__name__, template_folder=template_dir, static_folder=static_dir, static_url_path="/static")
     app.secret_key = secrets.token_hex(32)
 
     from web.core import core_bp

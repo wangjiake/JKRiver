@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% block head_title %}<title>{% block title %}{% endblock %} — {{ db_name }}</title>{% endblock %}
+<link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
+<link rel="icon" type="image/x-icon" href="/img/favicon.ico" sizes="48x48">
+<link rel="icon" type="image/png" href="/img/favicon-96x96.png" sizes="96x96">
+<link rel="apple-touch-icon" sizes="180x180" href="/img/apple-touch-icon.png">
+<link rel="manifest" href="/img/site.webmanifest">
+<style>
+:root {
+  --bg: #161e2c;
+  --bg-card: #1a2234;
+  --bg-card2: #182030;
+  --bg-header-start: #1a2030;
+  --bg-header-end: #1e2636;
+  --bg-input: #141c28;
+  --bg-hover: #1e2636;
+  --bg-hover2: #1c2432;
+  --bg-accent: #1e3252;
+  --bg-accent2: #1a2a3e;
+  --border: #28344a;
+  --border-light: #1e2838;
+  --border-accent: #2a4468;
+  --text: #b8c8d8;
+  --text-2: #a8b8cc;
+  --text-muted: #6e7e94;
+  --text-faint: #506070;
+  --text-faint2: #3a4858;
+  --accent: #58a6ff;
+  --green: #3fb950;
+  --yellow: #d29922;
+  --red: #f85149;
+  --purple: #bc8cff;
+  --shadow: rgba(0,0,0,0.5);
+  --glass-bg: rgba(24, 30, 42, 0.68);
+  --glass-sidebar: rgba(20, 26, 36, 0.80);
+  --glass-card: rgba(28, 34, 48, 0.92);
+  --glass-input: rgba(18, 22, 34, 0.84);
+  --glass-blur: blur(24px) saturate(200%);
+  --card-border: rgba(140, 158, 195, 0.16);
+  --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(160, 180, 220, 0.07);
+  --body-gradient: linear-gradient(160deg, #1a2030 0%, #1e2838 35%, #1a2830 65%, #1c2038 100%);
+}
+body.light {
+  --bg: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card2: #f0f3f6;
+  --bg-header-start: #f6f8fa;
+  --bg-header-end: #eaeef2;
+  --bg-input: #ffffff;
+  --bg-hover: #eaeef2;
+  --bg-hover2: #e8ecf0;
+  --bg-accent: #ededf8;
+  --bg-accent2: #e0e0f4;
+  --border: #d0d7de;
+  --border-light: #eaeef2;
+  --border-accent: #8a96d8;
+  --text: #1f2328;
+  --text-2: #24292f;
+  --text-muted: #57606a;
+  --text-faint: #8c959f;
+  --text-faint2: #afb8c1;
+  --accent: #4f5fba;
+  --green: #1a7f37;
+  --yellow: #9a6700;
+  --red: #cf222e;
+  --purple: #8250df;
+  --shadow: rgba(0,0,0,0.15);
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-sidebar: rgba(248, 250, 255, 0.60);
+  --glass-card: rgba(255, 255, 255, 0.88);
+  --glass-input: rgba(255, 255, 255, 0.85);
+  --card-border: rgba(0, 0, 0, 0.10);
+  --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.14), 0 1px 4px rgba(0, 0, 0, 0.08);
+  --body-gradient: linear-gradient(160deg, #dde8ff 0%, #ede6fa 35%, #ddf2ec 65%, #f5e6f5 100%);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+{% block style %}{% endblock %}
+</style>
+{% block head_extra %}{% endblock %}
+</head>
+<body>
+{% block body %}{% endblock %}
+{% block scripts %}{% endblock %}
+</body>
+</html>

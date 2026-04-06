@@ -105,10 +105,17 @@ Conversation flows in ──→ Erosion ──→ Sedimentation ──→ Shapes
 
 > **On accuracy:** No LLM today is specifically trained for personal profile extraction, so results may occasionally be off. You can **reject** incorrect memories or **close** outdated ones in the Web Dashboard. As conversations accumulate, the River Algorithm continuously self-corrects through multi-turn verification and contradiction detection.
 
-**After processing conversations, the extracted profile looks like this:**
+**The demo includes 20 casual conversations with a fictional character. From raw chat history like this:**
+
+![Demo raw conversations — natural language, no special formatting](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-raw-data.png)
+
+**The River Algorithm extracts a structured, evolving profile:**
 
 ![Confirmed facts extracted from conversations](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-confirmed.png)
+![Suspected facts pending verification](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-suspected.png)
 ![Timeline — how facts changed over time](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-timeline.png)
+![Snapshots — profile state at each point in time](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-snapshots.png)
+![Observations — raw statements extracted from conversations](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-observations.png)
 ![Relationships — people mentioned across conversations](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-relationships.png)
 
 ---
@@ -142,6 +149,7 @@ Open `http://localhost:1234` in your browser, enter the access token, then go to
 ![Chat](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-chat-empty.png)
 ![Profile](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-empty.png)
 ![System](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-system.png)
+![Tasks](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-tasks.png)
 
 Full Docker guide (chat bots, data import, demo, configuration): **[docker/README.md](docker/README.md)**
 

@@ -93,11 +93,19 @@ Conversation flows in ──→ Erosion ──→ Sedimentation ──→ Shapes
 - **Multi-Modal Input** — Text, voice, images, files — all understood natively
 - **Pluggable Tools** — Finance tracking, health sync (Withings), web search, vision, TTS, and more; toggle or remove any tool from the System page
 - **YAML Skills** — Custom behaviors triggered by keyword or cron schedule; install from SkillHub or paste YAML directly in the dashboard
-- **Outsource / Task Agent** — Delegate complex multi-step tasks to an autonomous sub-agent; preview the plan, confirm, then track real-time progress on the `/outsource` page
+- **Outsource / Task Agent** — Delegate complex multi-step tasks to an autonomous sub-agent that works in the background while you keep chatting. Say "outsource: [task]" — the agent breaks it into steps, shows you the plan for review, then executes automatically. It can read/write files, run shell commands, search code, and pause mid-task to ask you questions. Track real-time progress on the `/outsource` page.
 
-[![Outsource plan preview in chat](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-plan.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-plan.png)
-[![Task result shown in chat](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-result.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-result.png)
-[![Tasks page with full execution log](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-tasks.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-tasks.png)
+  **Step 1 — The agent generates a plan and asks for your confirmation:**
+
+  [![Outsource plan preview in chat](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-plan.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-plan.png)
+
+  **Step 2 — After confirmation, it executes and returns the result in chat:**
+
+  [![Task result shown in chat](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-result.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-result.png)
+
+  **Step 3 — Full execution log and output files available on the Tasks page:**
+
+  [![Tasks page with full execution log](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-tasks.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-tasks.png)
 - **Session Management** — Rename and pin conversations to quickly find what matters
 - **External Agents** — Connect Home Assistant, n8n, Dify and more via `agents_*.yaml`
 - **MCP Protocol** — Model Context Protocol support for Gmail and other MCP servers

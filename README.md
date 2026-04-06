@@ -94,6 +94,10 @@ Conversation flows in ──→ Erosion ──→ Sedimentation ──→ Shapes
 - **Pluggable Tools** — Finance tracking, health sync (Withings), web search, vision, TTS, and more; toggle or remove any tool from the System page
 - **YAML Skills** — Custom behaviors triggered by keyword or cron schedule; install from SkillHub or paste YAML directly in the dashboard
 - **Outsource / Task Agent** — Delegate complex multi-step tasks to an autonomous sub-agent; preview the plan, confirm, then track real-time progress on the `/outsource` page
+
+[![Outsource plan preview in chat](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-plan.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-plan.png)
+[![Task result shown in chat](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-result.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-result.png)
+[![Tasks page with full execution log](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-tasks.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-tasks.png)
 - **Session Management** — Rename and pin conversations to quickly find what matters
 - **External Agents** — Connect Home Assistant, n8n, Dify and more via `agents_*.yaml`
 - **MCP Protocol** — Model Context Protocol support for Gmail and other MCP servers

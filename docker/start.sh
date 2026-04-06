@@ -89,6 +89,18 @@ uvicorn agent.api:app --host 0.0.0.0 --port 8400 &
 echo "[start] Starting Flask UI on :1234..."
 python3 web.py --host 0.0.0.0 --port 1234 &
 
+# Kill any orphaned bot processes from a previous run before starting new ones
+if pgrep -f "agent.telegram_bot" > /dev/null 2>&1; then
+    echo "[start] Killing orphaned telegram_bot process..."
+    pkill -f "agent.telegram_bot" || true
+    sleep 1
+fi
+if pgrep -f "agent.discord_bot" > /dev/null 2>&1; then
+    echo "[start] Killing orphaned discord_bot process..."
+    pkill -f "agent.discord_bot" || true
+    sleep 1
+fi
+
 # Start bots if enabled in settings.yaml
 python3 - <<'EOF'
 import yaml, subprocess, sys

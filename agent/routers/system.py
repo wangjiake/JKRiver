@@ -549,15 +549,40 @@ async def revert_changes():
 
 
 def _start_bot(key: str, module: str):
-    """Start a bot subprocess, killing any existing one first."""
+    """Start a bot subprocess, killing any existing one first.
+
+    Uses pgrep to find and kill ALL running instances of the module
+    (including orphaned ones from before os.execv), not just the
+    tracked _state proc which is lost after process replacement.
+    """
+    import os as _os, signal as _signal, time as _time
+
+    # Kill all existing instances by module name (catches post-execv orphans)
+    own_pid = _os.getpid()
+    try:
+        result = subprocess.run(["pgrep", "-f", module], capture_output=True, text=True)
+        pids = [int(p) for p in result.stdout.strip().split() if p.strip().isdigit()]
+        for pid in pids:
+            if pid != own_pid:
+                try:
+                    _os.kill(pid, _signal.SIGTERM)
+                except ProcessLookupError:
+                    pass
+        if pids:
+            _time.sleep(0.5)
+    except Exception:
+        pass
+
+    # Also clean up the tracked subprocess reference
     proc_attr = f"_{key}_proc"
     existing = getattr(_state, proc_attr, None)
     if existing and existing.poll() is None:
         existing.terminate()
         try:
-            existing.wait(timeout=5)
+            existing.wait(timeout=3)
         except Exception:
             existing.kill()
+
     cfg = (_state._config or {}).get(key, {})
     if cfg.get("enabled") and cfg.get("bot_token"):
         proc = subprocess.Popen([sys.executable, "-m", module])

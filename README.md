@@ -105,6 +105,12 @@ Conversation flows in ──→ Erosion ──→ Sedimentation ──→ Shapes
 
 > **On accuracy:** No LLM today is specifically trained for personal profile extraction, so results may occasionally be off. You can **reject** incorrect memories or **close** outdated ones in the Web Dashboard. As conversations accumulate, the River Algorithm continuously self-corrects through multi-turn verification and contradiction detection.
 
+**After processing conversations, the extracted profile looks like this:**
+
+![Confirmed facts extracted from conversations](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-confirmed.png)
+![Timeline — how facts changed over time](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-timeline.png)
+![Relationships — people mentioned across conversations](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-relationships.png)
+
 ---
 
 ## Quick Start
@@ -132,6 +138,10 @@ Open `http://localhost:1234` in your browser, enter the access token, then go to
 | **JKRiver** | http://localhost:1234 | Web chat + system config |
 | **RiverHistory** | http://localhost:2345 | Profile viewer |
 | **API Docs** | http://localhost:8400/docs | REST API reference |
+
+![Chat](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-chat-empty.png)
+![Profile](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-empty.png)
+![System](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-system.png)
 
 Full Docker guide (chat bots, data import, demo, configuration): **[docker/README.md](docker/README.md)**
 

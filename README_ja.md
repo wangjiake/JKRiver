@@ -2,9 +2,9 @@
   <img src="img/binary-wave-logo.svg" width="128" height="128" alt="Riverse Logo">
 </p>
 
-# Riverse — 河流アルゴリズム（River Algorithm）
+# Riverse
 
-**個人デバイスのために設計された AI エージェント — 永続的な記憶、オフライン認知、使うほどあなたを理解する。すべてのデータはローカルに保存。**
+**AI のための個人記憶エンジン — すべての会話から記憶を抽出・管理・整理する。ローカル実行、任意の LLM に対応。**
 
 **[English](README.md)** | **[中文](README_zh.md)** | **[日本語](README_ja.md)**
 
@@ -22,39 +22,21 @@
 
 ---
 
-## RAG メモリ vs. 河流アルゴリズム
-
-なぜ類似度検索ではパーソナル AI に不十分なのか。
-
-| | RAG / 既存 AI メモリ | Riverse / 河流アルゴリズム |
-|---|---|---|
-| **検索方式** | キーワード / ベクトル類似度 — 「似ている」テキストを検索 | パーソナルプロフィール重み付け — *あなた*との関連性で順位付け |
-| **タイムライン** | タイムラインなし — 3年前と昨日が同じ重み | 時間推移 — 最近の出来事は勢いを持ち、古いパターンは自然に固化・消退 |
-| **推論** | 因果推論なし — 「頭痛」と「転職」は孤立した断片 | 因果チェーン — 「転職 → ストレス → 睡眠障害 → 頭痛」を自動接続 |
-| **確信度** | すべての事実が同じ重み | 観察が段階的に昇格：推測 → 確認 → 確立 |
-| **データ所有** | クラウド依存、プラットフォーム所有 | ローカルファースト — あなたのデバイス、あなたのデータ |
-
-### 💬 シナリオ：「最近ずっと頭痛がする」と言った場合
-
-*2ヶ月前、転職したことを話していた。*
+*2ヶ月前、転職したことを話していた。今「最近ずっと頭痛がする」と言った。*
 
 <table>
-<tr><th>RAG アプローチ</th><th>河流アルゴリズム</th></tr>
+<tr><th>Riverse なし</th><th>Riverse あり</th></tr>
 <tr>
 <td>
 
-🧑 最近ずっと頭痛がするんだ
+🤖 それは大変ですね。頭痛の一般的な原因には、脱水、画面の見すぎ、ストレスなどがあります……
 
-🤖 それは大変ですね。頭痛の一般的な原因には、脱水、画面の見すぎ、ストレスなどがあります。対処法をお伝えしましょうか？
-
-<sub>ベクトル検索が医療Q&Aで「頭痛」を検出。あなたの生活との関連なし。</sub>
+<sub>あなたの生活との関連なし。</sub>
 
 </td>
 <td>
 
-🧑 最近ずっと頭痛がするんだ
-
-🤖 2ヶ月ほど前に新しいマネージャー職に就いたよね。ちょうど同じ頃から睡眠が悪くなっていて、深夜1時過ぎまで起きていると何度か話してくれた。頭痛はそれと関連しているかもしれない。最近の仕事のプレッシャーはどう？健康パターンとして追跡しようか？
+🤖 2ヶ月ほど前に新しいマネージャー職に就いたよね。ちょうど同じ頃から睡眠が悪くなっていて、深夜1時過ぎまで起きていると何度か話してくれた。頭痛はそれと関連しているかもしれない。最近の仕事のプレッシャーはどう？
 
 <sub>因果チェーン：転職 → 睡眠障害 → 頭痛。タイムライン認識、パーソナル重み付け。</sub>
 
@@ -64,68 +46,16 @@
 
 ---
 
-## Riverse とは？
-
-長年 AI と会話してきたのに、どの AI もあなたを知りません。プラットフォームを変えればゼロからやり直し。あなたのデータはあちこちのクラウドに散らばり、あなたのものではありません。
-
-Riverse はあなた自身のマシンで動くパーソナル AI エージェントです。すべての会話を記憶し、人間の睡眠のようにオフラインで記憶を整理 — 性格、好み、経験、人間関係を抽出し、継続的に成長するプロフィールを構築します。会話が増えるほど、より深くあなたを理解します。すべてのデータはローカルに保存。
-
-## 河流アルゴリズム
-
-会話は水の流れ、重要な情報は河床の堆積物のように沈殿し、複数ターンの検証を経て「推測」から「確認」へ、さらに「確立」へと段階的に昇格します。オフライン整理（Sleep）は河の自浄作用です。
-
-```
-会話が流入 ──→ 浸食 ──→ 堆積 ──→ 認知を形成 ──→ 流れ続ける
-                │         │         │
-                │         │         └─ 確認された認知 → 安定した岩盤
-                │         └─ 重要な情報 → 観察・仮説・プロフィール
-                └─ 矛盾する古い認識は洗い流され、新たな洞察に置き換わる
-```
-
-- **流れ（Flow）** — すべての会話は流れる水。川は止まらず、あなたへの理解は進化し続ける
-- **堆積（Sediment）** — 重要情報は沈泥のように堆積：事実はプロフィールに、感情は観察に、パターンは仮説に
-- **自浄（Purify）** — Sleep は川の自浄能力：古い情報を洗い流し、矛盾を解消し、断片を統合して一貫した理解へ
-
-## 特徴
-
-- **永続的な記憶** — セッションを超えて記憶し、あなたと共に進化するプロファイルを構築
-- **オフライン整理（Sleep）** — 洞察の抽出、矛盾の解消、確認済み知識の強化
-- **マルチモーダル入力** — テキスト、音声、画像、ファイルをネイティブに理解
-- **プラガブルツール** — 財務追跡、健康同期（Withings）、Web検索、TTS など；System ページからツールの有効/無効・削除が可能
-- **YAML スキル** — キーワードまたはスケジュールでトリガーするカスタム動作；SkillHub 検索または YAML 貼り付けでダッシュボードから直接インストール可能
-- **アウトソース / タスクAgent** — 複雑なマルチステップタスクを自律サブAgentに委託；実行計画をプレビューして確認後、`/outsource` ページでリアルタイムに進捗を追跡
-- **セッション管理** — 会話の名前変更とピン留めに対応、重要な会話をすばやく見つけられる
-- **外部エージェント** — `agents_*.yaml` で Home Assistant、n8n、Dify 等を接続
-- **MCP プロトコル** — Model Context Protocol 対応、Gmail 等の MCP Server を接続
-- **マルチチャネル** — Telegram、Discord、REST API、WebSocket、CLI、Web ダッシュボード
-- **ローカルファースト** — デフォルトは Ollama、必要時に OpenAI / DeepSeek へ自動エスカレーション
-- **プロアクティブ** — イベントフォローアップ、アイドルチェックイン、静寂時間帯を尊重
-- **セマンティック検索** — BGE-M3 ベクトル埋め込み、意味で関連する記憶を検索
-- **多言語プロンプト** — 英語・中国語・日本語を内蔵、設定一つで切り替え
-
-> **精度について：** 現在、個人プロファイル抽出に特化して訓練された LLM は存在しないため、結果に誤りが含まれる場合があります。Web ダッシュボードで誤った記憶を**エラーとしてマーク**したり、期限切れの記憶を手動で**クローズ**したりできます — ただし、記憶の削除や直接編集はできません。これは意図的な設計です：河流アルゴリズムは記憶を監査記録として扱います。抽出品質はご利用の LLM の理解能力を反映しており、システムのバグではありません。エラーが多い場合は、より強力なモデルへの切り替えをお勧めします — 記憶パイプラインは、LLM が自然言語をどれだけ理解できるかを評価する実用的なベンチマークにもなります。会話が蓄積されるにつれ、アルゴリズムはマルチターン検証と矛盾検出により継続的に自己修正します。
-
----
-
 ## クイックスタート
 
-### 方法A：Docker Compose（推奨）
-
-最も簡単な方法です。Python・PostgreSQL のインストール、設定ファイルの編集は不要です。
-
 ```bash
-# 1. compose ファイルを取得
 mkdir jkriver && cd jkriver
 curl -O https://raw.githubusercontent.com/wangjiake/JKRiver/main/docker/docker-compose.yaml
-
-# 2. 全サービスを起動
 docker compose pull && docker compose up -d
-
-# 3. アクセストークンを確認（初回起動時に自動生成）
 docker logs jkriver-jkriver-1 2>&1 | grep "Token:"
 ```
 
-ブラウザで `http://localhost:1234` を開き、トークンを入力後 **System** ページで API キーを設定するだけです。
+ブラウザで `http://localhost:1234` を開き、トークンを入力後 **System** ページで API キーを設定。完了。
 
 | サービス | URL | 役割 |
 |---------|-----|------|
@@ -133,100 +63,110 @@ docker logs jkriver-jkriver-1 2>&1 | grep "Token:"
 | **RiverHistory** | http://localhost:2345 | プロフィール閲覧 |
 | **API ドキュメント** | http://localhost:8400/docs | REST API リファレンス |
 
-Docker 完全ガイド（チャットボット、データインポート、デモ、設定）：**[docker/README.md](docker/README.md)**
+Docker 完全ガイド（ボット、データインポート、デモ）：**[docker/README.md](docker/README.md)**
 
 ---
 
-### 方法B：ソースから
+## 記憶エンジン
 
-#### 1. 前提条件
+会話のたびにオフライン整理パイプライン（Sleep）が実行され、構造化された個人プロファイルを構築します：
 
-- **Python 3.10+**
-- **PostgreSQL 16+** — [インストールガイド](https://www.postgresql.org/download/)
-- **Ollama**（オプション）— [ollama.ai](https://ollama.ai)、ローカル LLM モードの場合のみ必要
+- **マルチタイプ抽出** — 事実・人間関係・期限付きイベントをそれぞれ独立して追跡し、独自のライフサイクルで管理
+- **信頼度の昇格** — 事実は `suspected`（推測）から始まり、複数ターンの検証を経て `confirmed`（確認）、`established`（確立）へと昇格
+- **時間的な減衰** — 各事実は `decay_days` の TTL を持ち、古くなった事実は自動的に失効。手動クリーンアップ不要
+- **無効化と上書き** — 事実が変わると古いレコードに `end_time` が記録され、新しい事実に置き換わる。履歴は完全に保持
+- **矛盾の検出と仲裁** — 競合する事実は自動検出され、LLM による仲裁で解消
+- **証拠チェーン** — すべての事実はそれを生んだ会話に紐付けられる
+- **知識グラフ** — 事実は型付きエッジ（因果・時系列・階層）で互いに接続
 
-#### 2. クローンとインストール
+すべてのデータはローカルの PostgreSQL に保存。デバイスの外には出ない。
+
+---
+
+## REST API
+
+外部システム・Agent・LLM から記憶をクエリできます：
+
+| エンドポイント | 説明 |
+|--------------|------|
+| `GET /profile` | 現在の確認済みプロファイル（カテゴリ・フィールド・値） |
+| `GET /hypotheses` | 信頼度・ステータス付きの全プロファイル |
+| `POST /chat` | メッセージ送信；応答は完全な記憶コンテキストを使用 |
+| `POST /sleep` | 記憶整理を手動トリガー |
+| `GET /health` | サービスのヘルスチェック |
+
+認証：すべてのリクエストに `X-Device-Token: <token>` ヘッダーを付与。
+
+---
+
+## RAG との違い
+
+| | RAG / 既存 AI メモリ | Riverse |
+|---|---|---|
+| **検索方式** | ベクトル類似度 — 「似ている」テキストを検索 | プロファイル重み付け — *あなた*との関連性で順位付け |
+| **タイムライン** | なし — 3年前と昨日が同じ重み | 時間推移 — 事実は勢いと減衰を持つ |
+| **推論** | 因果推論なし — 事実は孤立した断片 | 因果チェーン — 関連事実を自動で接続 |
+| **確信度** | すべての事実が同じ重み | 推測 → 確認 → 確立 |
+| **無効化** | なし — 古い事実は永続する | 事実は期限切れ・上書き・否定される |
+| **データ所有** | クラウド依存、プラットフォーム所有 | ローカルファースト — あなたのデバイス、あなたのデータ |
+
+---
+
+## デモ
+
+架空のキャラクターとの20の日常会話を含むデモ。生の会話記録から：
+
+[![生の会話データ](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-raw-data.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-raw-data.png)
+
+Riverse が構造化された進化するプロファイルを抽出：
+
+[![確認済みの事実](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-confirmed.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-confirmed.png)
+[![タイムライン — 事実の変遷](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-timeline.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-timeline.png)
+[![人間関係](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-relationships.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-relationships.png)
+
+---
+
+## 内蔵エージェント
+
+Riverse には記憶エンジンを活用した個人 AI エージェントが付属しています：
+
+- **マルチチャネル** — Web ダッシュボード、Telegram、Discord、REST API、CLI
+- **マルチモーダル** — テキスト、音声、画像、ファイル
+- **ツール** — Web 検索、財務追跡、健康同期（Withings）、TTS；System ページで個別に ON/OFF
+- **YAML スキル** — キーワードまたは cron スケジュールでトリガーするカスタム動作
+- **タスク Agent** — 複雑なマルチステップタスクを自律サブ Agent に委託；実行前に計画をプレビューして確認
+
+  [![タスク計画プレビュー](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-plan.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-plan.png)
+  [![タスク結果](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-result.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-result.png)
+
+- **MCP プロトコル** — Gmail 等の MCP Server を接続
+- **外部エージェント** — `agents_*.yaml` で Home Assistant、n8n、Dify を接続
+- **プロアクティブ通知** — 重要イベントをフォローアップ、静寂時間帯を尊重
+
+[![チャット画面](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-chat-empty.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-chat-empty.png)
+[![システム設定](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-system.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-system.png)
+
+---
+
+## ソースからインストール
 
 ```bash
 git clone https://github.com/wangjiake/JKRiver.git
 cd JKRiver
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-```
 
-#### 3. PostgreSQL のセットアップ
-
-```bash
-# データベースを作成（YOUR_USERNAME を PostgreSQL ユーザー名に置き換えてください）
 createdb -h localhost -U YOUR_USERNAME Riverse
-
-# 全テーブルを作成
 psql -h localhost -U YOUR_USERNAME -d Riverse -f agent/schema.sql
-```
 
-> **ヒント：** macOS/Linux では `whoami` でユーザー名を確認できます。Windows のデフォルト PostgreSQL ユーザーは通常 `postgres` です。
-
-#### 4. 設定
-
-```bash
 cp settings.yaml.default settings.yaml
-```
-
-`settings.yaml` を編集 — 最低限以下を変更：
-
-```yaml
-database:
-    user: "YOUR_USERNAME"               # PostgreSQL ユーザー名
-
-llm_provider: "openai"                  # "openai" = クラウド API、"local" = ローカル Ollama
-openai:
-    api_key: "sk-your-key-here"         # openai プロバイダー使用時は必須
+# settings.yaml を編集：database.user と openai.api_key を設定
+python scripts/start_local.py
 ```
 
 > 完全な設定ガイド：**[wangjiake.github.io/riverse-docs](https://wangjiake.github.io/riverse-docs/ja/getting-started/configuration/)**
 
-#### 5. 起動
-
-**Web ダッシュボード（推奨）** — FastAPI バックエンドと Flask フロントエンドを同時起動：
-
-```bash
-python scripts/start_local.py
-```
-
-| サービス | URL |
-|----------|-----|
-| Web ダッシュボード | http://localhost:1234 |
-| API ドキュメント | http://localhost:8400/docs |
-
-個別に起動する場合：
-
-```bash
-uvicorn agent.api:app --host 127.0.0.1 --port 8400   # FastAPI バックエンド
-python web.py                                          # Flask フロントエンド (http://localhost:1234)
-python -m agent.main                                   # CLI モード
-python -m agent.telegram_bot                           # Telegram Bot
-python -m agent.discord_bot                            # Discord Bot
-```
-
-> **注意：** Web ダッシュボードは両方のサービスが必要です。`start_local.py` は自動で管理し、`settings.yaml` の設定に応じて Telegram/Discord Bot も起動します。
-
-### テスト
-
-```bash
-# クイックチェック — モジュールインポートとDBスキーマの検証（LLM不要）
-python tests/test_imports.py
-python tests/test_db.py
-
-# エンドツーエンドパイプラインテスト — LLM + データベースが必要
-python tests/test_demo_pipeline.py                          # demo2.json（52セッション、英語）
-python tests/test_demo_pipeline.py tests/data/demo.json     # demo.json （50セッション、中国語）
-python tests/test_demo_pipeline.py --sessions 3             # クイックスモークテスト（3セッションのみ）
-
-# テストデータをデータベースからクリーンアップ
-python tests/test_demo_pipeline.py --clean
-```
-
-テストデータは `tests/data/` に含まれています。外部依存は不要です。
+---
 
 ## 技術スタック
 
@@ -234,17 +174,17 @@ python tests/test_demo_pipeline.py --clean
 |---|---|
 | ランタイム | Python 3.10+, PostgreSQL 16+ |
 | ローカル LLM | Ollama（任意の互換モデル） |
-| クラウド LLM | OpenAI GPT-4o / DeepSeek（フォールバック）|
-| 埋め込み | Ollama + BGE-M3（[pgvector](https://github.com/pgvector/pgvector) インストール時に自動高速化） |
+| クラウド LLM | 任意の OpenAI 互換 API（OpenAI、DeepSeek、Groq など） |
+| 埋め込み | Ollama + 任意の埋め込みモデル（[pgvector](https://github.com/pgvector/pgvector) で自動高速化） |
 | REST API | FastAPI + Uvicorn |
 | Web ダッシュボード | Flask |
 | Telegram / Discord | python-telegram-bot / discord.py |
 | 音声 / 画像 | Whisper-1, GPT-4 Vision, LLaVA |
 | TTS | Edge TTS |
 
-## セキュリティに関する注意
+## セキュリティ
 
-Riverse は**シングルユーザー・ローカル実行**を前提とした設計です。Web ダッシュボードは初回起動時に自動生成される **アクセストークン** で保護されています。ただし、REST API（ポート 8400）には認証がありません。公開インターネットには公開しないでください。リモートアクセスが必要な場合は、リバースプロキシ（Nginx、Caddy など）で認証を追加するか、SSH トンネルを使用してください。
+Riverse は**シングルユーザー・ローカル実行**を前提とした設計です。Web ダッシュボードは初回起動時に自動生成されるアクセストークンで保護されています。REST API（ポート 8400）には認証がありません。公開インターネットに公開しないでください。リモートアクセスが必要な場合は、リバースプロキシ（Nginx、Caddy など）か SSH トンネルを使用してください。
 
 ---
 

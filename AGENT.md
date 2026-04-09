@@ -197,13 +197,211 @@ Key tables:
 <!-- END HANDWRITTEN: core -->
 
 <!-- AUTO-GENERATED: system_overview -->
+## System Overview (Current State)
+
+- **Language**: zh
+- **Timezone**: ?
+- **LLM Provider**: openai
+- **Model**: gpt-4o-mini @ https://api.openai.com
+- **Remote Fallback (远端兜底)**: ❌ disabled
+
+**Tools status:**
+- `web_search`: ✅ enabled (backend: duckduckgo)
+- `dispatch_task`: ✅ enabled (mode: strict)
+- `shell_exec`: ✅ enabled
+- `file_read`: ✅ enabled
+- `finance_query`: ❌ disabled
+- `health_query`: ❌ disabled
+- `image_describe`: ❌ disabled
+- `voice_transcribe`: ❌ disabled
+- `tts`: ✅ enabled
+
+**Bots:**
+- Telegram: ❌ disabled
+- Discord: ❌ disabled
+
+**Other features:**
+- Proactive messaging: ❌ disabled
+- Embedding/vector search: ❌ disabled
+- Skills: ✅ enabled
+- MCP servers: ❌ disabled
 <!-- END AUTO-GENERATED: system_overview -->
 
 <!-- AUTO-GENERATED: tools -->
+## Available Tools
+
+### `ask_user` (enabled)
+向用户提问并等待回复。当你需要确认才能继续时使用，例如：本地还是远端、用哪个分支、是否覆盖文件等。
+
+Parameters:
+- `question` `(string)`: 向用户提出的问题
+
+### `dispatch_task` (enabled)
+将复杂任务外包给自主子智能体执行。
+必须按两步走：
+  第一步：action='preview' + 任务描述 → 生成执行计划。你必须将工具返回内容原样输出给用户，禁止概括、改写或用自己的话替代。
+  第二步：用户确认后：action='start' + task_id → 后台开始执行。
+禁止跳过预览步骤，禁止未经用户确认就开始执行，禁止改写计划内容。
+
+Parameters:
+- `action`: 'preview' 生成计划，'start' 开始执行
+- `task`: 任务描述（preview 时必填）
+- `task_id`: preview 返回的任务号（start 时必填）
+
+### `file_list` (enabled)
+列出目录的直接内容（单层，非递归）。返回子目录（以 / 结尾）和文件（附文件大小，单位 bytes），末尾附汇总行：`N 个目录，M 个文件`。递归列目录或按条件筛选请用 grep 或 shell_exec（find）。
+
+Parameters:
+- `path` `(string)`: 要列出的目录路径（string，默认：当前工作目录）
+
+### `file_read` (enabled)
+读取本地文本文件内容。支持 .txt/.py/.yaml/.json/.md/.log 等格式，大文件自动截断。
+
+Parameters:
+- `path` `(string)`: 文件路径（string，支持绝对路径或相对路径）
+
+### `file_write` (enabled)
+将文本内容写入本地文件。文件不存在时自动创建，已存在时直接覆盖（无确认提示）。父级目录不存在时自动创建。写入路径限制在当前工作目录和 /tmp 内。
+
+Parameters:
+- `path` `(string)`: 要写入的文件路径（string，绝对路径或相对路径）
+- `content` `(string)`: 要写入文件的文本内容（string，UTF-8 编码）
+
+### `finance_query` (disabled)
+查询用户信用卡/银行卡消费记录，支持按年月、商家关键词筛选。返回全部匹配记录及合计金额。
+
+Parameters:
+- `year` `(int)`: 年份（int，可选，如 2025）
+- `month` `(int)`: 月份（int，可选，如 3 表示3月）
+- `merchant` `(string)`: 商家名关键词（string，可选，如 Amazon）
+
+### `grep` (enabled)
+使用正则表达式在文件中搜索内容。返回格式为 `文件名:行号: 内容`。最多返回 100 行，超出时末尾附加截断提示。建议用 file_glob 限定文件类型（如 '*.py'），避免扫描二进制文件。
+
+Parameters:
+- `pattern` `(string)`: 要搜索的正则表达式（必填）
+- `path` `(string)`: 搜索目录或文件路径（string，默认：当前工作目录）
+- `file_glob` `(string)`: 限定搜索范围的 glob 模式（string，默认：* 匹配所有文件），如 '*.py'、'*.yaml'
+
+### `health_query` (disabled)
+查询用户体重、体脂、步数等健康数据，返回最近90天全部记录。
+
+Parameters:
+- `data_type` `(string)`: 数据类型（string）：weight（体重）| fat（体脂）| activity（步数/活动）| all（全部）
+
+### `image_describe` (enabled)
+分析图片内容并回答问题。支持识别物体、场景、文字、图表、截图等。可提供具体问题以获得针对性分析。
+
+Parameters:
+- `file_path` `(string)`: 图片文件路径（支持 jpg/png/gif/webp）
+- `question` `(string)`: 关于图片的具体问题（可选，默认描述图片全部内容）
+
+### `shell_exec` (enabled)
+执行 shell 命令并返回输出。允许：ls/cat/head/tail/find/grep/wc/date/df/du、git status/log/diff/branch/remote、python/pip/node/npm 版本查看。安装命令（pip install、npm install）需先通过 ask_user 获得用户确认。禁止：rm、sudo、dd、mkfs 及含 ;|&`$> 的命令。
+
+Parameters:
+- `command` `(string)`: 要执行的 shell 命令（string）
+
+### `system_manage` (enabled)
+管理 AI 系统：查看/开关工具，安装/开关/删除技能，切换智能体，读写配置。
+
+可用操作及参数：
+  list_tools       — 无需参数。返回所有工具及其启用状态。
+  toggle_tool      — name: 工具名如 'web_search'; enabled: 'true'/'false'。
+  list_skills      — 无需参数。
+  create_skill     — name: 技能名; content: YAML 技能定义。
+  toggle_skill     — name: 技能名; enabled: 'true'/'false'。
+  delete_skill     — name: 技能名。
+  list_agents      — 无需参数。
+  toggle_agent     — name: 智能体名; enabled: 'true'/'false'。
+  get_config       — key: 点分路径，如 'tools.web_search.backend'。
+  set_config       — key: 点分路径; value: 新值。
+                     不可设置: api_key, bot_token, password, secret, token。
+  restart          — 无需参数。重启服务使配置生效。
+                     修改 settings.yaml 后必须调用此操作。
+  update_agent_doc — 无需参数。扫描所有工具/智能体/技能，更新 AGENT.md，
+                     让 AI 获得最新的系统能力说明。
+
+Parameters:
+- `action` `(string)`: list_tools | toggle_tool | list_skills | create_skill | toggle_skill | delete_skill | list_agents | toggle_agent | get_config | set_config | restart | update_agent_doc
+- `name` `(string)`: 工具/技能/智能体名称（toggle/delete/create 时必填）
+- `enabled` `(bool)`: 'true' 或 'false'（toggle 操作时必填）
+- `content` `(string)`: YAML 格式的技能定义（create_skill 时必填）
+- `key` `(string)`: 点分路径配置键，如 'tools.web_search.backend'（get/set_config 时必填）
+- `value` `(bool|int|float|string)`: 新的配置值（set_config 时必填）
+
+### `tts` (disabled)
+将 AI 文字回复自动合成语音发送给用户。由系统在每次回复后自动调用，无需手动触发。自动识别中英文并切换对应音色。超过 max_chars 的内容会被截断。
+
+### `voice_transcribe` (enabled)
+将语音/音频文件转写为文字。支持 mp3/wav/ogg/m4a 等常见格式。
+
+Parameters:
+- `file_path` `(string)`: 音频文件路径（string，支持 mp3/wav/ogg/m4a 等）
+
+### `web_search` (enabled)
+搜索互联网获取实时信息：当前天气、突发新闻、实时价格、最新事件等。当答案需要最新数据时使用（如今天天气、最新发布、当前汇率）。对于稳定的知识性问题无需搜索。
+
+Parameters:
+- `query` `(string)`: 自然语言搜索词（越具体结果越准确）
 <!-- END AUTO-GENERATED: tools -->
 
 <!-- AUTO-GENERATED: agents -->
+## Available Agents
+
+Switch agents via `system_manage` with `action="toggle_agent"`.
+
+### `weather_query` (disabled)
+查询全球任意城市的实时天气（温度、湿度、风速、天气状况）
+
+Example triggers: "东京现在天气怎么样" / "北京今天多少度" / "伦敦下雨了吗"
+
+### `home_lights` (disabled)
+控制家里的灯光（开关、亮度、颜色）
+
+Example triggers: "把客厅灯打开" / "关掉卧室的灯" / "把灯调到50%"
+
+### `home_status` (disabled)
+查询家中设备状态（温度传感器、门窗、灯光等）
+
+Example triggers: "客厅现在多少度" / "前门关了吗" / "空调开着吗"
+
+### `n8n_email` (disabled)
+通过 n8n 工作流发送邮件
+
+Example triggers: "发封邮件给张三" / "帮我发个邮件通知一下"
+
+### `n8n_workflow` (disabled)
+触发 n8n 自定义工作流（通用）
+
+Example triggers: "运行数据备份流程" / "执行日报生成"
+
+### `dify_agent` (disabled)
+调用 Dify 子 agent 处理复杂任务（研究、分析、写作等）
+
+Example triggers: "帮我研究一下这个话题" / "分析这段数据"
+
+### `system_info` (disabled)
+查看本机系统信息（CPU、内存、磁盘使用率）
+
+Example triggers: "查看本机系统信息" / "查看系统信息" / "电脑内存还剩多少"
+
+### `httpbin_echo` (disabled)
+HTTP echo 测试工具，将参数原样返回（用于调试 agent 链路）
+
+Example triggers: "测试一下 agent 连通性" / "echo hello"
 <!-- END AUTO-GENERATED: agents -->
 
 <!-- AUTO-GENERATED: skills -->
+## Available Skills
+
+Skills are auto-detected by the AI based on trigger keywords or schedules.
+
+### `explain_code` (enabled, built-in)
+用户发代码时自动提供逐行解释
+Trigger keywords: 解释代码, explain code, 这段代码什么意思, 帮我看看这段代码
+
+### `weekly_summary` (enabled, built-in)
+每周日晚上发送温馨周末问候
+Schedule: `0 20 * * 0`
 <!-- END AUTO-GENERATED: skills -->

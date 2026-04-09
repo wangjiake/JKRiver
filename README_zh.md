@@ -2,9 +2,9 @@
   <img src="img/binary-wave-logo.svg" width="128" height="128" alt="Riverse Logo">
 </p>
 
-# Riverse — 河流算法
+# Riverse
 
-**为个人终端设计的 AI Agent — 持久记忆，离线认知，越用越懂你。所有数据存在本地。**
+**为 AI 打造的个人记忆引擎 — 从每次对话中提取、管理、整理你的记忆。本地运行，兼容任意 LLM。**
 
 **[English](README.md)** | **[中文](README_zh.md)** | **[日本語](README_ja.md)**
 
@@ -22,39 +22,21 @@
 
 ---
 
-## RAG 记忆 vs. 河流算法
-
-为什么相似度检索做不好个人 AI。
-
-| | RAG / 现有 AI 记忆 | Riverse / 河流算法 |
-|---|---|---|
-| **检索方式** | 关键词 / 向量相似度 — 找"看起来像"的文本 | 个人画像权重 — 按与*你*的相关性排序 |
-| **时间线** | 没有时间线 — 3 年前和昨天一样权重 | 时间推移 — 近期事件有势能，旧模式自然固化或消退 |
-| **推理** | 没有因果推理 — "头痛"和"换工作"是孤立碎片 | 因果链 — "换工作 → 压力 → 睡眠差 → 头痛"自动关联 |
-| **置信度** | 所有事实同等权重 | 观察逐步升级：猜测 → 确认 → 稳固 |
-| **数据归属** | 云端依赖，平台所有 | 本地驱动 — 你的设备，你的数据 |
-
-### 💬 场景：你说"最近老是头痛"
-
-*两个月前，你提到过换了工作。*
+*两个月前你提到换了工作。刚才你说最近老是头痛。*
 
 <table>
-<tr><th>RAG 方式</th><th>河流算法</th></tr>
+<tr><th>没有 Riverse</th><th>有 Riverse</th></tr>
 <tr>
 <td>
 
-🧑 最近老是头痛
+🤖 很抱歉听到这个。头痛的常见原因：脱水、用眼过度、压力大……
 
-🤖 很抱歉听到这个。头痛的常见原因包括：脱水、用眼过度、压力大……需要一些缓解建议吗？
-
-<sub>向量搜索在医疗问答库中匹配了"头痛"。和你的生活毫无关联。</sub>
+<sub>和你的生活毫无关联。</sub>
 
 </td>
 <td>
 
-🧑 最近老是头痛
-
-🤖 你大概两个月前开始带团队了，差不多同一时间睡眠变差了——你好几次提到凌晨一点多才睡。头痛可能和这些有关。最近工作压力怎么样？要不要我把这个记录成一个健康趋势持续追踪？
+🤖 你大概两个月前开始带团队了，差不多同一时间睡眠变差了——你好几次提到凌晨一点多才睡。头痛可能和这些有关。最近工作压力怎么样？
 
 <sub>因果链：换工作 → 睡眠变差 → 头痛。有时间线意识，个人权重驱动。</sub>
 
@@ -64,169 +46,127 @@
 
 ---
 
-## 什么是 Riverse？
-
-你和 AI 聊了这么久，但每个 AI 都不认识你。换一个平台，一切从零开始。你的数据散落在各个云端，不属于你。
-
-Riverse 是一个运行在你自己机器上的个人 AI Agent。它记住每一次对话，在对话结束后像人类睡眠一样离线整理记忆 — 提取你的性格、偏好、经历、人际关系，构建一个持续成长的你的画像。聊得越多，它越懂你。所有数据存在本地，归你所有。
-
-## 河流算法
-
-对话像水流，关键信息像河床泥沙一样沉淀，经过多轮验证逐步从"猜测"升级为"确认"再到"稳固"。离线整理（Sleep）则是河流的自净过程。
-
-```
-对话流入 ──→ 冲刷 ──→ 沉淀 ──→ 塑造认知 ──→ 继续流动
-              │         │         │
-              │         │         └─ 确认的认知 → 稳固的河床
-              │         └─ 重要信息 → 观察记录、假设、画像
-              └─ 矛盾的旧认知被冲走，新的洞察取而代之
-```
-
-- **水流（Flow）** — 每次对话都是流经的水。河流永不停歇，对你的理解持续演化，从不重置
-- **沉淀（Sediment）** — 关键信息像泥沙一样沉淀：事实沉入画像，情绪沉入观察，规律沉入假设
-- **自净（Purify）** — Sleep 像河流的自净能力：冲走过时的信息，解决矛盾，将碎片整合为完整理解
-
-## 特性
-
-- **持久记忆** — 跨会话记忆，构建随你演化的用户画像
-- **离线整理（Sleep）** — 对话结束后自动提炼认知、解决矛盾
-- **多模态输入** — 文本、语音、图片、文件，原生理解
-- **可插拔工具** — 网页搜索、财务追踪、健康同步（Withings）、TTS 等；在 System 页面可一键开关或删除
-- **YAML 技能** — 按关键词或 cron 定时触发自定义行为；支持从 SkillHub 搜索安装或粘贴 YAML 直接部署
-- **外包 / 任务 Agent** — 将复杂多步任务委托给自主子 Agent 执行；预览执行计划并确认后，在 `/outsource` 页面实时跟踪进度
-- **会话管理** — 支持对话重命名、置顶，快速定位重要会话
-- **外部 Agent** — 通过 `agents_*.yaml` 接入 Home Assistant、n8n、Dify 等
-- **MCP 协议** — 支持 Model Context Protocol，接入 Gmail 等 MCP Server
-- **多渠道** — Telegram、Discord、REST API、WebSocket、CLI、Web 仪表盘
-- **本地优先** — 默认 Ollama，质量不足时自动升级到 OpenAI / DeepSeek
-- **主动关怀** — 跟进重要事件、空闲问候、策略提醒，尊重静默时段
-- **语义搜索** — BGE-M3 向量嵌入，按语义而非关键词检索相关记忆
-- **多语言提示词** — 内置中文、英文、日文提示词，一键切换
-
-> **关于准确性：** 目前没有任何 LLM 是专门为个人画像提取训练的，提取结果可能偶尔偏差。你可以在 Web 面板中将错误的记忆**标记为错误**，或手动**关闭**过期的记忆 — 但记忆不能被删除或直接修改。这是有意为之：河流算法将你的记忆视为审计记录。提取质量反映的是你所用 LLM 的理解能力，而非系统 Bug。如果错误率较高，建议切换更强的模型 — 记忆提取流程本身也是评估你的 LLM 是否适合此场景的实用基准。随着对话积累，算法会通过多轮验证和矛盾检测持续自我修正。
-
----
-
 ## 快速开始
 
-### 方式一：Docker Compose（推荐）
-
-最快上手方式，无需安装 Python、PostgreSQL 或编辑任何配置文件。
-
 ```bash
-# 1. 获取 compose 文件
 mkdir jkriver && cd jkriver
 curl -O https://raw.githubusercontent.com/wangjiake/JKRiver/main/docker/docker-compose.yaml
-
-# 2. 启动所有服务
 docker compose pull && docker compose up -d
-
-# 3. 获取访问 Token（首次启动时自动生成）
 docker logs jkriver-jkriver-1 2>&1 | grep "Token:"
 ```
 
-在浏览器打开 `http://localhost:1234`，输入 Token 后进入 **System** 页面填写 API Key 即可。
+在浏览器打开 `http://localhost:1234`，输入 Token，在 **System** 页面填写 API Key。完成。
 
-| 服务 | 地址 | 用途 |
+| 服务 | 地址 | 功能 |
 |------|------|------|
-| **JKRiver** | http://localhost:1234 | Web 聊天 + 系统配置 |
+| **JKRiver** | http://localhost:1234 | 网页聊天 + 系统配置 |
 | **RiverHistory** | http://localhost:2345 | 用户画像查看 |
 | **API 文档** | http://localhost:8400/docs | REST API 参考 |
 
-完整 Docker 指南（聊天机器人、数据导入、Demo、配置说明）：**[docker/README.md](docker/README.md)**
+完整 Docker 指南（机器人、数据导入、Demo）：**[docker/README.md](docker/README.md)**
 
 ---
 
-### 方式二：从源码安装
+## 记忆引擎
 
-#### 1. 前置要求
+每次对话结束后，Riverse 运行离线整理流水线（Sleep），构建结构化的个人画像：
 
-- **Python 3.10+**
-- **PostgreSQL 16+** — [安装指南](https://www.postgresql.org/download/)
-- **Ollama**（可选）— [ollama.ai](https://ollama.ai)，仅本地模型模式需要
+- **多类型提取** — 事实、人际关系、有时效的事件分别独立追踪，各有自己的生命周期
+- **置信度升级** — 事实从 `suspected`（猜测）开始，经多轮验证升级为 `confirmed`（确认）再到 `established`（稳固）
+- **时间衰减** — 每条记忆携带 `decay_days` 生命周期，过期记忆自动失效，无需手动清理
+- **失效与关闭** — 事实发生变化时，旧记录自动关闭并记录 `end_time`，被新事实取代；完整历史永久保留
+- **矛盾检测与仲裁** — 冲突事实自动检测，由 LLM 仲裁解决
+- **证据链** — 每条记忆关联产生它的原始对话
+- **知识图谱** — 事实之间通过有类型的边连接（因果、时序、层级）
 
-#### 2. 克隆并安装依赖
+所有数据存储在本地 PostgreSQL，不离开你的设备。
+
+---
+
+## REST API
+
+任意外部系统、Agent 或 LLM 都可以查询记忆：
+
+| 接口 | 说明 |
+|------|------|
+| `GET /profile` | 当前确认的画像（类别、字段、值） |
+| `GET /hypotheses` | 完整画像，含置信度和状态 |
+| `POST /chat` | 发送消息；回复使用完整记忆上下文 |
+| `POST /sleep` | 手动触发记忆整理 |
+| `GET /health` | 服务健康检查 |
+
+认证方式：每个请求携带 `X-Device-Token: <token>` 请求头。
+
+---
+
+## 为什么不用 RAG？
+
+| | RAG / 现有 AI 记忆 | Riverse |
+|---|---|---|
+| **检索方式** | 向量相似度 — 找"看起来像"的文本 | 个人画像权重 — 按与*你*的相关性排序 |
+| **时间线** | 没有时间线 — 3 年前和昨天一样权重 | 时间推移 — 事实有势能和衰减 |
+| **推理** | 没有因果推理 — 事实是孤立碎片 | 因果链 — 相关事实自动关联 |
+| **置信度** | 所有事实同等权重 | 猜测 → 确认 → 稳固 |
+| **失效机制** | 无 — 旧事实永久存在 | 事实会过期、被取代或被否定 |
+| **数据归属** | 云端依赖，平台所有 | 本地驱动 — 你的设备，你的数据 |
+
+---
+
+## Demo
+
+Demo 包含 20 段与虚构人物的日常对话。从原始聊天记录：
+
+[![原始对话](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-raw-data.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-raw-data.png)
+
+Riverse 提取出结构化的、持续演化的画像：
+
+[![确认的事实](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-confirmed.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-confirmed.png)
+[![时间线 — 事实如何随时间变化](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-timeline.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-timeline.png)
+[![人际关系](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-relationships.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-relationships.png)
+
+---
+
+## 内置 Agent
+
+Riverse 附带一个完整的个人 AI Agent，直接消费记忆引擎：
+
+- **多渠道** — 网页面板、Telegram、Discord、REST API、CLI
+- **多模态** — 文本、语音、图片、文件
+- **工具** — 网页搜索、财务追踪、健康同步（Withings）、TTS；在 System 页面可一键开关
+- **YAML 技能** — 按关键词或 cron 定时触发自定义行为
+- **任务 Agent** — 将复杂多步任务委托给自主子 Agent；执行前预览计划并确认
+
+  [![任务计划预览](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-plan.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-plan.png)
+  [![任务结果](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-result.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-result.png)
+
+- **MCP 协议** — 接入 Gmail 等 MCP Server
+- **外部 Agent** — 通过 `agents_*.yaml` 接入 Home Assistant、n8n、Dify
+- **主动关怀** — 跟进重要事件，尊重静默时段
+
+[![聊天界面](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-chat-empty.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-chat-empty.png)
+[![系统配置](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-system.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-system.png)
+
+---
+
+## 从源码安装
 
 ```bash
 git clone https://github.com/wangjiake/JKRiver.git
 cd JKRiver
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-```
 
-#### 3. 配置 PostgreSQL
-
-```bash
-# 创建数据库（把 YOUR_USERNAME 替换为你的 PostgreSQL 用户名）
 createdb -h localhost -U YOUR_USERNAME Riverse
-
-# 创建所有表
 psql -h localhost -U YOUR_USERNAME -d Riverse -f agent/schema.sql
-```
 
-> **提示：** macOS/Linux 终端运行 `whoami` 查看用户名。Windows 默认 PostgreSQL 用户通常是 `postgres`。
-
-#### 4. 编辑配置
-
-```bash
 cp settings.yaml.default settings.yaml
-```
-
-编辑 `settings.yaml`，至少修改以下内容：
-
-```yaml
-database:
-    user: "YOUR_USERNAME"               # 你的 PostgreSQL 用户名
-
-llm_provider: "openai"                  # "openai" 用云端 API，"local" 用本地 Ollama
-openai:
-    api_key: "sk-your-key-here"         # 使用 openai 时必填
+# 编辑 settings.yaml：设置 database.user 和 openai.api_key
+python scripts/start_local.py
 ```
 
 > 完整配置说明：**[wangjiake.github.io/riverse-docs](https://wangjiake.github.io/riverse-docs/zh/getting-started/configuration/)**
 
-#### 5. 启动
-
-**Web 面板（推荐）** — 一键同时启动 FastAPI 后端和 Flask 前端：
-
-```bash
-python scripts/start_local.py
-```
-
-| 服务 | 地址 |
-|------|------|
-| Web 面板 | http://localhost:1234 |
-| API 文档 | http://localhost:8400/docs |
-
-或单独启动各服务：
-
-```bash
-uvicorn agent.api:app --host 127.0.0.1 --port 8400   # FastAPI 后端
-python web.py                                          # Flask 前端 (http://localhost:1234)
-python -m agent.main                                   # CLI 模式
-python -m agent.telegram_bot                           # Telegram Bot
-python -m agent.discord_bot                            # Discord Bot
-```
-
-> **注意：** Web 面板需要两个服务同时运行。`start_local.py` 会自动处理，并根据 `settings.yaml` 配置自动启动 Telegram/Discord Bot。
-
-### 测试
-
-```bash
-# 快速检查 — 验证模块导入和数据库表结构（不需要 LLM）
-python tests/test_imports.py
-python tests/test_db.py
-
-# 端到端流水线测试 — 需要 LLM + 数据库
-python tests/test_demo_pipeline.py                          # demo2.json（52 组会话，英文）
-python tests/test_demo_pipeline.py tests/data/demo.json     # demo.json （50 组会话，中文）
-python tests/test_demo_pipeline.py --sessions 3             # 快速冒烟测试（仅 3 组会话）
-
-# 清理测试数据
-python tests/test_demo_pipeline.py --clean
-```
-
-测试数据已包含在 `tests/data/` 中，无需额外依赖。
+---
 
 ## 技术栈
 
@@ -234,17 +174,17 @@ python tests/test_demo_pipeline.py --clean
 |---|---|
 | 运行时 | Python 3.10+, PostgreSQL 16+ |
 | 本地 LLM | Ollama（任意兼容模型） |
-| 云端 LLM | OpenAI GPT-4o / DeepSeek（兜底） |
-| 向量嵌入 | Ollama + BGE-M3（安装 [pgvector](https://github.com/pgvector/pgvector) 后自动加速） |
+| 云端 LLM | 兼容任意 OpenAI 格式 API（OpenAI、DeepSeek、Groq 等） |
+| 向量嵌入 | Ollama + 任意嵌入模型（安装 [pgvector](https://github.com/pgvector/pgvector) 后自动加速） |
 | REST API | FastAPI + Uvicorn |
-| Web 仪表盘 | Flask |
+| Web 面板 | Flask |
 | Telegram / Discord | python-telegram-bot / discord.py |
 | 语音 / 图像 | Whisper-1, GPT-4 Vision, LLaVA |
 | TTS | Edge TTS |
 
 ## 安全提示
 
-Riverse 设计为**单用户本地运行**的应用。Web 面板通过首次启动时自动生成的 **Access Token** 保护。但 REST API（端口 8400）没有认证保护，请勿将其暴露到公网。如需远程访问，请通过反向代理（如 Nginx、Caddy）添加认证，或使用 SSH 隧道。
+Riverse 设计为**单用户本地运行**的应用。Web 面板通过首次启动时自动生成的 Access Token 保护。REST API（端口 8400）没有认证保护，请勿暴露到公网。如需远程访问，请使用反向代理（如 Nginx、Caddy）或 SSH 隧道。
 
 ---
 

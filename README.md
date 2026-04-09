@@ -2,9 +2,9 @@
   <img src="img/binary-wave-logo.svg" width="128" height="128" alt="Riverse Logo">
 </p>
 
-# Riverse — River Algorithm
+# Riverse
 
-**A personal AI agent that runs on your own machine — persistent memory, offline cognition, grows with every conversation. All data stays local.**
+**Personal memory engine for AI — extracts, ages, and resolves your memories from every conversation. Runs locally. Works with any LLM.**
 
 **[English](README.md)** | **[中文](README_zh.md)** | **[日本語](README_ja.md)**
 
@@ -22,39 +22,21 @@
 
 ---
 
-## RAG Memory vs. River Algorithm
-
-Why similarity search isn't enough for a personal AI.
-
-| | RAG / Existing AI Memory | Riverse / River Algorithm |
-|---|---|---|
-| **Retrieval** | Keyword / vector similarity — finds text that "looks similar" | Personal profile weighting — ranked by relevance to *you* |
-| **Timeline** | No timeline — 3 years ago and yesterday weigh the same | Temporal evolution — recent events carry momentum, old patterns solidify or fade |
-| **Reasoning** | No causal inference — "headaches" and "job change" stay as isolated fragments | Causal chains — connects "new job → stress → sleep problems → headaches" |
-| **Confidence** | All facts have equal weight | Observations progress: suspected → confirmed → established |
-| **Data ownership** | Cloud-dependent, platform-owned | Local-first — your device, your data |
-
-### 💬 Scenario: You said "I've been having headaches lately"
-
-*Two months ago, you mentioned changing jobs.*
+*Two months ago you mentioned changing jobs. You just said you've been having headaches.*
 
 <table>
-<tr><th>RAG Approach</th><th>River Algorithm</th></tr>
+<tr><th>Without Riverse</th><th>With Riverse</th></tr>
 <tr>
 <td>
 
-🧑 I've been having headaches lately
+🤖 I'm sorry to hear that. Common causes of headaches: dehydration, screen time, stress...
 
-🤖 I'm sorry to hear that. Here are some common causes of headaches: dehydration, screen time, stress... Would you like some tips?
-
-<sub>Vector search found "headache" in medical Q&A corpus. No connection to your life context.</sub>
+<sub>No connection to your life context.</sub>
 
 </td>
 <td>
 
-🧑 I've been having headaches lately
-
-🤖 You started the new management role about two months ago, and around the same time your sleep got worse — you mentioned staying up past 1am several times. The headaches might be linked. How's the work pressure been? Want me to track this as a health pattern?
+🤖 You started the new management role about two months ago, and your sleep got worse around the same time — you mentioned staying up past 1am several times. The headaches might be linked. How's the work pressure been?
 
 <sub>Causal chain: job change → sleep disruption → headaches. Timeline-aware, personally weighted.</sub>
 
@@ -64,93 +46,16 @@ Why similarity search isn't enough for a personal AI.
 
 ---
 
-## What is Riverse?
-
-You've been talking to AI for years, but no AI actually knows you. Switch platforms and you start from zero. Your data is scattered across clouds you don't control.
-
-Riverse is a personal AI agent that runs on your own machine. It remembers every conversation and consolidates memories offline, like human sleep — extracting your personality, preferences, experiences, and relationships into a continuously growing profile. The more you talk, the deeper it understands you. All data stays local and belongs to you.
-
-## River Algorithm
-
-Conversations flow like water, key information settles like riverbed sediment, progressively upgrading from "suspected" to "confirmed" to "established" through multi-turn verification. Offline consolidation (Sleep) acts as the river's self-purification.
-
-```
-Conversation flows in ──→ Erosion ──→ Sedimentation ──→ Shapes cognition ──→ Keeps flowing
-                           │              │                   │
-                           │              │                   └─ Confirmed knowledge → stable bedrock
-                           │              └─ Key info → observations, hypotheses, profiles
-                           └─ Outdated beliefs washed away, replaced by new insights
-```
-
-- **Flow** — Every conversation is water flowing through. The river never stops; understanding of you evolves continuously
-- **Sediment** — Key information settles like silt: facts sink into profiles, emotions into observations, patterns into hypotheses
-- **Purify** — Sleep is the river's self-purification: washing away outdated info, resolving contradictions, integrating fragments
-
-## Features
-
-- **Persistent Memory** — Remembers across sessions, builds a timeline-based profile that evolves with you
-- **Offline Consolidation (Sleep)** — Extracts insights, resolves contradictions, strengthens confirmed knowledge
-- **Multi-Modal Input** — Text, voice, images, files — all understood natively
-- **Pluggable Tools** — Finance tracking, health sync (Withings), web search, vision, TTS, and more; toggle or remove any tool from the System page
-- **YAML Skills** — Custom behaviors triggered by keyword or cron schedule; install from SkillHub or paste YAML directly in the dashboard
-- **Outsource / Task Agent** — Delegate complex multi-step tasks to an autonomous sub-agent that works in the background while you keep chatting. Say "outsource: [task]" — the agent breaks it into steps, shows you the plan for review, then executes automatically. It can read/write files, run shell commands, search code, and pause mid-task to ask you questions. Track real-time progress on the `/outsource` page.
-
-  **Step 1 — The agent generates a plan and asks for your confirmation:**
-
-  [![Outsource plan preview in chat](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-plan.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-plan.png)
-
-  **Step 2 — After confirmation, it executes and returns the result in chat:**
-
-  [![Task result shown in chat](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-result.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-result.png)
-
-  **Step 3 — Full execution log and output files available on the Tasks page:**
-
-  [![Tasks page with full execution log](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-tasks.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-tasks.png)
-- **Session Management** — Rename and pin conversations to quickly find what matters
-- **External Agents** — Connect Home Assistant, n8n, Dify and more via `agents_*.yaml`
-- **MCP Protocol** — Model Context Protocol support for Gmail and other MCP servers
-- **Multi-Channel** — Telegram, Discord, REST API, WebSocket, CLI, Web Dashboard
-- **Local-First** — Ollama by default, auto-escalates to OpenAI / DeepSeek when needed
-- **Proactive Outreach** — Follows up on events, checks in when idle, respects quiet hours
-- **Semantic Search** — BGE-M3 embeddings, retrieves relevant memories by meaning
-- **Multi-language Prompts** — English, Chinese, Japanese — switch with one setting
-
-> **On accuracy:** No LLM today is specifically trained for personal profile extraction, so results may occasionally be off. You can **mark incorrect memories as error** or **manually close outdated ones** in the Web Dashboard — but memories cannot be deleted or edited directly. This is by design: the River Algorithm treats your memory as an audit trail. Bad extractions reflect your LLM's understanding, not a bug. If you see too many errors, try switching to a stronger model — the memory pipeline is also a practical benchmark for evaluating how well your LLM understands natural language. As conversations accumulate, the algorithm continuously self-corrects through multi-turn verification and contradiction detection.
-
-**The demo includes 20 casual conversations with a fictional character. From raw chat history like this:**
-
-[![Demo raw conversations — natural language, no special formatting](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-raw-data.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-raw-data.png)
-
-**The River Algorithm extracts a structured, evolving profile:**
-
-[![Confirmed facts extracted from conversations](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-confirmed.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-confirmed.png)
-[![Suspected facts pending verification](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-suspected.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-suspected.png)
-[![Timeline — how facts changed over time](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-timeline.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-timeline.png)
-[![Snapshots — profile state at each point in time](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-snapshots.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-snapshots.png)
-[![Observations — raw statements extracted from conversations](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-observations.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-observations.png)
-[![Relationships — people mentioned across conversations](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-relationships.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-relationships.png)
-
----
-
 ## Quick Start
 
-### Option A: Docker Compose (Recommended)
-
-The fastest way to get started. No Python, PostgreSQL, or configuration file needed.
-
 ```bash
-# 1. Get the compose file
 mkdir jkriver && cd jkriver
 curl -O https://raw.githubusercontent.com/wangjiake/JKRiver/main/docker/docker-compose.yaml
-
-# 2. Start everything
 docker compose pull && docker compose up -d
-
-# 3. Get your access token (generated automatically on first start)
-docker compose logs jkriver 2>&1 | grep "ACCESS_TOKEN"
+docker logs jkriver-jkriver-1 2>&1 | grep "Token:"
 ```
 
-Open `http://localhost:1234` in your browser, enter the access token, then go to **System** to set your API key. That's it.
+Open `http://localhost:1234`, enter the token, set your API key in **System**. Done.
 
 | Service | URL | What it does |
 |---------|-----|--------------|
@@ -158,105 +63,110 @@ Open `http://localhost:1234` in your browser, enter the access token, then go to
 | **RiverHistory** | http://localhost:2345 | Profile viewer |
 | **API Docs** | http://localhost:8400/docs | REST API reference |
 
-[![Chat](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-chat-empty.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-chat-empty.png)
-[![Profile](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-empty.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-empty.png)
-[![System](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-system.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-system.png)
-[![Tasks](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-tasks.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-tasks.png)
-
-Full Docker guide (chat bots, data import, demo, configuration): **[docker/README.md](docker/README.md)**
+Full Docker guide (bots, data import, demo): **[docker/README.md](docker/README.md)**
 
 ---
 
-### Option B: From Source
+## Memory Engine
 
-#### 1. Prerequisites
+After each conversation, Riverse runs an offline consolidation pipeline (Sleep) that builds a structured personal profile:
 
-- **Python 3.10+**
-- **PostgreSQL 16+** — [Install guide](https://www.postgresql.org/download/)
-- **Ollama** (optional) — [ollama.ai](https://ollama.ai), only needed for local LLM mode
+- **Multi-type extraction** — facts, relationships, and time-bounded events are each tracked separately with their own lifecycle
+- **Confidence progression** — facts start as `suspected`, get promoted to `confirmed` then `established` through multi-turn verification
+- **Time decay** — each fact carries a `decay_days` TTL; stale facts expire automatically without manual cleanup
+- **Invalidation** — when a fact changes, the old record is closed with an `end_time` and superseded by the new one; the full history is preserved
+- **Contradiction resolution** — conflicting facts are detected and resolved through LLM arbitration
+- **Evidence chains** — every fact links back to the conversations that produced it
+- **Knowledge graph** — facts connect to each other through typed edges (causal, temporal, hierarchical)
 
-#### 2. Clone and install
+All data lives in a local PostgreSQL database. Nothing leaves your machine.
+
+---
+
+## REST API
+
+Query memory from any external system, agent, or LLM:
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /profile` | Current confirmed profile (category, field, value) |
+| `GET /hypotheses` | Full profile with confidence levels and status |
+| `POST /chat` | Send a message; response uses full memory context |
+| `POST /sleep` | Trigger memory consolidation manually |
+| `GET /health` | Service health |
+
+Authentication: `X-Device-Token: <token>` header on every request.
+
+---
+
+## Why Not RAG?
+
+| | RAG / Existing AI Memory | Riverse |
+|---|---|---|
+| **Retrieval** | Vector similarity — finds text that "looks similar" | Profile weighting — ranked by relevance to *you* |
+| **Timeline** | No timeline — 3 years ago and yesterday weigh the same | Temporal evolution — facts have momentum and decay |
+| **Reasoning** | No causal inference — facts stay as isolated fragments | Causal chains — connects related facts automatically |
+| **Confidence** | All facts have equal weight | suspected → confirmed → established |
+| **Invalidation** | No mechanism — old facts persist forever | Facts expire, get superseded, or are rejected |
+| **Data ownership** | Cloud-dependent, platform-owned | Local-first — your device, your data |
+
+---
+
+## Demo
+
+The demo includes 20 casual conversations with a fictional character. From raw chat history:
+
+[![Demo raw conversations](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-raw-data.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-raw-data.png)
+
+Riverse extracts a structured, evolving profile:
+
+[![Confirmed facts](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-confirmed.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-confirmed.png)
+[![Timeline — how facts changed over time](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-timeline.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-timeline.png)
+[![Relationships](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-relationships.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-profile-relationships.png)
+
+---
+
+## Built-in Agent
+
+Riverse ships with a personal AI agent that consumes the memory engine:
+
+- **Multi-channel** — Web dashboard, Telegram, Discord, REST API, CLI
+- **Multi-modal** — Text, voice, images, files
+- **Tools** — Web search, finance tracking, health sync (Withings), TTS; toggle any tool in the System page
+- **YAML Skills** — Custom behaviors triggered by keyword or cron schedule
+- **Task Agent** — Delegate multi-step tasks to an autonomous sub-agent; preview the plan before it executes
+
+  [![Outsource plan preview](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-plan.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-plan.png)
+  [![Task result in chat](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-result.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-outsource-result.png)
+
+- **MCP Protocol** — Connect Gmail and other MCP servers
+- **External Agents** — Wire in Home Assistant, n8n, Dify via `agents_*.yaml`
+- **Proactive messaging** — Follows up on events, respects quiet hours
+
+[![Chat](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-chat-empty.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-chat-empty.png)
+[![System](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-system.png)](https://raw.githubusercontent.com/wangjiake/JKRiver/main/img/demo-system.png)
+
+---
+
+## From Source
 
 ```bash
 git clone https://github.com/wangjiake/JKRiver.git
 cd JKRiver
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-```
 
-#### 3. Set up PostgreSQL
-
-```bash
-# Create the database (replace YOUR_USERNAME with your PostgreSQL user)
 createdb -h localhost -U YOUR_USERNAME Riverse
-
-# Create all tables
 psql -h localhost -U YOUR_USERNAME -d Riverse -f agent/schema.sql
-```
 
-> **Tip:** On macOS/Linux, run `whoami` to find your username. On Windows with default PostgreSQL, the user is usually `postgres`.
-
-#### 4. Configure
-
-```bash
 cp settings.yaml.default settings.yaml
-```
-
-Edit `settings.yaml` — at minimum, change these:
-
-```yaml
-database:
-    user: "YOUR_USERNAME"               # Your PostgreSQL username
-
-llm_provider: "openai"                  # "openai" for cloud API, "local" for Ollama
-openai:
-    api_key: "sk-your-key-here"         # Required if using openai provider
+# edit settings.yaml: set database.user and openai.api_key
+python scripts/start_local.py
 ```
 
 > Full configuration guide: **[wangjiake.github.io/riverse-docs](https://wangjiake.github.io/riverse-docs/getting-started/configuration/)**
 
-#### 5. Run
-
-**Web Dashboard (recommended)** — starts FastAPI backend + Flask frontend together:
-
-```bash
-python scripts/start_local.py
-```
-
-| Service | URL |
-|---------|-----|
-| Web Dashboard | http://localhost:1234 |
-| API Docs | http://localhost:8400/docs |
-
-Or start services individually:
-
-```bash
-uvicorn agent.api:app --host 127.0.0.1 --port 8400   # FastAPI backend
-python web.py                                          # Flask frontend (http://localhost:1234)
-python -m agent.main                                   # CLI mode
-python -m agent.telegram_bot                           # Telegram Bot
-python -m agent.discord_bot                            # Discord Bot
-```
-
-> **Note:** The web dashboard requires both services running. `start_local.py` handles this automatically and also starts Telegram/Discord bots if enabled in `settings.yaml`.
-
-### Testing
-
-```bash
-# Quick checks — verify imports and database schema (no LLM needed)
-python tests/test_imports.py
-python tests/test_db.py
-
-# End-to-end pipeline test — requires LLM + database
-python tests/test_demo_pipeline.py                          # demo2.json (52 sessions, English)
-python tests/test_demo_pipeline.py tests/data/demo.json     # demo.json  (50 sessions, Chinese)
-python tests/test_demo_pipeline.py --sessions 3             # Quick smoke test (3 sessions only)
-
-# Clean up test data from database
-python tests/test_demo_pipeline.py --clean
-```
-
-Test data is included in `tests/data/`. No external dependencies needed.
+---
 
 ## Tech Stack
 
@@ -264,8 +174,8 @@ Test data is included in `tests/data/`. No external dependencies needed.
 |---|---|
 | Runtime | Python 3.10+, PostgreSQL 16+ |
 | Local LLM | Ollama (any compatible model) |
-| Cloud LLM | OpenAI GPT-4o / DeepSeek (fallback) |
-| Embeddings | Ollama + BGE-M3 (auto-accelerated with [pgvector](https://github.com/pgvector/pgvector) if installed) |
+| Cloud LLM | Any OpenAI-compatible API (OpenAI, DeepSeek, Groq, and more) |
+| Embeddings | Ollama + any embed model ([pgvector](https://github.com/pgvector/pgvector) auto-accelerated if available) |
 | REST API | FastAPI + Uvicorn |
 | Web Dashboard | Flask |
 | Telegram / Discord | python-telegram-bot / discord.py |
@@ -274,7 +184,7 @@ Test data is included in `tests/data/`. No external dependencies needed.
 
 ## Security Notice
 
-Riverse is designed as a **single-user, local-first** application. The Web Dashboard is protected by the **access token** generated on first startup. However, the REST API (`port 8400`) has no authentication — do not expose it to the public internet. If you need remote access, place it behind a reverse proxy (e.g. Nginx, Caddy) with authentication, or use an SSH tunnel.
+Riverse is designed as a **single-user, local-first** application. The Web Dashboard is protected by the access token generated on first startup. The REST API (`port 8400`) has no authentication — do not expose it to the public internet. If you need remote access, use a reverse proxy (e.g. Nginx, Caddy) or an SSH tunnel.
 
 ---
 

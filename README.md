@@ -81,6 +81,37 @@ After each conversation, Riverse runs an offline consolidation pipeline (Sleep) 
 
 All data lives in a local PostgreSQL database. Nothing leaves your machine.
 
+### The Sleep Pipeline — 14 Steps
+
+The entire pipeline runs atomically inside a single database transaction. If any step fails, everything rolls back.
+
+| Phase | Step | What it does |
+|-------|------|-------------|
+| **Extract** | 1. Load initial | Load existing profile and life trajectory |
+| | 2. Extract sessions | LLM extracts observations, tags, relationships, and events from each unprocessed conversation |
+| **Analyze** | 3. Analyze behavior | LLM infers behavioral patterns from observations (e.g. "sends messages late at night" → "night owl"); generates clarification strategies |
+| | 4. Classify & integrate | LLM classifies each observation as `support`, `contradict`, `evidence_against`, or `new` relative to existing facts; integrates results into the profile |
+| | 5. Cross-verify | Suspected facts with `stated` source + mention count ≥ 2 auto-confirm; remaining suspected facts undergo LLM cross-verification with timeline and conversation history |
+| | 6. Resolve disputes | LLM arbitrates contradicting fact pairs (supersede chains) — accept new or reject new |
+| **Maintain** | 7. Extract edges | Build knowledge graph edges between affected facts |
+| | 8. Expire facts | Close facts past their `expires_at` date; generate verification strategies for next conversation |
+| | 9. Maturity decay | Adjust `decay_days` based on fact age and evidence count — long-standing, well-evidenced facts live longer (up to 2 years) |
+| **Output** | 10. User model | LLM analyzes communication style dimensions from conversations |
+| | 11. Trajectory | Update life-phase trajectory when significant changes are detected |
+| | 12. Consolidate | Deduplicate the profile |
+| | 13. Snapshot | Pre-compile a memory snapshot (profile + model + events + relationships + knowledge graph) for fast context injection |
+| | 14. Finalize | Mark conversations as processed |
+
+After the transaction, non-critical post-processing runs: vector embedding and memory clustering.
+
+### Algorithm-First Design
+
+Riverse's memory pipeline is architecturally designed beyond what current general-purpose LLMs can fully deliver. The 14-step Sleep consolidation requires precise structured judgment at each stage — observation extraction, fact classification, cross-verification, contradiction resolution — and cascading errors from imprecise LLM outputs are currently the primary accuracy bottleneck, not the algorithm itself.
+
+No LLM today is purpose-trained for personal memory consolidation. The ideal path would be a dedicated memory LLM optimized for structured profile extraction and multi-fact reasoning. Until that becomes feasible — through dedicated training or through the natural evolution of foundation models — the algorithm will continue to improve with each generation of stronger models, with zero code changes required.
+
+The pipeline is also a practical benchmark: if extraction errors are high, the cause is almost always LLM capability, not a bug. Try a stronger model and watch the difference.
+
 ---
 
 ## REST API

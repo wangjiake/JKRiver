@@ -108,9 +108,11 @@ After the transaction, non-critical post-processing runs: vector embedding and m
 
 Riverse's memory pipeline is architecturally designed beyond what current general-purpose LLMs can fully deliver. The 14-step Sleep consolidation requires precise structured judgment at each stage — observation extraction, fact classification, cross-verification, contradiction resolution — and cascading errors from imprecise LLM outputs are currently the primary accuracy bottleneck, not the algorithm itself.
 
-No LLM today is purpose-trained for personal memory consolidation. The ideal path would be a dedicated memory LLM optimized for structured profile extraction and multi-fact reasoning. Until that becomes feasible — through dedicated training or through the natural evolution of foundation models — the algorithm will continue to improve with each generation of stronger models, with zero code changes required.
+No LLM today is purpose-trained for personal memory consolidation. The ideal path would be a dedicated memory LLM optimized for structured profile extraction and multi-fact reasoning. The author has a clear design for what that model should look like, but training it requires compute and data resources beyond what an individual can access.
 
-The pipeline is also a practical benchmark: if extraction errors are high, the cause is almost always LLM capability, not a bug. Try a stronger model and watch the difference.
+If your company is building a memory-focused model or working on personal AI and you have a role that fits — I'd love to hear from you: [mailwangjk@gmail.com](mailto:mailwangjk@gmail.com)
+
+Until then, the algorithm rides on general-purpose models and improves automatically with each stronger generation, with zero code changes required. The pipeline is also a practical benchmark: if extraction errors are high, the cause is almost always LLM capability, not a bug. Try a stronger model and watch the difference.
 
 ---
 

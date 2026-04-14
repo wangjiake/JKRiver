@@ -9,12 +9,30 @@ stop:
 
 test:
 	python3 tests/test_imports.py
-	python3 tests/test_unit.py
+	python3 tests/test_parsing.py
+	python3 tests/test_maturity.py
+	python3 tests/test_synonyms.py
+	python3 tests/test_profile_filter.py
+	python3 tests/test_perceive.py
+	python3 tests/test_trajectory.py
+	python3 tests/test_think.py
+	python3 tests/test_disputes.py
+	python3 tests/test_formatting.py
+	python3 tests/test_session_memory.py
 	python3 tests/test_storage.py
 
 test-quick:
 	python3 tests/test_imports.py
-	python3 tests/test_unit.py
+	python3 tests/test_parsing.py
+	python3 tests/test_maturity.py
+	python3 tests/test_synonyms.py
+	python3 tests/test_profile_filter.py
+	python3 tests/test_perceive.py
+	python3 tests/test_trajectory.py
+	python3 tests/test_think.py
+	python3 tests/test_disputes.py
+	python3 tests/test_formatting.py
+	python3 tests/test_session_memory.py
 
 lint:
 	python3 -m ruff check agent/ tests/

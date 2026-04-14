@@ -102,11 +102,15 @@ app.add_middleware(
 
 # ── Include routers ───────────────────────────────────────────────────────────
 from agent.routers import outsource, sessions, system as system_router
+from agent.routers import system_tools, system_skills, system_agents
 from agent.routers import stats as stats_router
 from agent.routers import chat as chat_router
 app.include_router(outsource.router)
 app.include_router(sessions.router)
 app.include_router(system_router.router)
+app.include_router(system_tools.router)
+app.include_router(system_skills.router)
+app.include_router(system_agents.router)
 app.include_router(stats_router.router)
 app.include_router(chat_router.router)
 

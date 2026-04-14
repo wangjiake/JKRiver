@@ -61,5 +61,8 @@
 {% endblock %}
 {% block scripts %}
 <script>const DB_NAME = {{ db_name | tojson }};</script>
-<script src="/static/js/system.js"></script>
+<script src="/static/js/system-i18n.js"></script>
+<script src="/static/js/system-render.js"></script>
+<script src="/static/js/system-edit.js"></script>
+<script src="/static/js/system-actions.js"></script>
 {% endblock %}

@@ -55,7 +55,17 @@ jobs:
         run: python tests/test_imports.py
 
       - name: Unit tests
-        run: python tests/test_unit.py
+        run: |
+          python tests/test_parsing.py
+          python tests/test_maturity.py
+          python tests/test_synonyms.py
+          python tests/test_profile_filter.py
+          python tests/test_perceive.py
+          python tests/test_trajectory.py
+          python tests/test_think.py
+          python tests/test_disputes.py
+          python tests/test_formatting.py
+          python tests/test_session_memory.py
 
       - name: Storage tests
         run: python tests/test_storage.py

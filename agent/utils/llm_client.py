@@ -12,6 +12,20 @@ logger = logging.getLogger(__name__)
 # ── Shared request/response helpers ──────────────────────
 
 
+def _is_valid_api_key(api_key: str) -> bool:
+    """判断 api_key 是否有效（过滤空值和占位符）"""
+    if not api_key:
+        return False
+    # 过滤常见占位符
+    cleaned = api_key.strip().lower()
+    if cleaned in ("", "-", "none", "null", "xxx", "your_api_key", "your-api-key"):
+        return False
+    # OpenAI key 以 sk- 开头，其他云服务也有类似前缀，太短的一般是占位符
+    if len(cleaned) < 10:
+        return False
+    return True
+
+
 def _build_chat_request(messages: list[dict], config: dict) -> tuple[str, dict, dict]:
     """Build (url, headers, body) for chat completions API."""
     api_base = str(config.get("api_base", "http://localhost:11434"))
@@ -21,7 +35,7 @@ def _build_chat_request(messages: list[dict], config: dict) -> tuple[str, dict, 
     max_tokens = config.get("max_tokens", 2048)
 
     headers = {"Content-Type": "application/json"}
-    if api_key:
+    if _is_valid_api_key(api_key):
         headers["Authorization"] = f"Bearer {api_key}"
 
     is_new_model = any(k in model for k in ("gpt-5", "o1", "o3"))
@@ -51,10 +65,9 @@ def _build_responses_request(messages: list[dict], config: dict) -> tuple[str, d
     temperature = config.get("temperature", 0.7)
     max_tokens = config.get("max_tokens", 2048)
 
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = {"Content-Type": "application/json"}
+    if _is_valid_api_key(api_key):
+        headers["Authorization"] = f"Bearer {api_key}"
 
     url = f"{api_base}/v1/responses"
     body = {

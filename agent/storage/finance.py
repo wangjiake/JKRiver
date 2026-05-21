@@ -158,6 +158,7 @@ def save_finance_transaction(
     email_id: str | None = None,
     note: str | None = None,
     metadata: dict | None = None,
+    owner_id: int = 1,
 ) -> int | None:
     _ensure_finance_tables()
     if not category:
@@ -171,12 +172,12 @@ def save_finance_transaction(
             try:
                 cur.execute(
                     "INSERT INTO finance_transactions "
-                    "(transaction_date, merchant, amount, currency, amount_jpy, "
+                    "(owner_id, transaction_date, merchant, amount, currency, amount_jpy, "
                     " category, card_name, email_id, note, metadata, "
                     " imported_at, created_at) "
-                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
                     "RETURNING id",
-                    (transaction_date, merchant, amount, currency, amount_jpy,
+                    (owner_id, transaction_date, merchant, amount, currency, amount_jpy,
                      category, card_name, email_id, note,
                      json.dumps(metadata or {}, ensure_ascii=False),
                      get_now(), get_now()),
@@ -198,11 +199,15 @@ def load_finance_transactions(
     merchant: str | None = None,
     limit: int = 100,
     offset: int = 0,
+    owner_id: int | None = None,
 ) -> list[dict]:
     _ensure_finance_tables()
     conditions = []
     params: list = []
 
+    if owner_id is not None:
+        conditions.append("owner_id = %s")
+        params.append(owner_id)
     if year:
         conditions.append("EXTRACT(YEAR FROM transaction_date) = %s")
         params.append(year)
@@ -239,7 +244,8 @@ def load_finance_transactions(
         conn.close()
 
 def update_finance_transaction(txn_id: int, category: str | None = None,
-                                note: str | None = None) -> bool:
+                                note: str | None = None,
+                                owner_id: int | None = None) -> bool:
     _ensure_finance_tables()
     updates = []
     params: list = []
@@ -252,13 +258,16 @@ def update_finance_transaction(txn_id: int, category: str | None = None,
     if not updates:
         return False
     params.append(txn_id)
+    owner_clause = " AND owner_id = %s" if owner_id is not None else ""
+    if owner_id is not None:
+        params.append(owner_id)
 
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
             cur.execute(
                 f"UPDATE finance_transactions SET {', '.join(updates)} "
-                f"WHERE id = %s",
+                f"WHERE id = %s{owner_clause}",
                 params,
             )
             updated = cur.rowcount > 0
@@ -271,11 +280,15 @@ def get_finance_summary(
     group_by: str = "month",
     year: int | None = None,
     month: int | None = None,
+    owner_id: int | None = None,
 ) -> list[dict]:
     _ensure_finance_tables()
     conditions = []
     params: list = []
 
+    if owner_id is not None:
+        conditions.append("owner_id = %s")
+        params.append(owner_id)
     if year:
         conditions.append("EXTRACT(YEAR FROM transaction_date) = %s")
         params.append(year)
@@ -323,13 +336,17 @@ def get_finance_summary(
                     cat_cond = "TO_CHAR(DATE_TRUNC('month', transaction_date), 'YYYY-MM') = %s"
                     cat_params = [str(period_val)]
 
+                owner_cond = " AND owner_id = %s" if owner_id is not None else ""
+                if owner_id is not None:
+                    cat_params.append(owner_id)
+
                 _uncategorized = get_labels("context.labels", _lang()).get("uncategorized", "未分类")
                 cur.execute(
                     f"SELECT COALESCE(category, %s) AS category, "
                     f"COUNT(*) AS count, "
                     f"SUM(COALESCE(amount_jpy, amount)) AS total_jpy "
                     f"FROM finance_transactions "
-                    f"WHERE {cat_cond} "
+                    f"WHERE {cat_cond}{owner_cond} "
                     f"GROUP BY category ORDER BY total_jpy DESC",
                     [_uncategorized] + cat_params,
                 )
@@ -343,11 +360,15 @@ def get_finance_merchant_stats(
     year: int | None = None,
     month: int | None = None,
     limit: int = 20,
+    owner_id: int | None = None,
 ) -> list[dict]:
     _ensure_finance_tables()
     conditions = []
     params: list = []
 
+    if owner_id is not None:
+        conditions.append("owner_id = %s")
+        params.append(owner_id)
     if year:
         conditions.append("EXTRACT(YEAR FROM transaction_date) = %s")
         params.append(year)
@@ -378,11 +399,15 @@ def get_finance_merchant_stats(
 def get_finance_category_stats(
     year: int | None = None,
     month: int | None = None,
+    owner_id: int | None = None,
 ) -> list[dict]:
     _ensure_finance_tables()
     conditions = []
     params: list = []
 
+    if owner_id is not None:
+        conditions.append("owner_id = %s")
+        params.append(owner_id)
     if year:
         conditions.append("EXTRACT(YEAR FROM transaction_date) = %s")
         params.append(year)
@@ -408,18 +433,20 @@ def get_finance_category_stats(
     finally:
         conn.close()
 
-def get_finance_overview() -> dict:
+def get_finance_overview(owner_id: int | None = None) -> dict:
     _ensure_finance_tables()
+    owner_clause = " WHERE owner_id = %s" if owner_id is not None else ""
+    owner_param: tuple = (owner_id,) if owner_id is not None else ()
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT COUNT(*) FROM finance_transactions")
+            cur.execute(f"SELECT COUNT(*) FROM finance_transactions{owner_clause}", owner_param)
             total_count = cur.fetchone()[0]
-            cur.execute("SELECT COALESCE(SUM(COALESCE(amount_jpy, amount)), 0) FROM finance_transactions")
+            cur.execute(f"SELECT COALESCE(SUM(COALESCE(amount_jpy, amount)), 0) FROM finance_transactions{owner_clause}", owner_param)
             total_amount = cur.fetchone()[0]
-            cur.execute("SELECT COUNT(DISTINCT merchant) FROM finance_transactions")
+            cur.execute(f"SELECT COUNT(DISTINCT merchant) FROM finance_transactions{owner_clause}", owner_param)
             merchant_count = cur.fetchone()[0]
-            cur.execute("SELECT MIN(transaction_date), MAX(transaction_date) FROM finance_transactions")
+            cur.execute(f"SELECT MIN(transaction_date), MAX(transaction_date) FROM finance_transactions{owner_clause}", owner_param)
             row = cur.fetchone()
             date_from = row[0]
             date_to = row[1]

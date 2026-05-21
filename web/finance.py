@@ -2,10 +2,15 @@
 import logging
 from datetime import datetime, date
 from decimal import Decimal
-from flask import Blueprint, render_template, jsonify, request
+from flask import Blueprint, g, render_template, jsonify, request
 from web._helpers import get_conn, _serialize, DB_NAME, load_config as _load_config
+from agent.core.identity import DEFAULT_OWNER_ID
 
 finance_bp = Blueprint("finance", __name__)
+
+
+def _owner_id() -> int:
+    return getattr(g, "owner_id", DEFAULT_OWNER_ID)
 
 
 @finance_bp.route("/finance")
@@ -16,7 +21,7 @@ def finance_page():
 @finance_bp.route("/api/finance/overview")
 def api_finance_overview():
     from agent.storage import get_finance_overview
-    data = get_finance_overview()
+    data = get_finance_overview(owner_id=_owner_id())
     return jsonify(data)
 
 
@@ -34,6 +39,7 @@ def api_finance_transactions():
         year=year, month=month, day=day,
         category=category, merchant=merchant,
         limit=limit, offset=offset,
+        owner_id=_owner_id(),
     )
     return jsonify([{k: _serialize(v) if isinstance(v, (datetime, date, Decimal)) else v
                      for k, v in row.items()} for row in rows])
@@ -45,7 +51,7 @@ def api_finance_summary():
     group_by = request.args.get("group_by", "month")
     year = request.args.get("year", type=int)
     month = request.args.get("month", type=int)
-    rows = get_finance_summary(group_by=group_by, year=year, month=month)
+    rows = get_finance_summary(group_by=group_by, year=year, month=month, owner_id=_owner_id())
     result = []
     for row in rows:
         item = {k: _serialize(v) if isinstance(v, (datetime, date, Decimal)) else v
@@ -65,7 +71,7 @@ def api_finance_merchants():
     year = request.args.get("year", type=int)
     month = request.args.get("month", type=int)
     limit = request.args.get("limit", 20, type=int)
-    rows = get_finance_merchant_stats(year=year, month=month, limit=limit)
+    rows = get_finance_merchant_stats(year=year, month=month, limit=limit, owner_id=_owner_id())
     return jsonify([{k: _serialize(v) if isinstance(v, (datetime, date, Decimal)) else v
                      for k, v in row.items()} for row in rows])
 
@@ -75,7 +81,7 @@ def api_finance_categories():
     from agent.storage import get_finance_category_stats
     year = request.args.get("year", type=int)
     month = request.args.get("month", type=int)
-    rows = get_finance_category_stats(year=year, month=month)
+    rows = get_finance_category_stats(year=year, month=month, owner_id=_owner_id())
     return jsonify([{k: _serialize(v) if isinstance(v, (datetime, date, Decimal)) else v
                      for k, v in row.items()} for row in rows])
 
@@ -181,7 +187,7 @@ def api_finance_update_transaction(txn_id):
     data = request.get_json(force=True)
     category = data.get("category")
     note = data.get("note")
-    ok = update_finance_transaction(txn_id, category=category, note=note)
+    ok = update_finance_transaction(txn_id, category=category, note=note, owner_id=_owner_id())
     if ok:
         return jsonify({"ok": True, "id": txn_id})
     return jsonify({"error": "Record not found or no updates"}), 404

@@ -50,19 +50,19 @@ def _build_chat_memory_context(full_profile, user_model_data, perception,
     }
 
 
-def _load_fact_edges_safe(full_profile):
+def _load_fact_edges_safe(full_profile, owner_id: int | None = None):
     """Load fact edges, return [] on error with warning."""
     if not full_profile:
         return []
     try:
         profile_ids = [p["id"] for p in full_profile if p.get("id")]
-        return load_fact_edges(profile_ids) or []
+        return load_fact_edges(profile_ids, owner_id=owner_id) or []
     except Exception:
         logger.warning("fact_edges load failed", exc_info=True)
         return []
 
 
-def _load_vector_results_safe(perception, config):
+def _load_vector_results_safe(perception, config, owner_id: int | None = None):
     """Vector search, return [] on error with warning."""
     if not (config and config.get("embedding", {}).get("enabled")):
         return []
@@ -77,19 +77,19 @@ def _load_vector_results_safe(perception, config):
         query_text = " ".join(query_parts)
         if not query_text.strip():
             return []
-        return vector_search(query_text, config) or []
+        return vector_search(query_text, config, owner_id=owner_id) or []
     except Exception:
         logger.warning("vector search failed", exc_info=True)
         return []
 
 
-def _load_cluster_themes_safe(config):
+def _load_cluster_themes_safe(config, owner_id: int | None = None):
     """Load cluster themes, return [] on error with warning."""
     if not (config and config.get("embedding", {}).get("clustering", {}).get("show_themes")):
         return []
     try:
         from agent.utils.clustering import load_cluster_themes
-        return load_cluster_themes() or []
+        return load_cluster_themes(owner_id=owner_id) or []
     except Exception:
         logger.warning("cluster themes load failed", exc_info=True)
         return []
@@ -273,7 +273,8 @@ def _assemble_memory_context(
 
 async def build_memory_context_async(perception: dict,
                                      executed_strategy_ids: set | None = None,
-                                     config: dict | None = None) -> dict:
+                                     config: dict | None = None,
+                                     owner_id: int = 1) -> dict:
     """Build memory context — parallelizes independent DB queries."""
     if executed_strategy_ids is None:
         executed_strategy_ids = set()
@@ -284,8 +285,8 @@ async def build_memory_context_async(perception: dict,
 
     if category == "chat":
         full_profile, user_model_data = await asyncio.gather(
-            asyncio.to_thread(load_full_current_profile),
-            asyncio.to_thread(load_user_model),
+            asyncio.to_thread(load_full_current_profile, False, owner_id),
+            asyncio.to_thread(load_user_model, owner_id),
         )
         return _build_chat_memory_context(full_profile, user_model_data,
                                           perception, config, language, L)
@@ -295,22 +296,22 @@ async def build_memory_context_async(perception: dict,
     (full_profile, user_model_data, all_strategies,
      relationships_data, events, trajectory_data,
      snapshot, timeline) = await asyncio.gather(
-        asyncio.to_thread(load_full_current_profile),
-        asyncio.to_thread(load_user_model),
+        asyncio.to_thread(load_full_current_profile, False, owner_id),
+        asyncio.to_thread(load_user_model, owner_id),
         asyncio.to_thread(load_pending_strategies,
-                          topic_keywords if topic_keywords else None),
-        asyncio.to_thread(load_relationships),
-        asyncio.to_thread(load_active_events, 5),
-        asyncio.to_thread(load_trajectory_summary),
-        asyncio.to_thread(load_memory_snapshot),
-        asyncio.to_thread(load_timeline),
+                          topic_keywords if topic_keywords else None, owner_id),
+        asyncio.to_thread(load_relationships, "active", owner_id),
+        asyncio.to_thread(load_active_events, 5, None, owner_id),
+        asyncio.to_thread(load_trajectory_summary, owner_id),
+        asyncio.to_thread(load_memory_snapshot, owner_id),
+        asyncio.to_thread(load_timeline, None, None, False, owner_id),
     )
 
     # Round 2: queries that may depend on profile
     fact_edges, vs_results, cluster_themes = await asyncio.gather(
-        asyncio.to_thread(_load_fact_edges_safe, full_profile),
-        asyncio.to_thread(_load_vector_results_safe, perception, config),
-        asyncio.to_thread(_load_cluster_themes_safe, config),
+        asyncio.to_thread(_load_fact_edges_safe, full_profile, owner_id),
+        asyncio.to_thread(_load_vector_results_safe, perception, config, owner_id),
+        asyncio.to_thread(_load_cluster_themes_safe, config, owner_id),
     )
 
     return _assemble_memory_context(

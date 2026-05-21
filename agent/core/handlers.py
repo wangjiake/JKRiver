@@ -159,6 +159,7 @@ def _save_turn_data(session, perception: dict, think_result: dict,
         user_input_at=user_input_at,
         assistant_reply=final_response,
         assistant_reply_at=assistant_reply_at,
+        owner_id=getattr(session, "owner_id", 1),
     )
 
     completed_at = get_now()
@@ -200,6 +201,7 @@ def _save_turn_data(session, perception: dict, think_result: dict,
     _memory_type = perception["memory_type"] if _need_memory else "无"
 
     save_conversation_turn({
+        "owner_id": getattr(session, "owner_id", 1),
         "session_id": session.id,
         "session_created_at": session.created_at,
         "user_input": raw_user_input,

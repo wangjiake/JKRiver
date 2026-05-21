@@ -5,27 +5,31 @@ from ._db import get_db_connection
 
 def save_observation(session_id: str, observation_type: str, content: str,
                      subject: str | None = None, context: str | None = None,
-                     source_turn_id: int | None = None):
+                     source_turn_id: int | None = None,
+                     owner_id: int = 1):
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
             cur.execute(
                 "INSERT INTO observations "
-                "(session_id, observation_type, content, subject, context, source_turn_id, created_at) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s)",
-                (session_id, observation_type, content, subject, context, source_turn_id, get_now()),
+                "(owner_id, session_id, observation_type, content, subject, context, source_turn_id, created_at) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+                (owner_id, session_id, observation_type, content, subject, context, source_turn_id, get_now()),
             )
         conn.commit()
     finally:
         conn.close()
 
 def load_observations(session_id: str | None = None, subject: str | None = None,
-                      limit: int = 50) -> list[dict]:
+                      limit: int = 50, owner_id: int | None = None) -> list[dict]:
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             conditions = ["rejected = false"]
             params: list = []
+            if owner_id is not None:
+                conditions.append("owner_id = %s")
+                params.append(owner_id)
             if session_id:
                 conditions.append("session_id = %s")
                 params.append(session_id)
@@ -45,17 +49,24 @@ def load_observations(session_id: str | None = None, subject: str | None = None,
         conn.close()
 
 def load_observations_by_time_range(pivot_time, keywords: set | None = None,
-                                     limit: int = 200) -> dict:
+                                     limit: int = 200,
+                                     owner_id: int | None = None) -> dict:
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            conditions = ["rejected = false"]
+            params: list = []
+            if owner_id is not None:
+                conditions.append("owner_id = %s")
+                params.append(owner_id)
+            where = "WHERE " + " AND ".join(conditions)
+            params.append(limit)
             cur.execute(
-                "SELECT id, session_id, observation_type, content, subject, "
-                "context, created_at "
-                "FROM observations "
-                "WHERE rejected = false "
-                "ORDER BY created_at ASC LIMIT %s",
-                (limit,),
+                f"SELECT id, session_id, observation_type, content, subject, "
+                f"context, created_at "
+                f"FROM observations {where} "
+                f"ORDER BY created_at ASC LIMIT %s",
+                params,
             )
             all_obs = list(cur.fetchall())
     finally:

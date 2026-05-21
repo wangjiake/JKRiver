@@ -67,6 +67,32 @@ docker logs jkriver-jkriver-1 2>&1 | grep "Token:"
 
 ---
 
+## 2026 年 5 月更新
+
+### 家庭多账号模式
+
+JKRiver 现在支持单部署里多个家庭成员各自有自己独立的对话历史、画像、记忆、财务/健康数据，共享同一个 Postgres 库。从 **System → 家庭成员** 设置：
+
+- **accounts 表** —— 把内部名（如 `wife`）映射到 `owner_id`。所有业务行（observations / profile / memory / finance 等）都按这个 id 隔离。
+- **access_tokens 表** —— 每个设备一个 session token，SHA-256 hash 存库；同一个家庭成员可以同时绑老婆 iPhone、你的 iPad 等多个设备。
+- **邀请流程** —— admin 在 System 页生成一次性邀请 URL（可带 QR 码），家人在自己设备打开 → 命名设备 → cookie 自动设好 → 登录完成。可在 settings.yaml 打开 `family.require_admin_approval` 让新设备需要 admin 审批。
+- **IM 映射** —— `channel_identities` 把 Telegram/Discord 的 user_id 映射到 owner_id，老婆通过 Telegram 发来的消息自动归到她的账号，不会和你的混。
+- **按 owner 跑 sleep** —— sleep 流水线现在按 owner 循环，每个家人有未处理对话就跑一轮，记忆/画像各自独立。
+- **按 owner 计 token** —— LLM API 用量按 owner 记录，能看到谁花了多少 token。
+
+### UI 改进
+
+- **居中的 "zero-state" 聊天页** —— 新建会话时输入框居中显示并配蓝色径向光晕（仿 Gemini），不再是底部空空的对话框。
+- **Gemini 风格发送按钮** —— 中性灰色药丸，输入框有内容时变蓝，图标用 Material `send`（纸飞机）。流式响应时停止按钮仍为红色。
+- **服务端 i18n** —— 语言由服务端根据 `jk_lang` cookie 直接渲染，跨页跳转不再有英文文字闪一下被 JS 替换的现象。
+- **首帧零闪烁** —— 侧栏折叠状态、zero-state 模式、亮/暗主题全部通过 `<head>` 同步脚本在首次绘制前就应用完。
+
+### 数据库迁移
+
+`migrations/` 下 12 个 SQL 文件覆盖多账号上线：`005_multi_owner.sql` 给 27 张业务表加 `owner_id` 列（已有数据默认填 1）；006-007 修唯一约束；008 删除遗留的 `hypotheses` 表（功能合并到 `user_profile.layer`）；009 把设备 token 改成 hash 存储 + 加设备元数据；010-012 覆盖 geoip、admin 审批、清理工作。迁移幂等，启动时自动跑。
+
+---
+
 ## 记忆引擎
 
 每次对话结束后，Riverse 运行离线整理流水线（Sleep），构建结构化的个人画像：

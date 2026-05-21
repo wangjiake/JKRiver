@@ -4,14 +4,11 @@
 {% block body %}
 <div class="header">
   <div>
-    <h1 data-i18n="title">用户画像</h1>
-    <div class="subtitle"><span data-i18n="db_label">数据库</span>: {{ db_name }}</div>
+    <h1 data-i18n="title">{{ page_title }}</h1>
+    <div class="subtitle"><span data-i18n="db_label">{{ nav_i18n.db_label }}</span>: {{ db_name }}</div>
   </div>
   <div class="header-right">
-    <a href="/chat" class="nav-link" data-i18n="nav_chat">Chat</a>
-    <a href="/profile" class="nav-link active" data-i18n="nav_profile">Profile</a>
-    <a href="/outsource" class="nav-link" id="outsource-nav-link">Tasks</a>
-    <a href="/system" class="nav-link" data-i18n="nav_system">System</a>
+    {% include '_nav.html' %}
     <div class="lang-switch">
       <button class="lang-btn active" onclick="setLang('zh')">中文</button>
       <button class="lang-btn" onclick="setLang('en')">EN</button>
@@ -22,29 +19,29 @@
 </div>
 
 <div class="stats-bar" id="stats-bar">
-  <div class="stat-item"><div class="stat-value" id="s-sessions">-</div><div class="stat-label" data-i18n="stat_sessions">已处理会话</div></div>
-  <div class="stat-item"><div class="stat-value" id="s-observations">-</div><div class="stat-label" data-i18n="stat_observations">观察记录</div></div>
-  <div class="stat-item"><div class="stat-value green" id="s-confirmed">-</div><div class="stat-label" data-i18n="stat_confirmed">已确认</div></div>
-  <div class="stat-item"><div class="stat-value yellow" id="s-suspected">-</div><div class="stat-label" data-i18n="stat_suspected">待确认</div></div>
-  <div class="stat-item"><div class="stat-value purple" id="s-closed">-</div><div class="stat-label" data-i18n="stat_closed">历史变迁</div></div>
-  <div class="stat-item"><div class="stat-value red" id="s-disputes">-</div><div class="stat-label" data-i18n="stat_disputes">未解决矛盾</div></div>
+  <div class="stat-item"><div class="stat-value" id="s-sessions">-</div><div class="stat-label" data-i18n="stat_sessions">{{ i18n.stat_sessions }}</div></div>
+  <div class="stat-item"><div class="stat-value" id="s-observations">-</div><div class="stat-label" data-i18n="stat_observations">{{ i18n.stat_observations }}</div></div>
+  <div class="stat-item"><div class="stat-value green" id="s-confirmed">-</div><div class="stat-label" data-i18n="stat_confirmed">{{ i18n.stat_confirmed }}</div></div>
+  <div class="stat-item"><div class="stat-value yellow" id="s-suspected">-</div><div class="stat-label" data-i18n="stat_suspected">{{ i18n.stat_suspected }}</div></div>
+  <div class="stat-item"><div class="stat-value purple" id="s-closed">-</div><div class="stat-label" data-i18n="stat_closed">{{ i18n.stat_closed }}</div></div>
+  <div class="stat-item"><div class="stat-value red" id="s-disputes">-</div><div class="stat-label" data-i18n="stat_disputes">{{ i18n.stat_disputes }}</div></div>
 </div>
 
 <div class="container">
   <div class="sidebar">
-    <h3 data-i18n="filter_title">分类筛选</h3>
-    <button class="filter-btn active" data-category="" onclick="filterCategory(this)" data-i18n="filter_all">全部</button>
+    <h3 data-i18n="filter_title">{{ i18n.filter_title }}</h3>
+    <button class="filter-btn active" data-category="" onclick="filterCategory(this)" data-i18n="filter_all">{{ i18n.filter_all }}</button>
     <div id="category-list"></div>
   </div>
   <div class="main">
     <div class="tabs">
-      <div class="tab active" data-tab="profile" onclick="switchTab(this)"><span data-i18n="tab_profile">当前画像</span> <span class="count" id="t-profile">0</span></div>
-      <div class="tab" data-tab="timeline" onclick="switchTab(this)"><span data-i18n="tab_timeline">时间线</span> <span class="count" id="t-timeline">0</span></div>
-      <div class="tab" data-tab="snapshot" onclick="switchTab(this)"><span data-i18n="tab_snapshot">月度快照</span></div>
-      <div class="tab" data-tab="observations" onclick="switchTab(this)"><span data-i18n="tab_observations">观察记录</span> <span class="count" id="t-obs">0</span></div>
-      <div class="tab" data-tab="relationships" onclick="switchTab(this)"><span data-i18n="tab_relationships">人际关系</span> <span class="count" id="t-rel">0</span></div>
+      <div class="tab active" data-tab="profile" onclick="switchTab(this)"><span data-i18n="tab_profile">{{ i18n.tab_profile }}</span> <span class="count" id="t-profile">0</span></div>
+      <div class="tab" data-tab="timeline" onclick="switchTab(this)"><span data-i18n="tab_timeline">{{ i18n.tab_timeline }}</span> <span class="count" id="t-timeline">0</span></div>
+      <div class="tab" data-tab="snapshot" onclick="switchTab(this)"><span data-i18n="tab_snapshot">{{ i18n.tab_snapshot }}</span></div>
+      <div class="tab" data-tab="observations" onclick="switchTab(this)"><span data-i18n="tab_observations">{{ i18n.tab_observations }}</span> <span class="count" id="t-obs">0</span></div>
+      <div class="tab" data-tab="relationships" onclick="switchTab(this)"><span data-i18n="tab_relationships">{{ i18n.tab_relationships }}</span> <span class="count" id="t-rel">0</span></div>
     </div>
-    <div id="content"><div class="loading" data-i18n="loading">加载中</div></div>
+    <div id="content"><div class="loading" data-i18n="loading">{{ i18n.loading }}</div></div>
   </div>
 </div>
 {% endblock %}

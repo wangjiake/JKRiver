@@ -2,7 +2,6 @@
 import asyncio
 import logging
 import os
-import secrets
 import uuid
 from datetime import datetime
 from contextlib import asynccontextmanager
@@ -18,6 +17,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 from agent.config import load_config
 from agent.core import SessionManager, run_cycle_async
+from agent.core.identity import DEFAULT_OWNER_ID, resolve_owner_id
 from agent.storage import get_db_connection, load_current_profile, load_full_current_profile
 from agent.utils.time_context import set_current_time
 from agent.routers import _state
@@ -63,20 +63,14 @@ async def lifespan(app: FastAPI):
                 except Exception as e:
                     logger.warning("AGENT.md periodic scan failed: %s", e)
         asyncio.create_task(_periodic_scan())
-    yield
 
-
-def _api_token_valid(token: str) -> bool:
-    pm = _state._config.get("public_mode", {}) if _state._config else {}
-    if not pm.get("enabled", False):
-        return True
-    expected = pm.get("access_token", "")
-    if not expected:
-        return True
+    # Family GC: daily prune of stale tokens / invites / audit rows.
     try:
-        return secrets.compare_digest(token.encode(), str(expected).encode())
-    except Exception:
-        return False
+        from agent.services.family_gc import gc_loop
+        asyncio.create_task(gc_loop())
+    except Exception as e:
+        logger.warning("Family GC not started: %s", e)
+    yield
 
 
 app = FastAPI(title="Riverse Agent API", version="2.4.0", lifespan=lifespan)
@@ -87,8 +81,19 @@ async def auth_middleware(request: Request, call_next):
     if request.url.path == "/health":
         return await call_next(request)
     token = request.headers.get("X-Device-Token", "") or request.query_params.get("token", "")
-    if not _api_token_valid(token):
+    pm = _state._config.get("public_mode", {}) if _state._config else {}
+    if not pm.get("enabled", False):
+        # public_mode disabled: single-user dev mode.
+        request.state.owner_id = DEFAULT_OWNER_ID
+        request.state.access_token = token
+        return await call_next(request)
+    ua = request.headers.get("User-Agent")
+    ip = request.client.host if request.client else None
+    owner_id = resolve_owner_id(token, user_agent=ua, ip=ip)
+    if owner_id is None:
         return JSONResponse(status_code=401, content={"detail": "unauthorized"})
+    request.state.owner_id = owner_id
+    request.state.access_token = token
     return await call_next(request)
 
 
@@ -105,6 +110,7 @@ from agent.routers import outsource, sessions, system as system_router
 from agent.routers import system_tools, system_skills, system_agents
 from agent.routers import stats as stats_router
 from agent.routers import chat as chat_router
+from agent.routers import family as family_router
 app.include_router(outsource.router)
 app.include_router(sessions.router)
 app.include_router(system_router.router)
@@ -113,6 +119,7 @@ app.include_router(system_skills.router)
 app.include_router(system_agents.router)
 app.include_router(stats_router.router)
 app.include_router(chat_router.router)
+app.include_router(family_router.router)
 
 
 # ── Models ────────────────────────────────────────────────────────────────────
@@ -163,13 +170,14 @@ class TaskResponse(BaseModel):
 _TOOL_FOR_INPUT = {"image": "image_describe", "voice": "voice_transcribe"}
 
 @app.post("/chat", response_model=ChatResponse)
-async def chat(req: ChatRequest):
+async def chat(req: ChatRequest, request: Request):
     if req.client_time:
         try:
             set_current_time(datetime.fromisoformat(req.client_time))
         except (ValueError, TypeError):
             pass
-    session = _state._manager.get_or_create(req.session_id)
+    owner_id = getattr(request.state, "owner_id", DEFAULT_OWNER_ID)
+    session = _state._manager.get_or_create(req.session_id, owner_id=owner_id)
     try:
         required_tool = _TOOL_FOR_INPUT.get(req.input_type)
         if required_tool and required_tool not in session.tool_registry._tools:
@@ -214,8 +222,9 @@ async def get_capabilities():
 
 
 @app.post("/session/new", response_model=SessionResponse)
-async def new_session():
-    session = _state._manager.get_or_create()
+async def new_session(request: Request):
+    owner_id = getattr(request.state, "owner_id", DEFAULT_OWNER_ID)
+    session = _state._manager.get_or_create(owner_id=owner_id)
     return SessionResponse(
         session_id=session.id,
         created_at=session.created_at.isoformat(),
@@ -300,8 +309,9 @@ async def health_check():
 
 
 @app.get("/profile", response_model=list[ProfileEntry])
-async def get_profile():
-    profile = load_current_profile()
+async def get_profile(request: Request):
+    owner_id = getattr(request.state, "owner_id", DEFAULT_OWNER_ID)
+    profile = load_current_profile(owner_id=owner_id)
     return [
         ProfileEntry(category=p["category"], field=p["field"], value=p["value"])
         for p in profile
@@ -309,8 +319,9 @@ async def get_profile():
 
 
 @app.get("/hypotheses", response_model=list[HypothesisEntry])
-async def get_hypotheses():
-    profile = load_full_current_profile()
+async def get_hypotheses(request: Request):
+    owner_id = getattr(request.state, "owner_id", DEFAULT_OWNER_ID)
+    profile = load_full_current_profile(owner_id=owner_id)
     return [
         HypothesisEntry(
             id=p["id"], category=p["category"], subject=p["subject"],

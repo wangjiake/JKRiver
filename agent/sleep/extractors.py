@@ -10,7 +10,8 @@ from agent.sleep._formatting import _format_profile_for_llm
 
 
 def extract_observations_and_tags(conversations: list[dict], config: dict,
-                                   existing_profile: list[dict] | None = None) -> dict:
+                                   existing_profile: list[dict] | None = None,
+                                   owner_id: int | None = None) -> dict:
     llm_config = config.get("llm", {})
     language = config.get("language", "en")
     L = get_labels("context.labels", language)
@@ -56,7 +57,7 @@ def extract_observations_and_tags(conversations: list[dict], config: dict,
     else:
         category_hint = L["none"]
 
-    existing = load_existing_tags()
+    existing = load_existing_tags(owner_id=owner_id)
     tag_hint = "、".join(existing) if existing else L["none"]
 
     prompt = get_prompt("sleep.extract_observations", language,

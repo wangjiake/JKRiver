@@ -142,8 +142,9 @@ class DispatchTaskTool(BaseTool):
 
             # Create pending record
             session_id = self.config.get("_session_id", "")
-            task_id = create_task(task, strict_mode=strict_mode)
-            update_task(task_id, status="pending", session_id=session_id)
+            owner_id = int(self.config.get("llm", {}).get("_owner_id", 1) or 1)
+            task_id = create_task(task, strict_mode=strict_mode, owner_id=owner_id)
+            update_task(task_id, status="pending", session_id=session_id, owner_id=owner_id)
 
             # Generate plan synchronously (just planning, fast)
             result = {}
@@ -159,7 +160,7 @@ class DispatchTaskTool(BaseTool):
             t.join(timeout=30)
             plan = result.get("plan", [{"step": 1, "description": task}])
 
-            update_task(task_id, plan=plan, total_steps=len(plan))
+            update_task(task_id, plan=plan, total_steps=len(plan), owner_id=owner_id)
 
             # Format plan for display
             lang = self.config.get("language", "en")

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Invite{% endblock %}
+{% block head_extra %}
+<style>
+  body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; box-sizing: border-box; }
+  .invite-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+                 padding: 32px; max-width: 440px; width: 100%; box-shadow: 0 4px 20px rgba(0,0,0,0.25); }
+  .invite-h1 { font-size: 22px; margin: 0 0 6px; color: var(--text); }
+  .invite-sub { font-size: 14px; color: var(--text-muted); margin-bottom: 24px; line-height: 1.55; }
+  .invite-sub strong { color: var(--accent); }
+  .invite-field { margin-bottom: 18px; }
+  .invite-field label { display: block; font-size: 11px; font-weight: 600;
+                        color: var(--text-2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .invite-field input { width: 100%; background: var(--bg-input); border: 1px solid var(--border);
+                        color: var(--text); padding: 9px 12px; border-radius: 6px; font-size: 14px;
+                        outline: none; box-sizing: border-box; }
+  .invite-field input:focus { border-color: var(--accent); }
+  .invite-field .hint { font-size: 12px; color: var(--text-faint); margin-top: 6px; }
+  .invite-btn { width: 100%; padding: 11px; background: var(--bg-accent); color: var(--accent);
+                border: 1px solid var(--accent); border-radius: 6px; font-size: 14px; font-weight: 600;
+                cursor: pointer; }
+  .invite-btn:hover { background: #24426e; }
+  .invite-err { text-align: center; padding: 24px; color: var(--red); font-size: 15px; line-height: 1.6; }
+  .invite-err strong { display: block; margin-bottom: 8px; font-size: 18px; color: var(--text); }
+</style>
+{% endblock %}
+{% block body %}
+<div class="invite-card">
+  {% if error == 'not_found' %}
+    <div class="invite-err"><strong>邀请无效</strong>这个邀请链接不存在。请联系发送邀请的家庭管理员。</div>
+  {% elif error == 'expired' %}
+    <div class="invite-err"><strong>邀请已过期</strong>邀请链接有效期 24 小时。请管理员重新生成。</div>
+  {% elif error == 'already_used' %}
+    <div class="invite-err"><strong>邀请已使用</strong>这个邀请链接是一次性的，已经被使用过。如需添加新设备，请联系管理员。</div>
+  {% else %}
+    <h1 class="invite-h1">加入家庭</h1>
+    <div class="invite-sub">
+      <strong>{{ owner_name }}</strong>{% if label %}（{{ label }}）{% endif %} 邀请你登录这台设备。<br/>
+      给这台设备起个名字，方便日后在设备列表里识别它。
+    </div>
+    <form method="POST" action="/invite/{{ invite_uuid }}">
+      <div class="invite-field">
+        <label>设备名</label>
+        <input type="text" name="device_name" value="{{ suggested_device }}" autocomplete="off" autofocus />
+        <div class="hint">例如：iPhone 15 / 老婆的 iPad / 客厅电视</div>
+      </div>
+      <button type="submit" class="invite-btn">接受邀请并登录</button>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}

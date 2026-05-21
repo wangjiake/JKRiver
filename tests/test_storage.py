@@ -78,11 +78,6 @@ from agent.storage import (
     load_fact_edges,
     save_observation,
     load_observations,
-    save_hypothesis,
-    load_active_hypotheses,
-    get_hypothesis_by_subject,
-    resolve_suspicion,
-    set_hypothesis_status,
 )
 
 
@@ -276,95 +271,6 @@ class TestObservations(_DBTestBase):
         obs = load_observations(subject="技能")
         assert all(o["subject"] == "技能" for o in obs)
 
-
-# ═══════════════════════════════════════════════════════════
-#  Hypothesis state machine
-# ═══════════════════════════════════════════════════════════
-
-@_skip
-class TestHypothesisStateMachine(_DBTestBase):
-
-    def test_new_hypothesis_creates_active(self):
-        hid = save_hypothesis("位置", "居住地", "北京")
-        h = get_hypothesis_by_subject("位置", "居住地")
-        assert h is not None
-        assert h["status"] == "active"
-        assert h["claim"] == "北京"
-        assert h["mention_count"] == 1
-
-    def test_same_claim_increments_mention(self):
-        hid = save_hypothesis("位置", "居住地", "北京")
-        save_hypothesis("位置", "居住地", "北京")
-        h = get_hypothesis_by_subject("位置", "居住地")
-        assert h["mention_count"] == 2
-        assert h["status"] == "active"
-        assert h["id"] == hid
-
-    def test_different_claim_enters_suspected(self):
-        hid = save_hypothesis("位置", "居住地", "北京")
-        save_hypothesis("位置", "居住地", "上海")
-        h = get_hypothesis_by_subject("位置", "居住地")
-        assert h["status"] == "suspected"
-        assert h["suspected_value"] == "上海"
-        assert h["claim"] == "北京"  # original unchanged
-
-    def test_suspected_repeat_adds_evidence(self):
-        hid = save_hypothesis("位置", "居住地", "北京")
-        save_hypothesis("位置", "居住地", "上海")
-        save_hypothesis("位置", "居住地", "上海")  # third mention of new value
-        h = get_hypothesis_by_subject("位置", "居住地")
-        assert h["status"] == "suspected"
-        assert len(h["suspected_evidence"]) >= 1
-
-    def test_resolve_suspicion_accept(self):
-        hid = save_hypothesis("位置", "居住地", "北京")
-        save_hypothesis("位置", "居住地", "北京")
-        save_hypothesis("位置", "居住地", "北京")  # mention_count=3
-        save_hypothesis("位置", "居住地", "上海")  # enters suspected
-        resolve_suspicion(hid, accept=True)
-        h = get_hypothesis_by_subject("位置", "居住地")
-        assert h["claim"] == "上海"  # new value is now the claim
-        assert h["status"] == "active"
-        assert h["mention_count"] == 2  # reset for new claim
-        assert h["suspected_value"] is None
-        # old value archived in history
-        assert len(h["history"]) == 1
-        assert h["history"][0]["value"] == "北京"
-        assert h["history"][0]["mention_count"] == 3
-
-    def test_resolve_suspicion_reject(self):
-        hid = save_hypothesis("位置", "居住地", "北京")
-        save_hypothesis("位置", "居住地", "北京")  # mention_count=2
-        save_hypothesis("位置", "居住地", "上海")  # enters suspected
-        resolve_suspicion(hid, accept=False)
-        h = get_hypothesis_by_subject("位置", "居住地")
-        assert h["claim"] == "北京"  # original restored
-        assert h["status"] == "active"  # mention_count=2 → active
-        assert h["suspected_value"] is None
-        # rejected evidence merged into evidence_against
-        assert h["evidence_against"] is not None
-
-    def test_resolve_suspicion_reject_high_mention_restores_established(self):
-        hid = save_hypothesis("位置", "居住地", "北京")
-        for _ in range(4):  # total mention_count = 5
-            save_hypothesis("位置", "居住地", "北京")
-        save_hypothesis("位置", "居住地", "上海")  # enters suspected
-        resolve_suspicion(hid, accept=False)
-        h = get_hypothesis_by_subject("位置", "居住地")
-        assert h["status"] == "established"  # mention_count >= 4
-
-    def test_dormant_reactivation(self):
-        hid = save_hypothesis("位置", "居住地", "北京")
-        set_hypothesis_status(hid, "dormant")
-        # dormant is excluded from get_hypothesis_by_subject
-        h = get_hypothesis_by_subject("位置", "居住地")
-        assert h is None
-        # re-mentioning same claim reactivates
-        save_hypothesis("位置", "居住地", "北京")
-        h = get_hypothesis_by_subject("位置", "居住地")
-        assert h is not None
-        assert h["status"] == "active"
-        assert h["mention_count"] == 2
 
 
 # ═══════════════════════════════════════════════════════════

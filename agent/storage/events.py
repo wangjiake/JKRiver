@@ -7,7 +7,7 @@ from ._db import get_db_connection
 
 def save_event(category: str, summary: str, session_id: str | None = None,
                importance: float | None = None, decay_days: int | None = None,
-               reference_time=None):
+               reference_time=None, owner_id: int = 1):
     if importance is None:
         importance = 0.5
 
@@ -22,10 +22,10 @@ def save_event(category: str, summary: str, session_id: str | None = None,
         with conn.cursor() as cur:
             cur.execute(
                 "SELECT id, summary FROM event_log "
-                "WHERE category = %s "
+                "WHERE category = %s AND owner_id = %s "
                 "AND (expires_at IS NULL OR expires_at > %s) "
                 "ORDER BY created_at DESC LIMIT 5",
-                (category, now),
+                (category, owner_id, now),
             )
             rows = cur.fetchall()
 
@@ -42,9 +42,9 @@ def save_event(category: str, summary: str, session_id: str | None = None,
                 )
             else:
                 cur.execute(
-                    "INSERT INTO event_log (category, summary, importance, expires_at, source_session, created_at) "
-                    "VALUES (%s, %s, %s, %s, %s, %s)",
-                    (category, summary, importance, expires_at, session_id, now),
+                    "INSERT INTO event_log (owner_id, category, summary, importance, expires_at, source_session, created_at) "
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                    (owner_id, category, summary, importance, expires_at, session_id, now),
                 )
         conn.commit()
     finally:
@@ -70,12 +70,16 @@ def _is_similar_event(existing: str, new: str) -> bool:
         return False
     return a == b or a in b or b in a
 
-def load_active_events(top_k: int = 10, category: str | None = None) -> list[dict]:
+def load_active_events(top_k: int = 10, category: str | None = None,
+                       owner_id: int | None = None) -> list[dict]:
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             conditions = ["(expires_at IS NULL OR expires_at > %s)"]
             params: list = [get_now()]
+            if owner_id is not None:
+                conditions.append("owner_id = %s")
+                params.append(owner_id)
             if category:
                 conditions.append("category = %s")
                 params.append(category)

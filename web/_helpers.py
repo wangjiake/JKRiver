@@ -27,12 +27,12 @@ def _serialize(obj):
     return str(obj)
 
 
-def _log_review(conn, target_table, target_id, action, old_value, new_value, note):
+def _log_review(conn, target_table, target_id, action, old_value, new_value, note, owner_id: int = 1):
     with conn.cursor() as cur:
         cur.execute(
-            "INSERT INTO review_log (target_table, target_id, action, old_value, new_value, note) "
-            "VALUES (%s, %s, %s, %s, %s, %s)",
-            (target_table, target_id, action,
+            "INSERT INTO review_log (owner_id, target_table, target_id, action, old_value, new_value, note) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s)",
+            (owner_id, target_table, target_id, action,
              json.dumps(old_value, default=_serialize, ensure_ascii=False) if old_value else None,
              json.dumps(new_value, default=_serialize, ensure_ascii=False) if new_value else None,
              note),

@@ -16,7 +16,8 @@ from agent.sleep._formatting import _format_trajectory_block, _format_profile_fo
 
 def generate_strategies(changed_items: list[dict], config: dict,
                         current_profile: list[dict] | None = None,
-                        trajectory: dict | None = None) -> list[dict]:
+                        trajectory: dict | None = None,
+                        owner_id: int | None = None) -> list[dict]:
     llm_config = config.get("llm", {})
     language = config.get("language", "en")
     L = get_labels("context.labels", language)
@@ -50,7 +51,7 @@ def generate_strategies(changed_items: list[dict], config: dict,
             f"  {L['volatile_areas']}: {json.dumps(trajectory.get('volatile_areas', []), ensure_ascii=False)}\n"
         )
 
-    user_model = load_user_model()
+    user_model = load_user_model(owner_id=owner_id)
     model_context = ""
     if user_model:
         model_lines = [f"  {m['dimension']}: {m['assessment']}" for m in user_model]
@@ -73,7 +74,8 @@ def generate_strategies(changed_items: list[dict], config: dict,
 
 
 def analyze_user_model(conversations: list[dict], config: dict,
-                       current_profile: list[dict] | None = None) -> list[dict]:
+                       current_profile: list[dict] | None = None,
+                       owner_id: int | None = None) -> list[dict]:
     llm_config = config.get("llm", {})
     language = config.get("language", "en")
     L = get_labels("context.labels", language)
@@ -86,7 +88,7 @@ def analyze_user_model(conversations: list[dict], config: dict,
     if not dialogue.strip():
         return []
 
-    existing_model = load_user_model()
+    existing_model = load_user_model(owner_id=owner_id)
     if existing_model:
         model_lines = []
         for m in existing_model:
@@ -161,7 +163,8 @@ def analyze_behavioral_patterns(observations: list[dict],
 
 
 def cross_verify_suspected_facts(suspected_facts: list[dict], config: dict,
-                                  trajectory: dict | None = None) -> list[dict]:
+                                  trajectory: dict | None = None,
+                                  owner_id: int | None = None) -> list[dict]:
     llm_config = config.get("llm", {})
     language = config.get("language", "en")
     L = get_labels("context.labels", language)
@@ -186,7 +189,7 @@ def cross_verify_suspected_facts(suspected_facts: list[dict], config: dict,
     llm_candidates.sort(key=lambda f: -(f.get("mention_count") or 1))
     llm_candidates = llm_candidates[:80]
 
-    all_current = load_full_current_profile()
+    all_current = load_full_current_profile(owner_id=owner_id)
     all_facts_map = {p["id"]: p for p in all_current}
 
     items_text = ""
@@ -223,7 +226,7 @@ def cross_verify_suspected_facts(suspected_facts: list[dict], config: dict,
     timeline_context = ""
     for cat, subj in seen_subjects:
         if cat and subj:
-            subj_timeline = load_timeline(category=cat, subject=subj)
+            subj_timeline = load_timeline(category=cat, subject=subj, owner_id=owner_id)
             if subj_timeline:
                 timeline_context += f"\n[{cat}] {subj} {L['full_timeline']}：\n"
                 for t in subj_timeline:
@@ -245,7 +248,7 @@ def cross_verify_suspected_facts(suspected_facts: list[dict], config: dict,
     for cat, subj in seen_subjects:
         if not subj:
             continue
-        subj_summaries = load_summaries_by_observation_subject(subject=subj)
+        subj_summaries = load_summaries_by_observation_subject(subject=subj, owner_id=owner_id)
         all_subj = subj_summaries.get("before", [])
         all_subj = [s for s in all_subj
                      if s.get('user_input_at') and s['user_input_at'] >= three_months_ago]

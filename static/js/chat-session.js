@@ -10,6 +10,7 @@ function toggleSidebar() {
     // Desktop: collapse/expand inline
     const sidebar = document.getElementById('historySidebar');
     const collapsed = sidebar.classList.toggle('collapsed');
+    document.body.classList.toggle('sidebar-collapsed', collapsed);
     localStorage.setItem(SIDEBAR_KEY, collapsed ? '0' : '1');
   }
 }
@@ -26,7 +27,13 @@ let pinnedSessions = [];
 let sessionOffset = 0;
 const SESSION_PAGE = 30;
 let sessionHasMore = false;
+let loadingMore = false;
 let searchTimer = null;
+
+function _setSessionLoading(visible) {
+  const el = document.getElementById('sessionLoading');
+  if (el) el.classList.toggle('visible', visible);
+}
 
 async function loadSessionList() {
   sessionOffset = 0;
@@ -43,7 +50,6 @@ async function loadSessionList() {
     sessionHasMore = allSessions.length === SESSION_PAGE;
     renderPinnedList(pinnedSessions);
     renderSessionList(allSessions);
-    document.getElementById('loadMoreBtn').style.display = sessionHasMore ? '' : 'none';
   } catch(e) { console.warn('Failed to load session list', e); }
 }
 
@@ -53,10 +59,8 @@ async function doSearch() {
   if (!q.trim()) {
     renderPinnedList(pinnedSessions);
     renderSessionList(allSessions);
-    document.getElementById('loadMoreBtn').style.display = sessionHasMore ? '' : 'none';
     return;
   }
-  document.getElementById('loadMoreBtn').style.display = 'none';
   try {
     const res = await fetch(`http://${location.hostname}:${API_PORT}/sessions/search?q=${encodeURIComponent(q)}`, { headers: authHeaders() });
     if (!res.ok) return;
@@ -71,15 +75,15 @@ function filterSessions(q) {
   if (!q.trim()) {
     renderPinnedList(pinnedSessions);
     renderSessionList(allSessions);
-    document.getElementById('loadMoreBtn').style.display = sessionHasMore ? '' : 'none';
     return;
   }
   searchTimer = setTimeout(doSearch, 300);
 }
 
 async function loadMoreSessions() {
-  const btn = document.getElementById('loadMoreBtn');
-  btn.disabled = true;
+  if (loadingMore || !sessionHasMore) return;
+  loadingMore = true;
+  _setSessionLoading(true);
   try {
     const res = await fetch(`http://${location.hostname}:${API_PORT}/sessions?limit=${SESSION_PAGE}&offset=${sessionOffset}`, { headers: authHeaders() });
     if (!res.ok) return;
@@ -88,10 +92,27 @@ async function loadMoreSessions() {
     sessionOffset += more.length;
     sessionHasMore = more.length === SESSION_PAGE;
     renderSessionList(allSessions);
-    btn.style.display = sessionHasMore ? '' : 'none';
   } catch(e) { console.warn('load more failed', e); }
-  btn.disabled = false;
+  _setSessionLoading(false);
+  loadingMore = false;
 }
+
+// Infinite scroll: trigger loadMoreSessions when the history list is near
+// the bottom. Skip while a search filter is active (search results don't
+// paginate). Within 80px of bottom counts as "near bottom".
+(function _initInfiniteScroll() {
+  document.addEventListener('DOMContentLoaded', () => {
+    const list = document.getElementById('historyList');
+    const search = document.getElementById('sessionSearch');
+    if (!list) return;
+    list.addEventListener('scroll', () => {
+      if (search && search.value.trim()) return;
+      if (list.scrollTop + list.clientHeight >= list.scrollHeight - 80) {
+        loadMoreSessions();
+      }
+    });
+  });
+})();
 
 function renderSessionItem(s) {
   const title = escHtml(s.custom_name || s.preview || s.session_id.slice(0, 8) + '…');
@@ -195,7 +216,9 @@ async function confirmDelete(sid) {
     if (sid === sessionId) {
       sessionId = null;
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.setItem(SESSION_ACTIVE_KEY, '0');
       document.getElementById('messages').innerHTML = '';
+      document.body.classList.add('zero-state');
     }
     await loadSessionList();
   } catch(e) { console.warn('delete failed', e); }
@@ -207,6 +230,8 @@ async function switchSession(sid) {
   sessionId = sid;
   localStorage.setItem(STORAGE_KEY, sid);
   document.getElementById('messages').innerHTML = '';
+  localStorage.setItem(SESSION_ACTIVE_KEY, '0');
+  document.body.classList.add('zero-state');
   document.getElementById('input').disabled = true;
   document.getElementById('sendBtn').disabled = true;
   document.querySelectorAll('.history-item').forEach(el =>
@@ -218,7 +243,9 @@ async function switchSession(sid) {
 
 function newSession() {
   localStorage.removeItem(STORAGE_KEY); sessionId = null;
+  localStorage.setItem(SESSION_ACTIVE_KEY, '0');
   document.getElementById('messages').innerHTML = '';
+  document.body.classList.add('zero-state');
   document.getElementById('sessionIdDisplay').textContent = '—';
   if (ws) ws.close();
   closeSidebar(); connect(); loadSessionList();

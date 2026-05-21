@@ -188,8 +188,9 @@ document.querySelectorAll('.lang-btn').forEach(b =>
   b.classList.toggle('active', b.textContent === { zh:'中文', en:'EN', ja:'日本語' }[currentLang]));
 document.getElementById('nav-chat').textContent = t('nav_chat');
 document.getElementById('nav-profile').textContent = t('nav_profile');
+const _outNavBtn = document.getElementById('outsource-nav-link');
+if (_outNavBtn) _outNavBtn.textContent = t('nav_tasks');
 document.getElementById('nav-system').textContent = t('nav_system');
-const _titleText = '⚙ ' + t('nav_system') + ' — ' + DB_NAME;
-document.getElementById('header-title').textContent = _titleText;
+document.getElementById('header-title').textContent = '⚙ ' + t('nav_system');
 document.title = t('nav_system') + ' — ' + DB_NAME;
 load();

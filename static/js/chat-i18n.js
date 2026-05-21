@@ -1,16 +1,21 @@
 // ── Constants ────────────────────────────────────────────────────────
 const API_PORT = 8400;
-const STORAGE_KEY = 'jkriver_session_id';
+// Per-owner localStorage namespace. The chat template injects window.__JK_OWNER_ID__
+// from g.owner_id; falls back to 1 in legacy single-user mode.
+const _OWNER = (window.__JK_OWNER_ID__ || 1);
+const _NS = `jkriver_o${_OWNER}_`;
+const STORAGE_KEY = _NS + 'session_id';
+const SESSION_ACTIVE_KEY = _NS + 'session_active';  // '1' when current session has rendered ≥1 message; consulted by zero-state sync init in chat.html
 const TOKEN_COOKIE = 'jkriver_token';
-const AUTO_SLEEP_KEY = 'jkriver_auto_sleep';
-const SLEEP_MODE_KEY = 'jkriver_sleep_mode';
-const SLEEP_INTERVAL_KEY = 'jkriver_sleep_hours';
-const SLEEP_TIME_KEY = 'jkriver_sleep_time';
-const LANG_KEY = 'jkriver_lang';
-const SIDEBAR_KEY = 'jkriver_sidebar_open';
-const SYS_STATS_KEY = 'jkriver_sys_stats';
-const SYS_STATS_INTERVAL_KEY = 'jkriver_sys_stats_interval';
-const TOKEN_USAGE_KEY = 'jkriver_token_usage';
+const AUTO_SLEEP_KEY = _NS + 'auto_sleep';
+const SLEEP_MODE_KEY = _NS + 'sleep_mode';
+const SLEEP_INTERVAL_KEY = _NS + 'sleep_hours';
+const SLEEP_TIME_KEY = _NS + 'sleep_time';
+const LANG_KEY = _NS + 'lang';
+const SIDEBAR_KEY = _NS + 'sidebar_open';
+const SYS_STATS_KEY = _NS + 'sys_stats';
+const SYS_STATS_INTERVAL_KEY = _NS + 'sys_stats_interval';
+const TOKEN_USAGE_KEY = _NS + 'token_usage';
 
 // ── Shared mutable globals ──────────────────────────────────────────
 let ws = null;
@@ -157,6 +162,7 @@ function t(key, params) {
 function setLang(lang) {
   currentLang = lang;
   localStorage.setItem(LANG_KEY, lang);
+  document.cookie = `jk_lang=${lang}; path=/; max-age=31536000; SameSite=Lax`;
   const labels = { zh: '中文', en: 'EN', ja: '日本語' };
   document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent.trim() === labels[lang]));
   document.querySelectorAll('[data-i18n]').forEach(el => {

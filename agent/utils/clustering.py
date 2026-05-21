@@ -124,17 +124,26 @@ def _compute_embeddings_hash(rows: list[dict]) -> str:
     return hashlib.sha256(ids_str.encode()).hexdigest()[:16]
 
 
-def _load_all_embeddings() -> list[dict]:
+def _load_all_embeddings(owner_id: int | None = None) -> list[dict]:
     from agent.utils.embedding import _pgvector_available
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             # Prefer vector column when pgvector is available
             if _pgvector_available:
-                cur.execute(
-                    "SELECT id, source_table, source_id, text_content, embedding_vec "
-                    "FROM memory_embeddings WHERE embedding_vec IS NOT NULL ORDER BY id"
-                )
+                if owner_id is not None:
+                    cur.execute(
+                        "SELECT id, source_table, source_id, text_content, embedding_vec "
+                        "FROM memory_embeddings "
+                        "WHERE embedding_vec IS NOT NULL AND owner_id = %s "
+                        "ORDER BY id",
+                        (owner_id,),
+                    )
+                else:
+                    cur.execute(
+                        "SELECT id, source_table, source_id, text_content, embedding_vec "
+                        "FROM memory_embeddings WHERE embedding_vec IS NOT NULL ORDER BY id"
+                    )
                 rows = []
                 for r in cur.fetchall():
                     emb = r["embedding_vec"]
@@ -152,10 +161,17 @@ def _load_all_embeddings() -> list[dict]:
                     })
                 return rows
             else:
-                cur.execute(
-                    "SELECT id, source_table, source_id, text_content, embedding "
-                    "FROM memory_embeddings ORDER BY id"
-                )
+                if owner_id is not None:
+                    cur.execute(
+                        "SELECT id, source_table, source_id, text_content, embedding "
+                        "FROM memory_embeddings WHERE owner_id = %s ORDER BY id",
+                        (owner_id,),
+                    )
+                else:
+                    cur.execute(
+                        "SELECT id, source_table, source_id, text_content, embedding "
+                        "FROM memory_embeddings ORDER BY id"
+                    )
                 rows = []
                 for r in cur.fetchall():
                     emb = r["embedding"]
@@ -173,15 +189,22 @@ def _load_all_embeddings() -> list[dict]:
         conn.close()
 
 
-def _get_last_embeddings_hash() -> str | None:
+def _get_last_embeddings_hash(owner_id: int | None = None) -> str | None:
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
             try:
-                cur.execute(
-                    "SELECT embeddings_hash FROM memory_clusters "
-                    "ORDER BY id DESC LIMIT 1"
-                )
+                if owner_id is not None:
+                    cur.execute(
+                        "SELECT embeddings_hash FROM memory_clusters "
+                        "WHERE owner_id = %s ORDER BY id DESC LIMIT 1",
+                        (owner_id,),
+                    )
+                else:
+                    cur.execute(
+                        "SELECT embeddings_hash FROM memory_clusters "
+                        "ORDER BY id DESC LIMIT 1"
+                    )
                 row = cur.fetchone()
                 return row[0] if row else None
             except Exception as e:
@@ -192,12 +215,19 @@ def _get_last_embeddings_hash() -> str | None:
         conn.close()
 
 
-def _save_clusters(clusters_data: list[dict], embeddings_hash: str):
+def _save_clusters(clusters_data: list[dict], embeddings_hash: str,
+                   owner_id: int | None = None):
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
             try:
-                cur.execute("DELETE FROM memory_clusters")
+                if owner_id is not None:
+                    cur.execute(
+                        "DELETE FROM memory_clusters WHERE owner_id = %s",
+                        (owner_id,),
+                    )
+                else:
+                    cur.execute("DELETE FROM memory_clusters")
             except Exception as e:
                 conn.rollback()
                 logger.debug("cluster table delete failed, creating: %s", e)
@@ -216,13 +246,15 @@ def _save_clusters(clusters_data: list[dict], embeddings_hash: str):
                     ")"
                 )
 
+            _row_owner = owner_id if owner_id is not None else 1
             for cd in clusters_data:
                 cur.execute(
                     "INSERT INTO memory_clusters "
-                    "(cluster_index, theme, centroid, member_ids, member_count, "
+                    "(owner_id, cluster_index, theme, centroid, member_ids, member_count, "
                     " representative_text, embeddings_hash) "
-                    "VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
                     (
+                        _row_owner,
                         cd["cluster_index"],
                         cd.get("theme", ""),
                         json.dumps(cd["centroid"]),
@@ -276,18 +308,18 @@ def _generate_cluster_themes(clusters_info: list[dict], config: dict) -> list[di
     return []
 
 
-def cluster_memories(config: dict):
+def cluster_memories(config: dict, owner_id: int | None = None):
     emb_cfg = config.get("embedding", {})
     clustering_cfg = emb_cfg.get("clustering", {})
     if not clustering_cfg.get("enabled", False):
         return
 
-    rows = _load_all_embeddings()
+    rows = _load_all_embeddings(owner_id=owner_id)
     if len(rows) < 6:
         return
 
     embeddings_hash = _compute_embeddings_hash(rows)
-    last_hash = _get_last_embeddings_hash()
+    last_hash = _get_last_embeddings_hash(owner_id=owner_id)
     if last_hash == embeddings_hash:
         return
 
@@ -337,20 +369,29 @@ def cluster_memories(config: dict):
     except Exception:
         logger.warning("cluster theme generation failed", exc_info=True)
 
-    _save_clusters(clusters_data, embeddings_hash)
+    _save_clusters(clusters_data, embeddings_hash, owner_id=owner_id)
 
 
-def load_cluster_themes() -> list[dict]:
+def load_cluster_themes(owner_id: int | None = None) -> list[dict]:
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             try:
-                cur.execute(
-                    "SELECT cluster_index, theme, member_count "
-                    "FROM memory_clusters "
-                    "WHERE theme IS NOT NULL AND theme != '' "
-                    "ORDER BY member_count DESC"
-                )
+                if owner_id is not None:
+                    cur.execute(
+                        "SELECT cluster_index, theme, member_count "
+                        "FROM memory_clusters "
+                        "WHERE theme IS NOT NULL AND theme != '' AND owner_id = %s "
+                        "ORDER BY member_count DESC",
+                        (owner_id,),
+                    )
+                else:
+                    cur.execute(
+                        "SELECT cluster_index, theme, member_count "
+                        "FROM memory_clusters "
+                        "WHERE theme IS NOT NULL AND theme != '' "
+                        "ORDER BY member_count DESC"
+                    )
                 return [dict(r) for r in cur.fetchall()]
             except Exception:
                 logger.warning("load_cluster_themes query failed", exc_info=True)

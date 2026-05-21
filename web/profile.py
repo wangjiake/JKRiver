@@ -1,10 +1,15 @@
 
 from datetime import datetime, date
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, g, jsonify, request
 from psycopg2.extras import RealDictCursor
 from web._helpers import get_conn, _serialize
+from agent.core.identity import DEFAULT_OWNER_ID
 
 profile_bp = Blueprint("profile", __name__)
+
+
+def _owner_id() -> int:
+    return getattr(g, "owner_id", DEFAULT_OWNER_ID)
 
 
 @profile_bp.route("/api/profile")
@@ -13,8 +18,8 @@ def api_profile():
     conn = get_conn()
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        conditions = ["end_time IS NULL"]
-        params = []
+        conditions = ["end_time IS NULL", "owner_id = %s"]
+        params = [_owner_id()]
         if category:
             conditions.append("category = %s")
             params.append(category)
@@ -43,12 +48,12 @@ def api_timeline():
     conn = get_conn()
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        conditions = []
-        params = []
+        conditions = ["owner_id = %s"]
+        params = [_owner_id()]
         if category:
             conditions.append("category = %s")
             params.append(category)
-        where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+        where = "WHERE " + " AND ".join(conditions)
         cur.execute(
             f"SELECT id, category, subject, value, layer, source_type, "
             f"start_time, end_time, mention_count, superseded_by, supersedes, "
@@ -72,8 +77,9 @@ def api_relationships():
         cur.execute(
             "SELECT id, name, relation, details, mention_count, "
             "first_mentioned_at, last_mentioned_at "
-            "FROM relationships WHERE status = 'active' "
-            "ORDER BY last_mentioned_at DESC"
+            "FROM relationships WHERE status = 'active' AND owner_id = %s "
+            "ORDER BY last_mentioned_at DESC",
+            (_owner_id(),),
         )
         rows = cur.fetchall()
         return jsonify([{k: _serialize(v) if isinstance(v, (datetime, date)) else v
@@ -87,7 +93,11 @@ def api_trajectory():
     conn = get_conn()
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("SELECT * FROM trajectory_summary ORDER BY updated_at DESC LIMIT 1")
+        cur.execute(
+            "SELECT * FROM trajectory_summary WHERE owner_id = %s "
+            "ORDER BY updated_at DESC LIMIT 1",
+            (_owner_id(),),
+        )
         row = cur.fetchone()
         if row:
             return jsonify({k: _serialize(v) if isinstance(v, (datetime, date)) else v

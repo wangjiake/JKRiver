@@ -107,6 +107,7 @@ body.light .badge-off     { background: #f1f5f9; color: #64748b; }
 .delete-btn:hover { color: var(--red); background: #2d1a1a; }
 .install-btn { margin-left: auto; padding: 4px 12px; background: var(--bg-accent); border: 1px solid var(--border-accent); border-radius: 5px; color: var(--accent); font-size: 11px; cursor: pointer; font-weight: 600; }
 .install-btn:hover { background: #24426e; }
+body.light .install-btn:hover { background: var(--bg-accent2); }
 .install-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 500; display: none; align-items: center; justify-content: center; }
 .install-modal.open { display: flex; }
 .install-box { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 24px; width: 560px; max-width: 96vw; max-height: 90vh; overflow-y: auto; }

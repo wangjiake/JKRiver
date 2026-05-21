@@ -1,10 +1,15 @@
 
 from datetime import datetime, date, timedelta, timezone
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, g, jsonify, request
 from psycopg2.extras import RealDictCursor
 from web._helpers import get_conn, _serialize
+from agent.core.identity import DEFAULT_OWNER_ID
 
 snapshot_bp = Blueprint("snapshot", __name__)
+
+
+def _owner_id() -> int:
+    return getattr(g, "owner_id", DEFAULT_OWNER_ID)
 
 
 @snapshot_bp.route("/api/snapshot")
@@ -34,9 +39,10 @@ def api_snapshot():
             "FROM user_profile "
             "WHERE start_time <= %s "
             "AND (end_time IS NULL OR end_time > %s) "
+            "AND owner_id = %s "
             "ORDER BY CASE layer WHEN 'confirmed' THEN 1 WHEN 'suspected' THEN 2 END, "
             "category, subject",
-            (month_start, month_end, month_end, month_end),
+            (month_start, month_end, month_end, month_end, _owner_id()),
         )
         rows = cur.fetchall()
         return jsonify([{k: _serialize(v) if isinstance(v, (datetime, date)) else v
@@ -52,8 +58,9 @@ def api_snapshot_months():
         cur = conn.cursor()
         cur.execute(
             "SELECT DISTINCT TO_CHAR(start_time, 'YYYY-MM') as m "
-            "FROM user_profile WHERE start_time IS NOT NULL "
-            "ORDER BY m"
+            "FROM user_profile WHERE start_time IS NOT NULL AND owner_id = %s "
+            "ORDER BY m",
+            (_owner_id(),),
         )
         months = [row[0] for row in cur.fetchall()]
         return jsonify(months)

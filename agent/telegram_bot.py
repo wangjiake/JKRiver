@@ -117,7 +117,7 @@ def _is_allowed(user_id: int) -> bool:
     return is_allowed(_tg_config, user_id)
 
 def _get_session(user_id: int):
-    return get_session(_manager, user_id, "tg")
+    return get_session(_manager, user_id, "tg", channel_config=_tg_config)
 
 MAX_TG_LENGTH = 4096
 

@@ -2,10 +2,15 @@
 import logging
 from datetime import datetime, date, timedelta, timezone
 from decimal import Decimal
-from flask import Blueprint, render_template, jsonify, request
+from flask import Blueprint, g, render_template, jsonify, request
 from web._helpers import _serialize, DB_NAME, load_config as _load_config
+from agent.core.identity import DEFAULT_OWNER_ID
 
 health_bp = Blueprint("health", __name__)
+
+
+def _owner_id() -> int:
+    return getattr(g, "owner_id", DEFAULT_OWNER_ID)
 
 
 def _load_withings_config():
@@ -20,7 +25,7 @@ def health_page():
 @health_bp.route("/api/health/overview")
 def api_health_overview():
     from agent.storage import get_health_overview
-    data = get_health_overview()
+    data = get_health_overview(owner_id=_owner_id())
     return jsonify(data)
 
 
@@ -29,7 +34,7 @@ def api_health_measures():
     from agent.storage import load_withings_measures
     measure_type = request.args.get("type", type=int)
     days = request.args.get("days", 90, type=int)
-    rows = load_withings_measures(measure_type=measure_type, days=days)
+    rows = load_withings_measures(measure_type=measure_type, days=days, owner_id=_owner_id())
     return jsonify([{k: _serialize(v) if isinstance(v, (datetime, date, Decimal)) else v
                      for k, v in row.items()} for row in rows])
 
@@ -38,7 +43,7 @@ def api_health_measures():
 def api_health_activity():
     from agent.storage import load_withings_activity
     days = request.args.get("days", 90, type=int)
-    rows = load_withings_activity(days=days)
+    rows = load_withings_activity(days=days, owner_id=_owner_id())
     return jsonify([{k: _serialize(v) if isinstance(v, (datetime, date, Decimal)) else v
                      for k, v in row.items()} for row in rows])
 
@@ -47,7 +52,7 @@ def api_health_activity():
 def api_health_sleep():
     from agent.storage import load_withings_sleep
     days = request.args.get("days", 90, type=int)
-    rows = load_withings_sleep(days=days)
+    rows = load_withings_sleep(days=days, owner_id=_owner_id())
     return jsonify([{k: _serialize(v) if isinstance(v, (datetime, date, Decimal)) else v
                      for k, v in row.items()} for row in rows])
 

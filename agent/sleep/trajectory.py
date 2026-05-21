@@ -28,7 +28,8 @@ def _safe_int(val, default=None):
 
 def generate_trajectory_summary(current_profile: list[dict],
                                 config: dict,
-                                new_observations: list[dict] | None = None) -> dict:
+                                new_observations: list[dict] | None = None,
+                                owner_id: int | None = None) -> dict:
     llm_config = config.get("llm", {})
     language = config.get("language", "en")
     L = get_labels("context.labels", language)
@@ -50,7 +51,7 @@ def generate_trajectory_summary(current_profile: list[dict],
     else:
         new_obs_text = f"{L['no_new_obs']}\n"
 
-    historical_obs = load_observations(limit=80)
+    historical_obs = load_observations(limit=80, owner_id=owner_id)
     hist_obs_text = ""
     if historical_obs:
         for o in historical_obs:
@@ -59,7 +60,7 @@ def generate_trajectory_summary(current_profile: list[dict],
     else:
         hist_obs_text = f"{L['no_historical']}\n"
 
-    events = load_active_events(top_k=10)
+    events = load_active_events(top_k=10, owner_id=owner_id)
     event_text = ""
     if events:
         for e in events:
@@ -67,7 +68,7 @@ def generate_trajectory_summary(current_profile: list[dict],
     else:
         event_text = f"{L['no_events']}\n"
 
-    prev_trajectory = load_trajectory_summary()
+    prev_trajectory = load_trajectory_summary(owner_id=owner_id)
     prev_text = ""
     if prev_trajectory:
         prev_text = (
@@ -99,7 +100,7 @@ def generate_trajectory_summary(current_profile: list[dict],
 
 
 def extract_fact_edges(affected_fact_ids: set[int], current_profile: list[dict],
-                       config: dict) -> list[dict]:
+                       config: dict, owner_id: int | None = None) -> list[dict]:
     if not affected_fact_ids:
         return []
     llm_config = config.get("llm", {})
@@ -125,7 +126,7 @@ def extract_fact_edges(affected_fact_ids: set[int], current_profile: list[dict],
         for p in context_profile if p.get("id")
     )
 
-    existing_edges = load_fact_edges(list(affected_fact_ids))
+    existing_edges = load_fact_edges(list(affected_fact_ids), owner_id=owner_id)
     edges_text = ""
     if existing_edges:
         edges_text = "\n".join(
@@ -168,7 +169,8 @@ def extract_fact_edges(affected_fact_ids: set[int], current_profile: list[dict],
             conf = min(1.0, max(0.0, float(e.get("confidence", 0.8))))
         except (ValueError, TypeError):
             conf = 0.8
-        save_fact_edge(src, tgt, etype, desc, conf)
+        save_fact_edge(src, tgt, etype, desc, conf,
+                       owner_id=owner_id if owner_id is not None else 1)
         saved.append(e)
     return saved
 

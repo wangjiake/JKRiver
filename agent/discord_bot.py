@@ -82,7 +82,7 @@ def _is_allowed(user_id: int) -> bool:
     return is_allowed(_dc_config, user_id)
 
 def _get_session(user_id: int):
-    return get_session(_manager, user_id, "dc")
+    return get_session(_manager, user_id, "dc", channel_config=_dc_config)
 
 def _split_dc_message(text: str) -> list[str]:
     return split_message(text, MAX_DC_LENGTH)

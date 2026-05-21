@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Waiting for approval{% endblock %}
+{% block head_extra %}
+<style>
+  body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; box-sizing: border-box; }
+  .wait-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+               padding: 36px 32px; max-width: 440px; width: 100%; box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+               text-align: center; }
+  .wait-icon { font-size: 56px; margin-bottom: 8px; }
+  .wait-h1 { font-size: 22px; margin: 6px 0 12px; color: var(--text); }
+  .wait-sub { font-size: 14px; color: var(--text-muted); margin-bottom: 18px; line-height: 1.6; }
+  .wait-dev { font-size: 13px; color: var(--text-2); margin-bottom: 18px;
+              background: var(--bg-hover2); padding: 10px 14px; border-radius: 6px; display: inline-block; }
+  .wait-spin { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--text-faint);
+               border-top-color: var(--accent); border-radius: 50%; animation: spin 0.9s linear infinite;
+               vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .wait-revoked { color: var(--red); }
+</style>
+{% endblock %}
+{% block body %}
+<div class="wait-card">
+  {% if state == 'revoked' %}
+    <div class="wait-icon">🚫</div>
+    <h1 class="wait-h1 wait-revoked">设备已被拒绝</h1>
+    <div class="wait-sub">管理员未批准此设备登录。如需登录，请联系管理员重新生成邀请链接。</div>
+  {% else %}
+    <div class="wait-icon">⏳</div>
+    <h1 class="wait-h1">等待管理员批准</h1>
+    <div class="wait-sub">
+      你已接受 <strong>{{ owner_name }}</strong> 的家庭邀请。<br/>
+      管理员需要在 system 后台手动批准这台设备后才能登录。
+    </div>
+    <div class="wait-dev">📱 {{ device_name }}</div>
+    <div class="wait-sub" style="font-size:13px;">
+      <span class="wait-spin"></span>
+      正在轮询批准状态…通常几秒内生效。本页面会自动跳转。
+    </div>
+    <script>
+      // Poll the status endpoint every 3 seconds; once approved (or revoked),
+      // navigate accordingly. No backend SSE needed.
+      const tokenId = {{ token_id | tojson }};
+      async function checkApproval() {
+        try {
+          const r = await fetch(`/invite/waiting/${tokenId}/status`, {cache: 'no-store'});
+          if (!r.ok) return;
+          const d = await r.json();
+          if (d.state === 'approved') { location.href = '/chat'; return; }
+          if (d.state === 'revoked')  { location.reload(); return; }
+        } catch (e) {}
+      }
+      setInterval(checkApproval, 3000);
+      // also a noscript meta-refresh fallback every 15s
+    </script>
+    <noscript>
+      <meta http-equiv="refresh" content="15" />
+      <div class="wait-sub" style="font-size:12px;">未启用 JavaScript — 页面将每 15 秒自动刷新。</div>
+    </noscript>
+  {% endif %}
+</div>
+{% endblock %}

@@ -3,8 +3,8 @@ html.light { background-color: #f5e6f5; }
 body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; background: var(--body-gradient); color: var(--text); min-height: 100vh; }
 
 /* Header */
-.header { background: var(--glass-bg); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); padding: 24px 32px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; }
-.header h1 { font-size: 22px; font-weight: 600; color: var(--text); }
+.header { background: var(--glass-bg); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); padding: 14px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; }
+.header h1 { font-size: 20px; font-weight: 600; color: var(--text); }
 .header .subtitle { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
 .header-right { display: flex; gap: 8px; align-items: center; }
 .nav-link { background: transparent; border: 1px solid rgba(255,255,255,0.10); border-radius: 8px; color: rgba(255,255,255,0.48); font-size: 12px; text-decoration: none; transition: all 0.2s; backdrop-filter: blur(12px) saturate(180%); -webkit-backdrop-filter: blur(12px) saturate(180%); padding: 5px 12px; }
@@ -39,6 +39,8 @@ body.light .theme-btn:hover { background: rgba(0,0,0,0.05); border-color: rgba(0
 .container { display: flex; min-height: calc(100vh - 130px); }
 .sidebar { width: 200px; background: var(--bg-card2); border-right: 1px solid var(--border); padding: 16px 0; flex-shrink: 0; }
 .main { flex: 1; padding: 24px 32px; overflow-y: auto; background: var(--bg); }
+body.light .sidebar { background: var(--glass-sidebar); backdrop-filter: blur(12px) saturate(180%); -webkit-backdrop-filter: blur(12px) saturate(180%); }
+body.light .main { background: var(--glass-bg); backdrop-filter: blur(12px) saturate(180%); -webkit-backdrop-filter: blur(12px) saturate(180%); }
 
 /* Sidebar */
 .sidebar h3 { font-size: 11px; color: var(--text-muted); padding: 0 16px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
@@ -50,10 +52,10 @@ body.light .theme-btn:hover { background: rgba(0,0,0,0.05); border-color: rgba(0
 .tabs { display: flex; gap: 4px; margin-bottom: 20px; flex-wrap: wrap; }
 .tab { padding: 8px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.10); border-radius: 8px; color: rgba(255,255,255,0.72); cursor: pointer; font-size: 13px; transition: all 0.2s; backdrop-filter: blur(12px) saturate(180%); -webkit-backdrop-filter: blur(12px) saturate(180%); }
 .tab:hover { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.90); border-color: rgba(255,255,255,0.20); }
-.tab.active { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.28); color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.18); }
+.tab.active { background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.18); color: rgba(255,255,255,0.95); box-shadow: 0 2px 8px rgba(0,0,0,0.25); }
 body.light .tab { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.08); color: rgba(0,0,0,0.62); }
 body.light .tab:hover { background: rgba(0,0,0,0.08); color: rgba(0,0,0,0.82); border-color: rgba(0,0,0,0.14); }
-body.light .tab.active { background: rgba(255,255,255,0.88); border-color: rgba(0,0,0,0.10); color: rgba(0,0,0,0.90); box-shadow: 0 2px 8px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.07); }
+body.light .tab.active { background: rgba(255,255,255,0.55); border-color: rgba(0,0,0,0.10); color: rgba(0,0,0,0.85); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
 .tab .count { background: rgba(255,255,255,0.12); padding: 1px 6px; border-radius: 10px; font-size: 11px; margin-left: 4px; }
 body.light .tab .count { background: rgba(0,0,0,0.08); }
 
@@ -121,6 +123,7 @@ body.light .card-layer.suspected { background: rgba(154,103,0,0.12); }
 .snapshot-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
 .month-select { background: var(--bg-hover); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 8px 12px; font-size: 14px; cursor: pointer; }
 .month-select:hover { border-color: #444c5e; }
+body.light .month-select:hover { border-color: var(--border-accent); }
 .month-select:focus { outline: none; border-color: var(--accent); }
 .snapshot-summary { font-size: 13px; color: var(--text-muted); }
 .sub-filter { display: inline-flex; gap: 6px; flex-wrap: wrap; }

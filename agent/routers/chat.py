@@ -7,6 +7,7 @@ from datetime import datetime
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from agent.core import run_cycle_async
+from agent.core.identity import DEFAULT_OWNER_ID, resolve_owner_id
 from agent.routers import _state
 from agent.utils.time_context import set_current_time
 
@@ -21,7 +22,8 @@ async def _handle_outsource_confirm(websocket: WebSocket, data: dict, session) -
         return
     from agent.storage.outsource import get_task
     from agent.tools.dispatch_task import DispatchTaskTool
-    record = get_task(task_id)
+    owner_id = getattr(session, "owner_id", 1)
+    record = get_task(task_id, owner_id=owner_id)
     if (record
             and record.get("status") == "pending"
             and record.get("session_id") == session.id):
@@ -42,12 +44,13 @@ async def _handle_outsource_cancel(websocket: WebSocket, data: dict, session) ->
     if not task_id:
         return
     from agent.storage.outsource import get_task, update_task
-    record = get_task(task_id)
+    owner_id = getattr(session, "owner_id", 1)
+    record = get_task(task_id, owner_id=owner_id)
     if record and record.get("session_id") == session.id:
         from agent.config.prompts import get_labels as _gl
         _lang = session.full_config.get("language", "en")
         _cancel_msg = _gl("context.labels", _lang).get("outsource_cancel_result", "Cancelled by user")
-        update_task(task_id, status="cancelled", result=_cancel_msg)
+        update_task(task_id, status="cancelled", result=_cancel_msg, owner_id=owner_id)
         await websocket.send_json({
             "type": "outsource_cancelled",
             "task_id": task_id,
@@ -64,6 +67,8 @@ async def _handle_task_answer(websocket: WebSocket, data: dict) -> None:
         event.set()
         try:
             from agent.storage.outsource import update_task as _ot_upd
+            # owner_id not enforced here — the in-memory _task_questions handshake
+            # already proves the caller is the original task initiator.
             _ot_upd(task_id, pending_question=None)
         except Exception:
             pass
@@ -78,9 +83,25 @@ async def _handle_task_answer(websocket: WebSocket, data: dict) -> None:
 
 
 @router.websocket("/ws/chat")
-async def ws_chat(websocket: WebSocket, session_id: str | None = None):
+async def ws_chat(websocket: WebSocket, session_id: str | None = None,
+                  token: str | None = None):
+    # WebSocket bypasses the HTTP auth_middleware, so resolve the token here.
+    pm = (_state._config or {}).get("public_mode", {}) or {}
+    if pm.get("enabled", False):
+        owner_id = resolve_owner_id(token)
+        if owner_id is None:
+            await websocket.close(code=4401, reason="unauthorized")
+            return
+    else:
+        owner_id = DEFAULT_OWNER_ID
+
     await websocket.accept()
-    session = _state._manager.get_or_create(session_id)
+    session = _state._manager.get_or_create(session_id, owner_id=owner_id)
+    # If we recovered an in-memory session that belongs to a different owner
+    # (shouldn't happen since session_ids are per-owner, but be defensive),
+    # rebind the owner so writes carry the correct owner_id for *this* connection.
+    if getattr(session, "owner_id", DEFAULT_OWNER_ID) != owner_id:
+        session.owner_id = owner_id
     _state._ws_connections.setdefault(session.id, []).append(websocket)
     await websocket.send_json({
         "type": "session_created",

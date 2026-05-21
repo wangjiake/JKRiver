@@ -13,3 +13,4 @@ python-multipart~=0.0.24
 websockets~=16.0
 psutil
 ddgs>=9.0
+segno~=1.6

@@ -68,6 +68,7 @@ function setSendStopMode(isStop) {
   const btn = document.getElementById('sendBtn');
   if (isStop) {
     btn.classList.add('stop-mode');
+    btn.classList.remove('has-input');
     btn.disabled = false;
   } else {
     btn.classList.remove('stop-mode');
@@ -298,6 +299,8 @@ function showToast(msg, success) {
 }
 
 function appendMessage(role, text, category, intent, at) {
+  document.body.classList.remove('zero-state');
+  try { localStorage.setItem(SESSION_ACTIVE_KEY, '1'); } catch (e) {}
   const container = document.getElementById('messages');
   const div = document.createElement('div');
   div.className = `msg ${role}`;

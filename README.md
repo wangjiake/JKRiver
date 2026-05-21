@@ -67,6 +67,32 @@ Full Docker guide (bots, data import, demo): **[docker/README.md](docker/README.
 
 ---
 
+## What's New (May 2026)
+
+### Family multi-user mode
+
+JKRiver now supports multiple family members on a single deployment, each with their own isolated chat history, profile, memory, and finance/health data — sharing one Postgres database. Set up via **System → 家庭成员**:
+
+- **Accounts** — `accounts` table maps an internal name (e.g. `wife`) to a numeric `owner_id`. Every business row (observations, profile, memory, finance, etc.) is namespaced by this id.
+- **Devices** — `access_tokens` table stores per-device session tokens (SHA-256 hashed). Each family member can have multiple devices (their phone, your iPad, etc.).
+- **Invite flow** — admin creates a one-time invite URL (with optional QR code) in the System page. Family member opens it on their device → names the device → cookie is set → logged in. Admin approval optional via `family.require_admin_approval` in settings.yaml.
+- **IM mappings** — `channel_identities` maps Telegram/Discord user_id → owner_id, so messages from your wife's Telegram get routed to her account, not yours.
+- **Per-owner sleep** — the sleep pipeline now loops over each owner with unprocessed conversations, so everyone's memories get extracted into their own profile without cross-contamination.
+- **Per-owner token usage** — LLM API spend is tracked per owner so you can see who used how many tokens.
+
+### UI improvements
+
+- **Centered "zero-state" chat** — fresh chat sessions show a Gemini-style centered input with a soft blue radial glow, instead of an empty bottom-anchored area.
+- **Gemini-style send button** — neutral pill that turns blue when the input has content, with the Material `send` icon. Stop button still red when a response is streaming.
+- **Server-side i18n** — language is now rendered on the server (driven by a `jk_lang` cookie), so navigation between pages no longer flashes English text before client-side JS swaps it.
+- **No-flicker first paint** — sidebar collapse state, zero-state mode, and theme (light/dark) are all applied via a synchronous `<head>` script before the first paint.
+
+### Schema migrations
+
+12 SQL migrations under `migrations/` cover the multi-owner roll-out: `005_multi_owner.sql` adds `owner_id` columns to 27 business tables (default 1 for existing rows); 006-007 fix UNIQUE constraints; 008 drops the legacy `hypotheses` table (functionality merged into `user_profile.layer`); 009 hashes device tokens and adds device metadata; 010-012 cover geoip, admin approval, and clean-up. Migrations are idempotent and run automatically at startup.
+
+---
+
 ## Memory Engine
 
 After each conversation, Riverse runs an offline consolidation pipeline (Sleep) that builds a structured personal profile:

@@ -12,5 +12,5 @@ edge-tts~=7.2
 python-multipart~=0.0.24
 websockets~=16.0
 psutil
-ddgs>=9.0
+ddgs>=9.14.4
 segno~=1.6

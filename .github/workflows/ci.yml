@@ -51,6 +51,12 @@ jobs:
           cp settings.yaml.default settings.yaml
           sed -i '/^    host: "localhost"/a\    password: "postgres"' settings.yaml
 
+      - name: Run migrations
+        # schema.sql gives us the base tables; migrations/005-012 add the
+        # owner_id columns + accounts/access_tokens/family_* tables that the
+        # storage layer expects. Same sequence as docker/start.sh.
+        run: python3 -c "from agent.storage.migrations import migrate; migrate()"
+
       - name: Test imports
         run: python tests/test_imports.py
 

@@ -15,7 +15,9 @@ jobs:
 
     services:
       postgres:
-        image: postgres:16
+        # pgvector image bundles Postgres 16 + the `vector` extension that
+        # migration 001_pgvector.sql needs for memory_embeddings ANN search.
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres

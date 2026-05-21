@@ -1,15 +1,16 @@
 """System agent & cloud provider management endpoints."""
 import os
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from agent.routers import _state
+from agent.routers._auth import require_admin
 from agent.services.settings_writer import (
     _SETTINGS_PATH,
     _set_yaml_enabled, _delete_yaml_entry, _append_cloud_provider,
 )
 
-router = APIRouter(tags=["system"])
+router = APIRouter(tags=["system"], dependencies=[Depends(require_admin)])
 
 
 @router.patch("/system/agent/{name}")

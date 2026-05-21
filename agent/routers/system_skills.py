@@ -2,16 +2,17 @@
 import os
 import shutil
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from agent.routers import _state
+from agent.routers._auth import require_admin
 from agent.services.settings_writer import (
     _SKILLS_DIR,
     _set_yaml_enabled,
     _set_skill_file_enabled, _set_skill_md_enabled,
 )
 
-router = APIRouter(tags=["system"])
+router = APIRouter(tags=["system"], dependencies=[Depends(require_admin)])
 
 
 def _reload_skills():

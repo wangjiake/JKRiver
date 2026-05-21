@@ -11,6 +11,7 @@ class _PipelineState:
     config: dict
     language: str
     L: dict
+    owner_id: int = 1
 
     # Accumulated data
     all_msg_ids: list = field(default_factory=list)

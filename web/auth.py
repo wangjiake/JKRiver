@@ -6,7 +6,9 @@ import logging
 import os
 import yaml
 
-from flask import Blueprint, request, make_response, redirect, url_for, render_template
+from flask import Blueprint, g, request, make_response, redirect, url_for, render_template
+
+from agent.core.identity import DEFAULT_OWNER_ID, resolve_owner_id
 
 logger = logging.getLogger(__name__)
 
@@ -75,12 +77,17 @@ def setup(app):
 
     @app.before_request
     def check_auth():
+        # Single-user / dev mode: no public_mode = pin every request to the default owner.
         if not _public_mode:
+            g.owner_id = DEFAULT_OWNER_ID
             return None
-        # Always allow the unlock routes and static assets
-        if request.endpoint in ("auth.unlock_get", "auth.unlock_post"):
+
+        # Always allow the unlock routes, invite acceptance, and static assets.
+        if request.endpoint in ("auth.unlock_get", "auth.unlock_post",
+                                "invite.invite_landing", "invite.invite_accept",
+                                "invite.invite_waiting", "invite.invite_waiting_status"):
             return None
-        if request.path.startswith("/img/"):
+        if request.path.startswith("/img/") or request.path.startswith("/invite/"):
             return None
 
         ip = request.remote_addr or "unknown"
@@ -89,7 +96,14 @@ def setup(app):
             return make_response("Too many failed attempts. Try again later.", 429)
 
         token = request.cookies.get(COOKIE_NAME, "")
-        if _token_valid(token):
+        owner_id = resolve_owner_id(
+            token,
+            user_agent=request.headers.get("User-Agent"),
+            ip=request.remote_addr,
+        )
+        if owner_id is not None:
+            g.owner_id = owner_id
+            g.access_token = token
             return None
 
         return redirect(url_for("auth.unlock_get"))
@@ -131,7 +145,7 @@ def unlock_post():
         return render_template("unlock.html", error="Too many failed attempts. Try again later.")
 
     token = request.form.get("token", "").strip()
-    if _token_valid(token):
+    if resolve_owner_id(token) is not None:
         _record_success(ip)
         resp = make_response(redirect(url_for("chat.chat")))
         resp.set_cookie(COOKIE_NAME, token, max_age=COOKIE_MAX_AGE, httponly=False, samesite="Lax")

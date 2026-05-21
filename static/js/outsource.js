@@ -1,6 +1,9 @@
 const API_PORT = 8400;
-const THEME_KEY = 'theme';
-const LANG_KEY = 'jkriver_lang';
+const THEME_KEY = 'theme';  // theme is a device-level preference, kept bare
+// Owner-namespaced localStorage (base.html injects window.__JK_OWNER_ID__).
+const _OWNER = (window.__JK_OWNER_ID__ || 1);
+const _NS = `jkriver_o${_OWNER}_`;
+const LANG_KEY = _NS + 'lang';
 
 const I18N = {
   en: {
@@ -35,7 +38,7 @@ const I18N = {
     task_stopped: '外包已停止', task_deleted: '外包已删除', all_cleared: '所有外包已清空',
     could_not_stop: '无法停止外包', could_not_delete: '无法删除外包',
     step: '步骤', just_now: '刚刚', ago_m: '分钟前', ago_h: '小时前',
-    nav_chat: '聊天', nav_profile: '档案', nav_tasks: '外包', nav_system: '系统',
+    nav_chat: '聊天', nav_profile: '个人资料', nav_tasks: '外包', nav_system: '系统',
   },
   ja: {
     page_title: '派遣', all_tasks: 'すべての派遣', clear_all: '全削除',
@@ -76,13 +79,25 @@ function apiUrl(path) {
 }
 
 // Theme
+const _SVG_MOON = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+const _SVG_SUN  = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+function updateThemeBtn() {
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.innerHTML = document.body.classList.contains('light') ? _SVG_MOON : _SVG_SUN;
+}
 function toggleTheme() {
-  document.body.classList.toggle('light');
-  localStorage.setItem(THEME_KEY, document.body.classList.contains('light') ? 'light' : 'dark');
+  const isLight = document.body.classList.toggle('light');
+  document.documentElement.classList.toggle('light', isLight);
+  localStorage.setItem(THEME_KEY, isLight ? 'light' : 'dark');
+  updateThemeBtn();
 }
 (function() {
   const saved = localStorage.getItem(THEME_KEY);
-  if (saved === 'light') document.body.classList.add('light');
+  if (saved === 'light') {
+    document.body.classList.add('light');
+    document.documentElement.classList.add('light');
+  }
+  updateThemeBtn();
 })();
 
 // State
@@ -455,6 +470,7 @@ async function clearAllTasks() {
 
 function setLang(lang) {
   localStorage.setItem(LANG_KEY, lang);
+  document.cookie = `jk_lang=${lang}; path=/; max-age=31536000; SameSite=Lax`;
   location.reload();
 }
 

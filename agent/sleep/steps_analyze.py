@@ -39,6 +39,7 @@ def _step_analyze_behavior(state: _PipelineState):
     state.behavioral_signals = analyze_behavioral_patterns(
         state.all_observations, behavioral_profile, state.trajectory, state.config,
     )
+    _ = state.owner_id  # behavioral_patterns reads no owner-scoped table directly
     if not state.behavioral_signals:
         return
 
@@ -63,6 +64,7 @@ def _step_analyze_behavior(state: _PipelineState):
                     value=inferred,
                     source_type="inferred",
                     start_time=_earliest_time,
+                    owner_id=state.owner_id,
                 )
 
         if ev_count >= 3:
@@ -75,6 +77,7 @@ def _step_analyze_behavior(state: _PipelineState):
                     trigger_condition=state.L["strategy_topic_trigger"].format(subj=subj),
                     approach=state.L["strategy_clarify_approach"].format(inferred=inferred),
                     reference_time=_earliest_time,
+                    owner_id=state.owner_id,
                 )
             except Exception:
                 state.pipeline_errors += 1
@@ -100,6 +103,7 @@ def _integrate_supports(state, supports, _find_fact):
                 source_type=fact.get("source_type", "stated"),
                 decay_days=fact.get("decay_days"),
                 start_time=_obs_time,
+                owner_id=state.owner_id,
             )
 
 
@@ -160,6 +164,7 @@ def _integrate_new_facts(state, new_obs_cls, obs_query):
             decay_days=decay,
             evidence=_evidence,
             start_time=_new_batch_time,
+            owner_id=state.owner_id,
         )
         state.new_fact_count += 1
         if fact_id:
@@ -204,6 +209,7 @@ def _integrate_contradictions(state, contradictions, _find_fact):
             decay_days=fact.get("decay_days"),
             evidence=[_evidence_entry],
             start_time=_obs_time,
+            owner_id=state.owner_id,
         )
         if new_id:
             state.affected_fact_ids.add(new_id)
@@ -230,7 +236,8 @@ def _generate_change_strategies(state):
     )
     strategies = generate_strategies(state.changed_items, state.config,
                                     current_profile=strategy_profile,
-                                    trajectory=state.trajectory)
+                                    trajectory=state.trajectory,
+                                    owner_id=state.owner_id)
     for s in strategies:
         cat = s.get("category")
         subj = s.get("subject")
@@ -245,6 +252,7 @@ def _generate_change_strategies(state):
                 trigger_condition=s.get("trigger", ""),
                 approach=s.get("approach", ""),
                 reference_time=state.latest_conv_time,
+                owner_id=state.owner_id,
             )
         except Exception as e:
             state.pipeline_errors += 1
@@ -257,8 +265,8 @@ def _generate_change_strategies(state):
 def _step_classify_and_integrate(state: _PipelineState):
     """Classify observations and integrate into profile: supports, contradictions, new facts, strategies."""
     # Reload profile after behavioral analysis mutations
-    state.current_profile = load_full_current_profile(exclude_superseded=True)
-    timeline = load_timeline()
+    state.current_profile = load_full_current_profile(exclude_superseded=True, owner_id=state.owner_id)
+    timeline = load_timeline(owner_id=state.owner_id)
 
     _all_conv_times = [o["_conv_time"] for o in state.all_observations if o.get("_conv_time")]
     if not _all_conv_times:
@@ -344,12 +352,13 @@ def _step_classify_and_integrate(state: _PipelineState):
 
 def _step_cross_verify(state: _PipelineState):
     """Cross-verify suspected facts."""
-    suspected_facts = load_suspected_profile()
+    suspected_facts = load_suspected_profile(owner_id=state.owner_id)
     if not suspected_facts:
         return
 
     judgments = cross_verify_suspected_facts(suspected_facts, state.config,
-                                             trajectory=state.trajectory)
+                                             trajectory=state.trajectory,
+                                             owner_id=state.owner_id)
     judgment_map = {_safe_int(j["fact_id"]): j for j in judgments if _safe_int(j.get("fact_id")) is not None}
 
     for f in suspected_facts:
@@ -364,15 +373,16 @@ def _step_cross_verify(state: _PipelineState):
 
 def _step_resolve_disputes(state: _PipelineState):
     """Resolve disputed facts."""
-    disputed_pairs = load_disputed_facts()
+    disputed_pairs = load_disputed_facts(owner_id=state.owner_id)
     if not disputed_pairs:
         return
 
     # Reload profile after cross-verify mutations
-    state.current_profile = load_full_current_profile(exclude_superseded=True)
+    state.current_profile = load_full_current_profile(exclude_superseded=True, owner_id=state.owner_id)
 
     judgments = resolve_disputes_with_llm(disputed_pairs, state.config,
-                                          trajectory=state.trajectory)
+                                          trajectory=state.trajectory,
+                                          owner_id=state.owner_id)
     for j in judgments:
         old_fid = j["old_fact_id"]
         new_fid = j["new_fact_id"]
@@ -382,13 +392,13 @@ def _step_resolve_disputes(state: _PipelineState):
             if action == "accept_new":
                 resolve_dispute(old_fid, new_fid, accept_new=True,
                               resolution_time=state.latest_conv_time)
-                delete_fact_edges_for(old_fid)
+                delete_fact_edges_for(old_fid, owner_id=state.owner_id)
                 state.affected_fact_ids.add(new_fid)
                 state.dispute_resolved += 1
             elif action == "reject_new":
                 resolve_dispute(old_fid, new_fid, accept_new=False,
                               resolution_time=state.latest_conv_time)
-                delete_fact_edges_for(new_fid)
+                delete_fact_edges_for(new_fid, owner_id=state.owner_id)
                 state.affected_fact_ids.add(old_fid)
                 state.dispute_resolved += 1
         except Exception:

@@ -29,6 +29,7 @@ body.light .lang-btn.active { background: rgba(79,95,186,0.08); border-color: rg
 
 /* Task list sidebar */
 .task-sidebar { width: 320px; background: var(--bg-card2); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; }
+body.light .task-sidebar { background: var(--glass-sidebar); backdrop-filter: blur(12px) saturate(180%); -webkit-backdrop-filter: blur(12px) saturate(180%); }
 .task-sidebar-header { padding: 14px 16px; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
 .task-list { flex: 1; overflow-y: auto; }
 .task-list::-webkit-scrollbar { width: 4px; }

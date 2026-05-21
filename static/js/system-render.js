@@ -441,8 +441,11 @@ function render(d) {
       ${mcpServers.length ? `<div class="cards">${mcpServers.map(renderMCPCard).join('')}</div>` : ''}
       ${mcpTools.length ? `<div class="cards" style="margin-top:12px">${mcpTools.map(renderToolCard).join('')}</div>` : ''}
     </div>` : ''}
+
+    ${typeof renderFamilySection === 'function' ? renderFamilySection() : ''}
   `;
   requestAnimationFrame(applyCardCollapse);
+  if (typeof refreshFamily === 'function') refreshFamily();
 }
 
 function expandCard(btn) {

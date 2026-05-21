@@ -6,6 +6,7 @@ import threading
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
+from agent.core.identity import DEFAULT_OWNER_ID
 from agent.routers import _state
 from agent.storage.outsource import (
     create_task as _ot_create,
@@ -19,19 +20,23 @@ from agent.storage.outsource import (
 router = APIRouter(prefix="/api/outsource/tasks", tags=["outsource"])
 
 
+def _owner_id(request: Request) -> int:
+    return getattr(request.state, "owner_id", DEFAULT_OWNER_ID)
+
+
 class OutsourceCreateRequest(BaseModel):
     task: str
     strict_mode: bool = True
 
 
 @router.get("/active_count")
-async def api_active_count():
-    return {"count": _ot_count_active()}
+async def api_active_count(request: Request):
+    return {"count": _ot_count_active(owner_id=_owner_id(request))}
 
 
 @router.get("/{task_id}")
-async def api_get_task(task_id: str):
-    task = _ot_get(task_id)
+async def api_get_task(task_id: str, request: Request):
+    task = _ot_get(task_id, owner_id=_owner_id(request))
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     for k in ("created_at", "updated_at"):
@@ -41,8 +46,8 @@ async def api_get_task(task_id: str):
 
 
 @router.get("")
-async def api_list_tasks():
-    tasks = _ot_list()
+async def api_list_tasks(request: Request):
+    tasks = _ot_list(owner_id=_owner_id(request))
     for t in tasks:
         for k in ("created_at", "updated_at"):
             if t.get(k):
@@ -51,16 +56,17 @@ async def api_list_tasks():
 
 
 @router.post("")
-async def api_create_task(req: OutsourceCreateRequest):
+async def api_create_task(req: OutsourceCreateRequest, request: Request):
     from agent.tools import ToolRegistry
     from agent.task_agent import plan_task_async, run_task_async
 
-    task_id = _ot_create(req.task, strict_mode=req.strict_mode)
+    owner_id = _owner_id(request)
+    task_id = _ot_create(req.task, strict_mode=req.strict_mode, owner_id=owner_id)
     config = _state._manager.config
 
-    _ot_update(task_id, status="planning")
+    _ot_update(task_id, status="planning", owner_id=owner_id)
     plan = await plan_task_async(req.task, config)
-    _ot_update(task_id, plan=plan, total_steps=len(plan), status="running")
+    _ot_update(task_id, plan=plan, total_steps=len(plan), status="running", owner_id=owner_id)
 
     strict_mode = req.strict_mode
 
@@ -115,7 +121,7 @@ async def api_create_task(req: OutsourceCreateRequest):
 
 @router.post("/{task_id}/confirm")
 async def api_confirm_task(task_id: str, request: Request):
-    record = _ot_get(task_id)
+    record = _ot_get(task_id, owner_id=_owner_id(request))
     if not record:
         raise HTTPException(status_code=404, detail="Task not found")
     if record.get("status") != "pending":
@@ -136,20 +142,25 @@ async def api_confirm_task(task_id: str, request: Request):
 
 
 @router.post("/{task_id}/cancel")
-async def api_cancel_task(task_id: str):
-    record = _ot_get(task_id)
+async def api_cancel_task(task_id: str, request: Request):
+    owner_id = _owner_id(request)
+    record = _ot_get(task_id, owner_id=owner_id)
     if not record:
         raise HTTPException(status_code=404, detail="Task not found")
     if record.get("status", "") not in ("pending", "planning", "running", "suspended"):
         return {"ok": False, "reason": "Task is not active"}
     if task_id in _state._cancel_flags:
         _state._cancel_flags[task_id].set()
-    _ot_update(task_id, status="cancelled", result="Cancelled by user")
+    _ot_update(task_id, status="cancelled", result="Cancelled by user", owner_id=owner_id)
     return {"ok": True}
 
 
 @router.post("/{task_id}/answer")
 async def api_task_answer(task_id: str, request: Request):
+    owner_id = _owner_id(request)
+    # Ensure the task belongs to the caller before letting them answer it.
+    if not _ot_get(task_id, owner_id=owner_id):
+        raise HTTPException(status_code=404, detail="Task not found")
     body = await request.json()
     answer = body.get("answer", "").strip()
     if not answer:
@@ -161,15 +172,15 @@ async def api_task_answer(task_id: str, request: Request):
     event.set()
     try:
         from agent.storage.outsource import update_task as _ot_upd
-        _ot_upd(task_id, pending_question=None)
+        _ot_upd(task_id, pending_question=None, owner_id=owner_id)
     except Exception:
         pass
     return {"ok": True}
 
 
 @router.post("/{task_id}/retry")
-async def api_retry_task(task_id: str):
-    record = _ot_get(task_id)
+async def api_retry_task(task_id: str, request: Request):
+    record = _ot_get(task_id, owner_id=_owner_id(request))
     if not record:
         raise HTTPException(status_code=404, detail="Task not found")
     if record.get("status") not in ("failed", "cancelled"):
@@ -178,6 +189,7 @@ async def api_retry_task(task_id: str):
     task_session_id = record.get("session_id", "")
     if task_session_id:
         cfg["_session_id"] = task_session_id
+    cfg.setdefault("llm", {})["_owner_id"] = _owner_id(request)
     from agent.tools.dispatch_task import DispatchTaskTool
     tool = DispatchTaskTool(cfg)
     result = tool.execute({"action": "retry", "task_id": task_id})
@@ -187,8 +199,8 @@ async def api_retry_task(task_id: str):
 
 
 @router.post("/{task_id}/resume")
-async def api_resume_task(task_id: str):
-    record = _ot_get(task_id)
+async def api_resume_task(task_id: str, request: Request):
+    record = _ot_get(task_id, owner_id=_owner_id(request))
     if not record:
         raise HTTPException(status_code=404, detail="Task not found")
     if record.get("status") != "suspended":
@@ -197,6 +209,7 @@ async def api_resume_task(task_id: str):
     task_session_id = record.get("session_id", "")
     if task_session_id:
         cfg["_session_id"] = task_session_id
+    cfg.setdefault("llm", {})["_owner_id"] = _owner_id(request)
     from agent.tools.dispatch_task import DispatchTaskTool
     tool = DispatchTaskTool(cfg)
     result = tool.execute({"action": "resume", "task_id": task_id})
@@ -206,14 +219,15 @@ async def api_resume_task(task_id: str):
 
 
 @router.delete("/{task_id}")
-async def api_delete_task(task_id: str):
-    record = _ot_get(task_id)
+async def api_delete_task(task_id: str, request: Request):
+    owner_id = _owner_id(request)
+    record = _ot_get(task_id, owner_id=owner_id)
     if not record:
         raise HTTPException(status_code=404, detail="Task not found")
     if task_id in _state._cancel_flags:
         _state._cancel_flags[task_id].set()
         _state._cancel_flags.pop(task_id, None)
-    deleted = _ot_delete(task_id)
+    deleted = _ot_delete(task_id, owner_id=owner_id)
     return {"ok": deleted}
 
 
@@ -245,16 +259,18 @@ async def push_task_result_to_session(session_id: str, task_id: str, success: bo
         try:
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT session_created_at FROM raw_conversations "
+                    "SELECT session_created_at, owner_id FROM raw_conversations "
                     "WHERE session_id = %s ORDER BY user_input_at ASC LIMIT 1",
                     (session_id,)
                 )
                 row = cur.fetchone()
             session_created_at = row[0] if row else get_now()
+            owner_id = int(row[1]) if row and row[1] is not None else 1
         finally:
             conn.close()
         now = get_now()
-        save_raw_conversation(session_id, session_created_at, "", now, msg, now)
+        save_raw_conversation(session_id, session_created_at, "", now, msg, now,
+                              owner_id=owner_id)
     except Exception:
         pass
 

@@ -1,9 +1,13 @@
 const API_PORT = 8400;
-const LANG_KEY = 'jkriver_lang';
+// Owner-namespaced localStorage: every family member gets their own
+// preferences on the same browser. base.html injects window.__JK_OWNER_ID__.
+const _OWNER = (window.__JK_OWNER_ID__ || 1);
+const _NS = `jkriver_o${_OWNER}_`;
+const LANG_KEY = _NS + 'lang';
 
 const I18N = {
   zh: {
-    nav_chat: '聊天', nav_profile: '个人资料', nav_system: '系统',
+    nav_chat: '聊天', nav_profile: '个人资料', nav_tasks: '外包', nav_system: '系统',
     loading: '加载中...', load_error: '无法加载系统信息：',
     section_overview: '系统概览',
     section_tools: '内置工具',
@@ -72,7 +76,7 @@ const I18N = {
     label_strategy: '策略分析触发', label_idle: '闲时关心', label_idle_hours: '触发闲置(小时)',
   },
   en: {
-    nav_chat: 'Chat', nav_profile: 'Profile', nav_system: 'System',
+    nav_chat: 'Chat', nav_profile: 'Profile', nav_tasks: 'Tasks', nav_system: 'System',
     loading: 'Loading...', load_error: 'Failed to load system info: ',
     section_overview: 'System Overview',
     section_tools: 'Built-in Tools',
@@ -141,7 +145,7 @@ const I18N = {
     label_strategy: 'Strategy Analysis', label_idle: 'Idle Check-in', label_idle_hours: 'Idle Hours',
   },
   ja: {
-    nav_chat: 'Chat', nav_profile: 'プロフィール', nav_system: 'システム',
+    nav_chat: 'チャット', nav_profile: 'プロフィール', nav_tasks: '派遣', nav_system: 'システム',
     loading: '読み込み中...', load_error: 'システム情報の読み込みに失敗: ',
     section_overview: 'システム概要',
     section_tools: '組み込みツール',
@@ -228,17 +232,19 @@ function t(key) { return (I18N[currentLang] || I18N.en)[key] || key; }
 function setLang(lang) {
   currentLang = lang;
   localStorage.setItem(LANG_KEY, lang);
+  document.cookie = `jk_lang=${lang}; path=/; max-age=31536000; SameSite=Lax`;
   document.querySelectorAll('.lang-btn').forEach(b =>
     b.classList.toggle('active', b.textContent === { zh:'中文', en:'EN', ja:'日本語' }[lang]));
   document.getElementById('nav-chat').textContent = t('nav_chat');
   document.getElementById('nav-profile').textContent = t('nav_profile');
+  const _outBtn = document.getElementById('outsource-nav-link');
+  if (_outBtn) _outBtn.textContent = t('nav_tasks');
   document.getElementById('nav-system').textContent = t('nav_system');
   const themeBtn = document.getElementById('theme-toggle');
   if (themeBtn) themeBtn.title = t('toggle_theme');
   const hubInput = document.getElementById('hubSkillName');
   if (hubInput) hubInput.placeholder = t('hub_placeholder') || 'explain-code';
-  const titleText = '⚙ ' + t('nav_system') + ' — ' + DB_NAME;
-  document.getElementById('header-title').textContent = titleText;
+  document.getElementById('header-title').textContent = '⚙ ' + t('nav_system');
   document.title = t('nav_system') + ' — ' + DB_NAME;
   if (_data) render(_data);
 }

@@ -5,15 +5,12 @@
 <div class="header">
   <div class="header-left">
     <div>
-      <h1 id="pageTitle">Tasks</h1>
+      <h1 id="pageTitle">{{ page_title }}</h1>
       <div class="subtitle">{{ db_name }}</div>
     </div>
   </div>
   <div class="header-right">
-    <a href="/chat" class="nav-link" id="nav-chat">Chat</a>
-    <a href="/profile" class="nav-link" id="nav-profile">Profile</a>
-    <a href="/outsource" class="nav-link active" id="outsource-nav-link">Tasks</a>
-    <a href="/system" class="nav-link" id="nav-system">System</a>
+    {% include '_nav.html' %}
     <div class="lang-switch" style="display:flex;gap:3px;">
       <button class="lang-btn" onclick="setLang('zh')">中文</button>
       <button class="lang-btn" onclick="setLang('en')">EN</button>

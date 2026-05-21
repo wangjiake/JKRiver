@@ -177,7 +177,7 @@ async def run_cycle_async(user_input: str | dict, session: Session,
             "memory_text": "",
         }
         memories_used_at = get_now()
-        _profile = await asyncio.to_thread(_load_resolver_profile)
+        _profile = await asyncio.to_thread(_load_resolver_profile, getattr(session, "owner_id", 1))
         tool_results = await resolve_tools_async(
             _resolver_input, perception, session.tool_registry,
             session.cognition.config, input_metadata,
@@ -187,10 +187,11 @@ async def run_cycle_async(user_input: str | dict, session: Session,
         # Memory build + tool resolution in parallel
         log("info", "记忆构建 + 工具调度 并行中...")
 
-        _profile = await asyncio.to_thread(_load_resolver_profile)
+        _profile = await asyncio.to_thread(_load_resolver_profile, getattr(session, "owner_id", 1))
         memories, tool_results = await asyncio.gather(
             build_memory_context_async(perception, session.executed_strategy_ids,
-                                       config=session.full_config),
+                                       config=session.full_config,
+                                       owner_id=getattr(session, "owner_id", 1)),
             resolve_tools_async(
                 _resolver_input, perception, session.tool_registry,
                 session.cognition.config, input_metadata,

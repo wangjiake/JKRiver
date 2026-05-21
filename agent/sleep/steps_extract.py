@@ -17,8 +17,8 @@ _SKIP_EXTRACT_PREFIXES = ("outsource:", "dispatch_task:", "task_agent:")
 
 def _step_load_initial(state: _PipelineState):
     """Load existing profile and trajectory."""
-    state.existing_profile = load_full_current_profile(exclude_superseded=True)
-    state.trajectory = load_trajectory_summary()
+    state.existing_profile = load_full_current_profile(exclude_superseded=True, owner_id=state.owner_id)
+    state.trajectory = load_trajectory_summary(owner_id=state.owner_id)
     if not (state.trajectory and state.trajectory.get("life_phase")):
         state.trajectory = None
 
@@ -41,6 +41,7 @@ def _step_extract_sessions(state: _PipelineState):
         )
         result = extract_observations_and_tags(
             convs, state.config, existing_profile=extract_profile,
+            owner_id=state.owner_id,
         )
         observations_raw = result.get("observations", [])
         tags = result.get("tags", [])
@@ -69,6 +70,7 @@ def _step_extract_sessions(state: _PipelineState):
                 content=o["content"],
                 subject=o.get("subject"),
                 context=o.get("context"),
+                owner_id=state.owner_id,
             )
 
         for o in third_party_obs:
@@ -78,6 +80,7 @@ def _step_extract_sessions(state: _PipelineState):
                 content=o["content"],
                 subject=o.get("subject"),
                 context=f"about:{o.get('about', '?')}",
+                owner_id=state.owner_id,
             )
 
         state.all_observations.extend(observations)
@@ -87,15 +90,15 @@ def _step_extract_sessions(state: _PipelineState):
             relation = r.get("relation", "")
             details = r.get("details", {})
             if relation:
-                save_or_update_relationship(name, relation, details)
+                save_or_update_relationship(name, relation, details, owner_id=state.owner_id)
 
         for t in tags:
-            save_session_tag(session_id, t["tag"], t.get("summary", ""))
+            save_session_tag(session_id, t["tag"], t.get("summary", ""), owner_id=state.owner_id)
 
         intent_parts = [c.get("intent", "") for c in convs if c.get("intent")]
         if intent_parts:
             intent_summary = " | ".join(intent_parts)
-            save_session_summary(session_id, intent_summary)
+            save_session_summary(session_id, intent_summary, owner_id=state.owner_id)
 
         events = extract_events(convs, state.config)
         for e in events:
@@ -103,10 +106,10 @@ def _step_extract_sessions(state: _PipelineState):
             importance = e.get("importance")
             save_event(e["category"], e["summary"], session_id,
                        importance=importance, decay_days=decay_days,
-                       reference_time=session_time)
+                       reference_time=session_time, owner_id=state.owner_id)
 
     # Reload profile after extraction mutations
-    state.current_profile = load_full_current_profile(exclude_superseded=True)
+    state.current_profile = load_full_current_profile(exclude_superseded=True, owner_id=state.owner_id)
 
 
 def _obs_query(state: _PipelineState) -> str:

@@ -89,7 +89,6 @@ def test_storage_submodules():
         "agent.storage.events",
         "agent.storage.observations",
         "agent.storage.profile",
-        "agent.storage.hypotheses",
         "agent.storage.strategies",
         "agent.storage.memory",
         "agent.storage.proactive",

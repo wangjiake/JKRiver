@@ -202,7 +202,7 @@ Key tables:
 - **Language**: zh
 - **Timezone**: ?
 - **LLM Provider**: openai
-- **Model**: gpt-4o-mini @ https://api.openai.com
+- **Model**: gpt-4o @ https://api.openai.com
 - **Remote Fallback (远端兜底)**: ❌ disabled
 
 **Tools status:**

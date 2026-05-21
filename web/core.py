@@ -1,8 +1,13 @@
 
-from flask import Blueprint, render_template, jsonify, redirect, send_from_directory, url_for
+from flask import Blueprint, g, render_template, jsonify, redirect, send_from_directory, url_for
 from web._helpers import get_conn, _serialize, IMG_DIR, DB_NAME
+from agent.core.identity import DEFAULT_OWNER_ID
 
 core_bp = Blueprint("core", __name__)
+
+
+def _owner_id() -> int:
+    return getattr(g, "owner_id", DEFAULT_OWNER_ID)
 
 
 @core_bp.route("/img/<path:filename>")
@@ -23,22 +28,23 @@ def profile():
 
 @core_bp.route("/api/stats")
 def api_stats():
+    owner_id = _owner_id()
     conn = get_conn()
     try:
         cur = conn.cursor()
-        cur.execute("SELECT COUNT(DISTINCT session_id) FROM raw_conversations")
+        cur.execute("SELECT COUNT(DISTINCT session_id) FROM raw_conversations WHERE owner_id = %s", (owner_id,))
         sessions = cur.fetchone()[0]
-        cur.execute("SELECT COUNT(*) FROM observations WHERE rejected = false")
+        cur.execute("SELECT COUNT(*) FROM observations WHERE rejected = false AND owner_id = %s", (owner_id,))
         observations = cur.fetchone()[0]
-        cur.execute("SELECT COUNT(*) FROM user_profile WHERE end_time IS NULL AND human_end_time IS NULL AND layer='confirmed' AND rejected = false")
+        cur.execute("SELECT COUNT(*) FROM user_profile WHERE end_time IS NULL AND human_end_time IS NULL AND layer='confirmed' AND rejected = false AND owner_id = %s", (owner_id,))
         confirmed = cur.fetchone()[0]
-        cur.execute("SELECT COUNT(*) FROM user_profile WHERE end_time IS NULL AND human_end_time IS NULL AND layer='suspected' AND rejected = false")
+        cur.execute("SELECT COUNT(*) FROM user_profile WHERE end_time IS NULL AND human_end_time IS NULL AND layer='suspected' AND rejected = false AND owner_id = %s", (owner_id,))
         suspected = cur.fetchone()[0]
-        cur.execute("SELECT COUNT(*) FROM user_profile WHERE rejected = false AND (end_time IS NOT NULL OR human_end_time IS NOT NULL)")
+        cur.execute("SELECT COUNT(*) FROM user_profile WHERE rejected = false AND (end_time IS NOT NULL OR human_end_time IS NOT NULL) AND owner_id = %s", (owner_id,))
         closed = cur.fetchone()[0]
-        cur.execute("SELECT COUNT(*) FROM user_profile WHERE superseded_by IS NOT NULL AND end_time IS NULL AND human_end_time IS NULL")
+        cur.execute("SELECT COUNT(*) FROM user_profile WHERE superseded_by IS NOT NULL AND end_time IS NULL AND human_end_time IS NULL AND owner_id = %s", (owner_id,))
         disputes = cur.fetchone()[0]
-        cur.execute("SELECT COUNT(*) FROM relationships WHERE status='active'")
+        cur.execute("SELECT COUNT(*) FROM relationships WHERE status='active' AND owner_id = %s", (owner_id,))
         relationships = cur.fetchone()[0]
         return jsonify({
             "sessions": sessions,
@@ -59,7 +65,10 @@ def api_categories():
     try:
         cur = conn.cursor()
         cur.execute(
-            "SELECT DISTINCT category FROM user_profile WHERE end_time IS NULL AND rejected = false AND human_end_time IS NULL ORDER BY category"
+            "SELECT DISTINCT category FROM user_profile "
+            "WHERE end_time IS NULL AND rejected = false AND human_end_time IS NULL "
+            "AND owner_id = %s ORDER BY category",
+            (_owner_id(),),
         )
         return jsonify([row[0] for row in cur.fetchall()])
     finally:

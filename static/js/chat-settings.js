@@ -107,12 +107,16 @@ function updateThemeBtn() {
 }
 (function() {
   const saved = localStorage.getItem('theme') || 'dark';
-  if (saved === 'light') document.body.classList.add('light');
+  if (saved === 'light') {
+    document.body.classList.add('light');
+    document.documentElement.classList.add('light');
+  }
   updateThemeBtn();
 })();
 
 function toggleTheme() {
   const isLight = document.body.classList.toggle('light');
+  document.documentElement.classList.toggle('light', isLight);
   localStorage.setItem('theme', isLight ? 'light' : 'dark');
   updateThemeBtn();
 }
@@ -146,6 +150,11 @@ async function init() {
   loadAutoSleepSetting();
   await loadSessionList();
   if (sessionId) await loadHistory(sessionId);
+  // After history loads, decide zero-state. appendMessage() clears it during
+  // load if any items existed; if not, this preserves the centered-input look.
+  if (!document.getElementById('messages').children.length) {
+    document.body.classList.add('zero-state');
+  }
   connect();
 }
 
@@ -156,6 +165,9 @@ document.getElementById('input').addEventListener('keydown', (e) => {
 document.getElementById('input').addEventListener('input', function () {
   this.style.height = 'auto';
   this.style.height = Math.min(this.scrollHeight, 140) + 'px';
+  // Mirror Gemini: send button turns blue once the textarea has any content.
+  const send = document.getElementById('sendBtn');
+  if (send) send.classList.toggle('has-input', this.value.trim().length > 0);
 });
 
 init();

@@ -10,19 +10,29 @@ from agent.skills import SkillRegistry
 logger = logging.getLogger(__name__)
 
 
-def _load_resolver_profile() -> list[dict]:
+def _load_resolver_profile(owner_id: int | None = None) -> list[dict]:
     """Load confirmed-only profile sorted by recency, for use in tool resolver."""
     try:
         conn = get_db_connection()
         try:
             from psycopg2.extras import RealDictCursor
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute(
-                    "SELECT category, subject, value FROM user_profile "
-                    "WHERE layer = 'confirmed' AND end_time IS NULL "
-                    "AND rejected = false AND human_end_time IS NULL "
-                    "ORDER BY updated_at DESC"
-                )
+                if owner_id is not None:
+                    cur.execute(
+                        "SELECT category, subject, value FROM user_profile "
+                        "WHERE layer = 'confirmed' AND end_time IS NULL "
+                        "AND rejected = false AND human_end_time IS NULL "
+                        "AND owner_id = %s "
+                        "ORDER BY updated_at DESC",
+                        (owner_id,),
+                    )
+                else:
+                    cur.execute(
+                        "SELECT category, subject, value FROM user_profile "
+                        "WHERE layer = 'confirmed' AND end_time IS NULL "
+                        "AND rejected = false AND human_end_time IS NULL "
+                        "ORDER BY updated_at DESC"
+                    )
                 return list(cur.fetchall())
         finally:
             conn.close()
@@ -31,16 +41,24 @@ def _load_resolver_profile() -> list[dict]:
 
 
 class Session:
-    def __init__(self, config: dict, session_id: str | None = None):
+    def __init__(self, config: dict, session_id: str | None = None,
+                 owner_id: int = 1):
         self.id = session_id or str(uuid.uuid4())
+        self.owner_id = owner_id
         self.created_at = get_now()
-        self.full_config = config
-        self.cognition = CognitionEngine(config)
+        # Build an owner-bound shallow copy of config so the global config
+        # isn't mutated when we inject _owner_id into the llm dict (so token
+        # usage is attributed to this owner).
+        owner_config = dict(config)
+        owner_config["llm"] = dict(config.get("llm", {}))
+        owner_config["llm"]["_owner_id"] = owner_id
+        self.full_config = owner_config
+        self.cognition = CognitionEngine(owner_config)
         self.cognition.session_memory.session_id = self.id
         self.executed_strategy_ids: set = set()
-        tools_enabled = config.get("tools", {}).get("enabled", True)
-        self.tool_registry = ToolRegistry(config, enabled=tools_enabled)
-        self.skill_registry = SkillRegistry(config)
+        tools_enabled = owner_config.get("tools", {}).get("enabled", True)
+        self.tool_registry = ToolRegistry(owner_config, enabled=tools_enabled)
+        self.skill_registry = SkillRegistry(owner_config)
 
 
 class SessionManager:
@@ -48,17 +66,18 @@ class SessionManager:
         self.config = config
         self._sessions: dict[str, Session] = {}
 
-    def get_or_create(self, session_id: str | None = None) -> Session:
+    def get_or_create(self, session_id: str | None = None,
+                      owner_id: int = 1) -> Session:
         if session_id and session_id in self._sessions:
             return self._sessions[session_id]
-        session = Session(self.config, session_id)
+        session = Session(self.config, session_id, owner_id=owner_id)
         self._sessions[session.id] = session
         if session_id:
-            self._load_history_into_session(session, session_id)
+            self._load_history_into_session(session, session_id, owner_id=owner_id)
         return session
 
     def _load_history_into_session(self, session: Session, session_id: str,
-                                   limit: int = 10) -> None:
+                                   limit: int = 10, owner_id: int = 1) -> None:
         """Load the last N turns of an existing session into session memory."""
         try:
             conn = get_db_connection()
@@ -67,9 +86,9 @@ class SessionManager:
                     cur.execute(
                         "SELECT user_input, assistant_reply, user_input_at "
                         "FROM raw_conversations "
-                        "WHERE session_id = %s "
+                        "WHERE session_id = %s AND owner_id = %s "
                         "ORDER BY user_input_at DESC LIMIT %s",
-                        (session_id, limit),
+                        (session_id, owner_id, limit),
                     )
                     rows = cur.fetchall()
             finally:

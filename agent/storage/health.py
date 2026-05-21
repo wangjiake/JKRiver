@@ -133,15 +133,23 @@ def save_withings_tokens(user_id: str, access_token: str,
     finally:
         conn.close()
 
-def load_withings_tokens() -> dict | None:
+def load_withings_tokens(owner_id: int | None = None) -> dict | None:
     _ensure_health_tables()
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(
-                "SELECT user_id, access_token, refresh_token, expires_at, scope "
-                "FROM withings_tokens ORDER BY updated_at DESC LIMIT 1"
-            )
+            if owner_id is not None:
+                cur.execute(
+                    "SELECT user_id, access_token, refresh_token, expires_at, scope "
+                    "FROM withings_tokens WHERE owner_id = %s "
+                    "ORDER BY updated_at DESC LIMIT 1",
+                    (owner_id,),
+                )
+            else:
+                cur.execute(
+                    "SELECT user_id, access_token, refresh_token, expires_at, scope "
+                    "FROM withings_tokens ORDER BY updated_at DESC LIMIT 1"
+                )
             row = cur.fetchone()
             return dict(row) if row else None
     finally:
@@ -168,13 +176,17 @@ def save_withings_measure(grpid: int, measured_at, measure_type: int,
         conn.close()
 
 def load_withings_measures(measure_type: int = None,
-                           days: int = 90) -> list[dict]:
+                           days: int = 90,
+                           owner_id: int | None = None) -> list[dict]:
     _ensure_health_tables()
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             conditions = []
             params = []
+            if owner_id is not None:
+                conditions.append("owner_id = %s")
+                params.append(owner_id)
             if measure_type is not None:
                 conditions.append("measure_type = %s")
                 params.append(measure_type)
@@ -223,13 +235,16 @@ def save_withings_activity(activity_date, steps=None, distance=None,
     finally:
         conn.close()
 
-def load_withings_activity(days: int = 90) -> list[dict]:
+def load_withings_activity(days: int = 90, owner_id: int | None = None) -> list[dict]:
     _ensure_health_tables()
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             conditions = []
             params = []
+            if owner_id is not None:
+                conditions.append("owner_id = %s")
+                params.append(owner_id)
             if days:
                 conditions.append("activity_date >= %s")
                 params.append((get_now() - timedelta(days=days)).date())
@@ -287,13 +302,16 @@ def save_withings_sleep(sleep_date, start_time=None, end_time=None,
     finally:
         conn.close()
 
-def load_withings_sleep(days: int = 90) -> list[dict]:
+def load_withings_sleep(days: int = 90, owner_id: int | None = None) -> list[dict]:
     _ensure_health_tables()
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             conditions = []
             params = []
+            if owner_id is not None:
+                conditions.append("owner_id = %s")
+                params.append(owner_id)
             if days:
                 conditions.append("sleep_date >= %s")
                 params.append((get_now() - timedelta(days=days)).date())
@@ -343,44 +361,51 @@ def save_sync_log(data_type: str, records_synced: int = 0,
     finally:
         conn.close()
 
-def get_health_overview() -> dict:
+def get_health_overview(owner_id: int | None = None) -> dict:
     _ensure_health_tables()
+    owner_clause = " WHERE owner_id = %s" if owner_id is not None else ""
+    owner_clause_and = " AND owner_id = %s" if owner_id is not None else ""
+    owner_param: tuple = (owner_id,) if owner_id is not None else ()
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT COUNT(*) FROM withings_measures")
+            cur.execute(f"SELECT COUNT(*) FROM withings_measures{owner_clause}", owner_param)
             total_measures = cur.fetchone()[0]
 
             cur.execute(
-                "SELECT value FROM withings_measures "
-                "WHERE measure_type = 1 ORDER BY measured_at DESC LIMIT 1"
+                f"SELECT value FROM withings_measures "
+                f"WHERE measure_type = 1{owner_clause_and} "
+                f"ORDER BY measured_at DESC LIMIT 1",
+                owner_param,
             )
             row = cur.fetchone()
             latest_weight = float(row[0]) if row else None
 
-            cur.execute("SELECT COUNT(*) FROM withings_activity")
+            cur.execute(f"SELECT COUNT(*) FROM withings_activity{owner_clause}", owner_param)
             activity_days = cur.fetchone()[0]
 
-            cur.execute("SELECT COUNT(*) FROM withings_sleep")
+            cur.execute(f"SELECT COUNT(*) FROM withings_sleep{owner_clause}", owner_param)
             sleep_days = cur.fetchone()[0]
 
             cur.execute(
-                "SELECT COALESCE(AVG(steps), 0) FROM withings_activity "
-                "WHERE activity_date >= %s",
-                ((get_now() - timedelta(days=30)).date(),),
+                f"SELECT COALESCE(AVG(steps), 0) FROM withings_activity "
+                f"WHERE activity_date >= %s{owner_clause_and}",
+                ((get_now() - timedelta(days=30)).date(), *owner_param),
             )
             avg_steps_30d = round(float(cur.fetchone()[0]))
 
             cur.execute(
-                "SELECT COALESCE(AVG(sleep_score), 0) FROM withings_sleep "
-                "WHERE sleep_date >= %s AND sleep_score IS NOT NULL",
-                ((get_now() - timedelta(days=30)).date(),),
+                f"SELECT COALESCE(AVG(sleep_score), 0) FROM withings_sleep "
+                f"WHERE sleep_date >= %s AND sleep_score IS NOT NULL{owner_clause_and}",
+                ((get_now() - timedelta(days=30)).date(), *owner_param),
             )
             avg_sleep_score_30d = round(float(cur.fetchone()[0]))
 
             cur.execute(
-                "SELECT expires_at FROM withings_tokens "
-                "ORDER BY updated_at DESC LIMIT 1"
+                f"SELECT expires_at FROM withings_tokens"
+                f"{owner_clause} "
+                f"ORDER BY updated_at DESC LIMIT 1",
+                owner_param,
             )
             token_row = cur.fetchone()
             token_connected = token_row is not None

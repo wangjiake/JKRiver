@@ -32,12 +32,14 @@ def _step_user_model(state: _PipelineState):
     )
     model_convs = state.all_convs[-50:] if len(state.all_convs) > 50 else state.all_convs
     model_results = analyze_user_model(model_convs, state.config,
-                                       current_profile=model_profile)
+                                       current_profile=model_profile,
+                                       owner_id=state.owner_id)
     for m in model_results:
         upsert_user_model(
             dimension=m["dimension"],
             assessment=m["assessment"],
             evidence_summary=m.get("evidence", ""),
+            owner_id=state.owner_id,
         )
 
 
@@ -46,7 +48,11 @@ def _step_trajectory(state: _PipelineState):
     should_update_trajectory = False
     conn = get_db_connection()
     with conn.cursor() as cur:
-        cur.execute("SELECT COUNT(DISTINCT session_id) FROM raw_conversations WHERE processed = TRUE")
+        cur.execute(
+            "SELECT COUNT(DISTINCT session_id) FROM raw_conversations "
+            "WHERE processed = TRUE AND owner_id = %s",
+            (state.owner_id,),
+        )
         total_sessions = cur.fetchone()[0] + len(state.session_convs)
 
     prev_session_count = state.trajectory.get("session_count", 0) if state.trajectory else 0
@@ -74,10 +80,12 @@ def _step_trajectory(state: _PipelineState):
         trajectory_result = generate_trajectory_summary(
             state.current_profile, state.config,
             new_observations=state.all_observations,
+            owner_id=state.owner_id,
         )
         if trajectory_result and trajectory_result.get("life_phase"):
             try:
-                save_trajectory_summary(trajectory_result, session_count=total_sessions)
+                save_trajectory_summary(trajectory_result, session_count=total_sessions,
+                                        owner_id=state.owner_id)
             except Exception as e:
                 state.pipeline_errors += 1
                 logger.error("Save trajectory failed: %s", e)
@@ -86,35 +94,36 @@ def _step_trajectory(state: _PipelineState):
 def _step_consolidate(state: _PipelineState):
     """Dedup profile when new facts were created or disputes resolved."""
     if state.new_fact_count > 0 or state.dispute_resolved > 0:
-        _consolidate_profile()
+        _consolidate_profile(owner_id=state.owner_id)
 
 
 def _step_snapshot(state: _PipelineState):
     """Generate memory snapshot."""
     try:
-        final_profile = load_full_current_profile(exclude_superseded=True)
+        final_profile = load_full_current_profile(exclude_superseded=True, owner_id=state.owner_id)
         snapshot_text = format_profile_text(
             final_profile, max_entries=40, detail="full", language=state.language,
         )
 
-        user_model = load_user_model()
+        user_model = load_user_model(owner_id=state.owner_id)
         if user_model:
             model_lines = [f"  {m['dimension']}: {m['assessment']}" for m in user_model]
             snapshot_text += f"\n\n{state.L['section_user_traits']}\n" + "\n".join(model_lines)
 
-        snapshot_events = load_active_events(top_k=5)
+        snapshot_events = load_active_events(top_k=5, owner_id=state.owner_id)
         if snapshot_events:
             event_lines = [f"  [{e['category']}] {e['summary']}" for e in snapshot_events]
             snapshot_text += f"\n\n{state.L['section_events']}\n" + "\n".join(event_lines)
 
-        snapshot_relationships = load_relationships()
+        snapshot_relationships = load_relationships(owner_id=state.owner_id)
         if snapshot_relationships:
             rel_lines = [f"  {r['relation']}: {r.get('name', '?')}" for r in snapshot_relationships[:10]]
             snapshot_text += f"\n\n{state.L['section_relationships']}\n" + "\n".join(rel_lines)
 
         try:
             snapshot_edges = load_fact_edges(
-                [p["id"] for p in final_profile if p.get("id")]
+                [p["id"] for p in final_profile if p.get("id")],
+                owner_id=state.owner_id,
             ) if final_profile else []
         except Exception:
             logger.error("Load fact edges for snapshot failed", exc_info=True)
@@ -129,7 +138,7 @@ def _step_snapshot(state: _PipelineState):
             ]
             snapshot_text += f"\n\n{state.L['section_knowledge_network']}\n" + "\n".join(edge_lines)
 
-        save_memory_snapshot(snapshot_text, profile_count=len(final_profile))
+        save_memory_snapshot(snapshot_text, profile_count=len(final_profile), owner_id=state.owner_id)
     except Exception:
         state.pipeline_errors += 1
         logger.error("Save memory snapshot failed", exc_info=True)
@@ -139,4 +148,4 @@ def _step_finalize(state: _PipelineState):
     """Mark processed and log errors."""
     if state.pipeline_errors:
         logger.warning("Sleep pipeline completed with %d error(s)", state.pipeline_errors)
-    mark_processed(state.all_msg_ids)
+    mark_processed(state.all_msg_ids, owner_id=state.owner_id)

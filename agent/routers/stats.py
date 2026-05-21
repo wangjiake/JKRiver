@@ -1,7 +1,8 @@
 """Stats endpoints — system resources and token usage."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
+from agent.core.identity import DEFAULT_OWNER_ID
 from agent.routers import _state
 
 router = APIRouter(tags=["stats"])
@@ -39,10 +40,11 @@ async def system_stats():
 
 
 @router.get("/api/token-usage")
-async def token_usage_stats():
+async def token_usage_stats(request: Request):
     try:
         from agent.storage.token_usage import get_stats
         timezone = _state._config.get("timezone", "UTC") if _state._config else "UTC"
-        return get_stats(timezone)
+        owner_id = getattr(request.state, "owner_id", DEFAULT_OWNER_ID)
+        return get_stats(timezone, owner_id=owner_id)
     except Exception as e:
         return {"error": str(e)}

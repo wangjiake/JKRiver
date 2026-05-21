@@ -138,10 +138,57 @@ def is_allowed(channel_config: dict, user_id: int) -> bool:
     return user_id in allowed
 
 
-def get_session(manager: SessionManager, user_id: int, prefix: str):
-    """Get or create session with prefix (e.g. 'tg', 'dc')."""
+# Bot session-id prefix ↔ channel_identities.channel value.
+_PREFIX_TO_CHANNEL = {"tg": "telegram", "dc": "discord"}
+
+
+def resolve_owner_id(channel_config: dict, user_id: int,
+                     *, channel: str | None = None) -> int:
+    """Resolve an IM external user_id to a JKRiver owner_id.
+
+    Lookup order:
+      1) channel_identities DB table (managed via the System → 家庭成员 UI)
+      2) settings.yaml `<channel>.owner_map` (legacy / pre-UI config)
+      3) fall back to owner_id=1 with a warning
+
+    `channel` is the channel_identities.channel value ("telegram" / "discord" /
+    "withings"). When None (caller doesn't know the channel), step 1 is
+    skipped and we go straight to settings.yaml.
+    """
+    if channel:
+        try:
+            from agent.core.identity import resolve_channel_owner
+            owner = resolve_channel_owner(channel, str(user_id))
+            if owner is not None:
+                return owner
+        except Exception:
+            logger.exception("channel_identities lookup failed; falling back to settings.yaml")
+
+    owner_map = (channel_config or {}).get("owner_map", {}) or {}
+    # YAML keys are sometimes parsed as int, sometimes str; accept both.
+    if user_id in owner_map:
+        return int(owner_map[user_id])
+    if str(user_id) in owner_map:
+        return int(owner_map[str(user_id)])
+    logger.warning(
+        "channel user_id=%s has no owner mapping (DB or yaml); defaulting to owner_id=1. "
+        "Add via System → 家庭成员 → IM 映射, or `owner_map: {%s: <id>}` in settings.yaml.",
+        user_id, user_id,
+    )
+    return 1
+
+
+def get_session(manager: SessionManager, user_id: int, prefix: str,
+                channel_config: dict | None = None):
+    """Get or create session with prefix (e.g. 'tg', 'dc').
+
+    Resolves user_id → owner_id via channel_identities DB table first, then
+    settings.yaml owner_map, so writes go to the right family account.
+    """
     session_id = f"{prefix}_{user_id}"
-    return manager.get_or_create(session_id)
+    channel = _PREFIX_TO_CHANNEL.get(prefix)
+    owner_id = resolve_owner_id(channel_config or {}, user_id, channel=channel)
+    return manager.get_or_create(session_id, owner_id=owner_id)
 
 def split_message(text: str, max_length: int = 4096) -> list[str]:
     if len(text) <= max_length:

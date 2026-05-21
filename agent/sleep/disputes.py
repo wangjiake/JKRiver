@@ -55,7 +55,8 @@ def _preprocess_disputes(disputed_pairs: list[dict], language: str = "en") -> tu
     return rule_results, llm_candidates
 
 
-def _build_dispute_messages(pair: dict, traj_context: str, language: str = "en") -> list[dict]:
+def _build_dispute_messages(pair: dict, traj_context: str, language: str = "en",
+                            owner_id: int | None = None) -> list[dict]:
     """Build LLM messages for a single dispute pair."""
     L = get_labels("context.labels", language)
     now = get_now()
@@ -93,12 +94,14 @@ def _build_dispute_messages(pair: dict, traj_context: str, language: str = "en")
         summary_groups = load_summaries_by_observation_subject(
             subject=subject_key,
             pivot_time=pivot_time,
+            owner_id=owner_id,
         )
     elif pivot_time:
         summary_groups = load_conversation_summaries_around(
             pivot_time=pivot_time,
             limit_before=30,
             limit_after=50,
+            owner_id=owner_id,
         )
     else:
         summary_groups = {"before": [], "after": []}
@@ -180,7 +183,8 @@ def _build_traj_context(trajectory: dict | None, language: str = "en") -> str:
 
 
 def resolve_disputes_with_llm(disputed_pairs: list[dict], config: dict,
-                              trajectory: dict | None = None) -> list[dict]:
+                              trajectory: dict | None = None,
+                              owner_id: int | None = None) -> list[dict]:
     llm_config = config.get("llm", {})
     language = config.get("language", "en")
     if not disputed_pairs:
@@ -194,7 +198,7 @@ def resolve_disputes_with_llm(disputed_pairs: list[dict], config: dict,
     all_results = []
 
     for pair in llm_candidates:
-        messages = _build_dispute_messages(pair, traj_context, language)
+        messages = _build_dispute_messages(pair, traj_context, language, owner_id=owner_id)
         raw = call_llm(messages, llm_config)
         result = _parse_dispute_result(raw, pair["old"]["id"], pair["new"]["id"])
         if result:
@@ -204,7 +208,8 @@ def resolve_disputes_with_llm(disputed_pairs: list[dict], config: dict,
 
 
 async def resolve_disputes_with_llm_async(disputed_pairs: list[dict], config: dict,
-                                           trajectory: dict | None = None) -> list[dict]:
+                                           trajectory: dict | None = None,
+                                           owner_id: int | None = None) -> list[dict]:
     llm_config = config.get("llm", {})
     language = config.get("language", "en")
     if not disputed_pairs:
@@ -217,7 +222,7 @@ async def resolve_disputes_with_llm_async(disputed_pairs: list[dict], config: di
     traj_context = _build_traj_context(trajectory, language)
 
     async def _resolve_one(pair: dict) -> dict | None:
-        messages = _build_dispute_messages(pair, traj_context, language)
+        messages = _build_dispute_messages(pair, traj_context, language, owner_id=owner_id)
         raw = await call_llm_async(messages, llm_config)
         return _parse_dispute_result(raw, pair["old"]["id"], pair["new"]["id"])
 

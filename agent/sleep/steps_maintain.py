@@ -19,8 +19,9 @@ def _step_extract_edges(state: _PipelineState):
     if not state.affected_fact_ids:
         return
     try:
-        edge_profile = load_full_current_profile()
-        extract_fact_edges(state.affected_fact_ids, edge_profile, state.config)
+        edge_profile = load_full_current_profile(owner_id=state.owner_id)
+        extract_fact_edges(state.affected_fact_ids, edge_profile, state.config,
+                           owner_id=state.owner_id)
     except Exception:
         state.pipeline_errors += 1
         logger.error("Extract fact edges failed", exc_info=True)
@@ -28,7 +29,7 @@ def _step_extract_edges(state: _PipelineState):
 
 def _step_expire_facts(state: _PipelineState):
     """Close expired facts and create verify strategies."""
-    expired_facts = get_expired_facts(reference_time=state.latest_conv_time)
+    expired_facts = get_expired_facts(reference_time=state.latest_conv_time, owner_id=state.owner_id)
     if not expired_facts:
         return
 
@@ -38,7 +39,7 @@ def _step_expire_facts(state: _PipelineState):
 
         close_time_period(f["id"], end_time=state.latest_conv_time)
         try:
-            delete_fact_edges_for(f["id"])
+            delete_fact_edges_for(f["id"], owner_id=state.owner_id)
         except Exception:
             logger.error("Delete edges for expired fact %s failed", f["id"], exc_info=True)
         try:
@@ -50,6 +51,7 @@ def _step_expire_facts(state: _PipelineState):
                 trigger_condition=state.L["strategy_topic_trigger"].format(subj=f["subject"]),
                 approach=state.L["strategy_verify_approach"].format(subj=f["subject"]),
                 reference_time=state.latest_conv_time,
+                owner_id=state.owner_id,
             )
         except Exception:
             state.pipeline_errors += 1
@@ -62,7 +64,7 @@ def _step_maturity_decay(state: _PipelineState):
     if state.trajectory and state.trajectory.get("key_anchors"):
         key_anchors = [str(a).lower() for a in state.trajectory["key_anchors"]]
 
-    all_living = load_full_current_profile()
+    all_living = load_full_current_profile(owner_id=state.owner_id)
 
     for f in all_living:
         start = f.get("start_time")

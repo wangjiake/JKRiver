@@ -1,10 +1,15 @@
 
 from datetime import datetime, date, timezone
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, g, jsonify, request
 from psycopg2.extras import RealDictCursor
 from web._helpers import get_conn, _serialize, _log_review
+from agent.core.identity import DEFAULT_OWNER_ID
 
 review_bp = Blueprint("review", __name__)
+
+
+def _owner_id() -> int:
+    return getattr(g, "owner_id", DEFAULT_OWNER_ID)
 
 
 @review_bp.route("/api/review/profile", methods=["POST"])
@@ -21,7 +26,11 @@ def api_review_profile():
     conn = get_conn()
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("SELECT id, rejected, human_end_time, end_time, note FROM user_profile WHERE id = %s", (fact_id,))
+        cur.execute(
+            "SELECT id, rejected, human_end_time, end_time, note FROM user_profile "
+            "WHERE id = %s AND owner_id = %s",
+            (fact_id, _owner_id()),
+        )
         row = cur.fetchone()
         if not row:
             return jsonify({"error": "Record not found"}), 404
@@ -65,7 +74,7 @@ def api_review_profile():
             )
             new_value = {"human_end_time": None, "note": note}
 
-        _log_review(conn, "user_profile", fact_id, action, old_value, new_value, note)
+        _log_review(conn, "user_profile", fact_id, action, old_value, new_value, note, owner_id=_owner_id())
         conn.commit()
         return jsonify({"ok": True, "action": action, "id": fact_id})
     finally:
@@ -85,7 +94,10 @@ def api_review_observation():
     conn = get_conn()
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("SELECT id, rejected, note FROM observations WHERE id = %s", (obs_id,))
+        cur.execute(
+            "SELECT id, rejected, note FROM observations WHERE id = %s AND owner_id = %s",
+            (obs_id, _owner_id()),
+        )
         row = cur.fetchone()
         if not row:
             return jsonify({"error": "Record not found"}), 404
@@ -105,7 +117,7 @@ def api_review_observation():
             )
             new_value = {"rejected": False, "note": note}
 
-        _log_review(conn, "observations", obs_id, action, old_value, new_value, note)
+        _log_review(conn, "observations", obs_id, action, old_value, new_value, note, owner_id=_owner_id())
         conn.commit()
         return jsonify({"ok": True, "action": action, "id": obs_id})
     finally:
@@ -119,15 +131,15 @@ def api_review_log():
     conn = get_conn()
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        conditions = []
-        params = []
+        conditions = ["owner_id = %s"]
+        params = [_owner_id()]
         if target_table:
             conditions.append("target_table = %s")
             params.append(target_table)
         if target_id:
             conditions.append("target_id = %s")
             params.append(int(target_id))
-        where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+        where = "WHERE " + " AND ".join(conditions)
         cur.execute(
             f"SELECT id, target_table, target_id, action, old_value, new_value, note, created_at "
             f"FROM review_log {where} "

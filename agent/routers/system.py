@@ -5,9 +5,10 @@ import os
 import subprocess
 import sys
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from agent.routers import _state
+from agent.routers._auth import require_admin
 from agent.services.settings_writer import (
     _TOP_LEVEL_TOOL_NAMES, _mask,
     _set_settings_field, _set_settings_list_item_field, _set_settings_allowed_ids,
@@ -17,7 +18,7 @@ from agent.services.settings_writer import (
     _set_yaml_enabled,
 )
 
-router = APIRouter(tags=["system"])
+router = APIRouter(tags=["system"], dependencies=[Depends(require_admin)])
 
 
 # ── System overview ───────────────────────────────────────────────────────────

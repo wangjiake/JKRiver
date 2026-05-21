@@ -3,7 +3,7 @@
 // ══════════════════════════════════════
 const I18N = {
   zh: {
-    title: '个人资料', db_label: '数据库', nav_chat: '聊天', nav_profile: '个人资料', nav_system: '系统', nav_finance: '财务追踪', nav_health: '健康追踪',
+    title: '个人资料', db_label: '数据库', nav_chat: '聊天', nav_profile: '个人资料', nav_tasks: '外包', nav_system: '系统', nav_finance: '财务追踪', nav_health: '健康追踪',
     stat_sessions: '已处理会话', stat_observations: '观察记录',
     stat_confirmed: '已确认', stat_suspected: '待确认',
     stat_closed: '历史变迁', stat_disputes: '未解决矛盾',
@@ -31,7 +31,7 @@ const I18N = {
     filter_active: '全部', filter_human_closed: '人工关闭', filter_rejected: '标记为错误',
   },
   en: {
-    title: 'User Profile', db_label: 'Database', nav_chat: 'Chat', nav_profile: 'Profile', nav_system: 'System', nav_finance: 'Finance', nav_health: 'Health',
+    title: 'User Profile', db_label: 'Database', nav_chat: 'Chat', nav_profile: 'Profile', nav_tasks: 'Tasks', nav_system: 'System', nav_finance: 'Finance', nav_health: 'Health',
     stat_sessions: 'Sessions', stat_observations: 'Observations',
     stat_confirmed: 'Confirmed', stat_suspected: 'Suspected',
     stat_closed: 'History', stat_disputes: 'Disputes',
@@ -59,7 +59,7 @@ const I18N = {
     filter_active: 'All', filter_human_closed: 'Manually Closed', filter_rejected: 'Marked as Error',
   },
   ja: {
-    title: 'ユーザープロフィール', db_label: 'データベース', nav_chat: 'チャット', nav_profile: 'プロフィール', nav_system: 'システム', nav_finance: '家計簿', nav_health: '健康',
+    title: 'ユーザープロフィール', db_label: 'データベース', nav_chat: 'チャット', nav_profile: 'プロフィール', nav_tasks: '派遣', nav_system: 'システム', nav_finance: '家計簿', nav_health: '健康',
     stat_sessions: '処理済み会話', stat_observations: '観察記録',
     stat_confirmed: '確認済み', stat_suspected: '未確認',
     stat_closed: '変遷履歴', stat_disputes: '未解決矛盾',
@@ -88,7 +88,10 @@ const I18N = {
   }
 };
 
-const LANG_KEY = 'jkriver_lang';
+// Owner-namespaced localStorage (base.html injects window.__JK_OWNER_ID__).
+const _OWNER = (window.__JK_OWNER_ID__ || 1);
+const _NS = `jkriver_o${_OWNER}_`;
+const LANG_KEY = _NS + 'lang';
 
 function detectLang() {
   const saved = localStorage.getItem(LANG_KEY);
@@ -120,6 +123,7 @@ function tObsType(type) {
 function setLang(lang) {
   currentLang = lang;
   localStorage.setItem(LANG_KEY, lang);
+  document.cookie = `jk_lang=${lang}; path=/; max-age=31536000; SameSite=Lax`;
   document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent.trim() === {zh:'中文',en:'EN',ja:'日本語'}[lang]));
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.dataset.i18n;

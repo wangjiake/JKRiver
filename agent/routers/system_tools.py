@@ -1,7 +1,8 @@
 """System tool management endpoints — toggle and delete tools."""
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from agent.routers import _state
+from agent.routers._auth import require_admin
 from agent.services.settings_writer import (
     _SETTINGS_PATH, _TOOLS_YAML,
     _TOP_LEVEL_TOOL_NAMES,
@@ -9,7 +10,7 @@ from agent.services.settings_writer import (
     _get_top_level_enabled, _set_top_level_enabled,
 )
 
-router = APIRouter(tags=["system"])
+router = APIRouter(tags=["system"], dependencies=[Depends(require_admin)])
 
 
 @router.patch("/system/tool/{name}")

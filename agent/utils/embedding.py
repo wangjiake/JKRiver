@@ -113,48 +113,61 @@ def cosine_similarity(a: list[float], b: list[float]) -> float:
     return dot / (norm_a * norm_b)
 
 def _vector_search_pgvector(query_vec: list[float], top_k: int, min_score: float,
-                            source_tables: list[str] | None) -> list[dict]:
+                            source_tables: list[str] | None,
+                            owner_id: int | None = None) -> list[dict]:
     """Use pgvector SQL for similarity search."""
     vec_str = "[" + ",".join(str(v) for v in query_vec) + "]"
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            owner_clause = " AND owner_id = %s" if owner_id is not None else ""
+            owner_param: tuple = (owner_id,) if owner_id is not None else ()
             if source_tables:
-                cur.execute("""
+                cur.execute(f"""
                     SELECT source_table, source_id, text_content,
                            1 - (embedding_vec <=> %s::vector) AS score
                     FROM memory_embeddings
                     WHERE source_table = ANY(%s)
                       AND embedding_vec IS NOT NULL
                       AND 1 - (embedding_vec <=> %s::vector) >= %s
+                      {owner_clause}
                     ORDER BY embedding_vec <=> %s::vector
                     LIMIT %s
-                """, (vec_str, source_tables, vec_str, min_score, vec_str, top_k))
+                """, (vec_str, source_tables, vec_str, min_score, *owner_param, vec_str, top_k))
             else:
-                cur.execute("""
+                cur.execute(f"""
                     SELECT source_table, source_id, text_content,
                            1 - (embedding_vec <=> %s::vector) AS score
                     FROM memory_embeddings
                     WHERE embedding_vec IS NOT NULL
                       AND 1 - (embedding_vec <=> %s::vector) >= %s
+                      {owner_clause}
                     ORDER BY embedding_vec <=> %s::vector
                     LIMIT %s
-                """, (vec_str, vec_str, min_score, vec_str, top_k))
+                """, (vec_str, vec_str, min_score, *owner_param, vec_str, top_k))
             return [dict(r) for r in cur.fetchall()]
     finally:
         conn.close()
 
 
 def _vector_search_python(query_vec: list[float], top_k: int, min_score: float,
-                          source_tables: list[str] | None) -> list[dict]:
+                          source_tables: list[str] | None,
+                          owner_id: int | None = None) -> list[dict]:
     """Fallback: full-table scan with Python cosine similarity."""
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(
-                "SELECT source_table, source_id, text_content, embedding "
-                "FROM memory_embeddings"
-            )
+            if owner_id is not None:
+                cur.execute(
+                    "SELECT source_table, source_id, text_content, embedding "
+                    "FROM memory_embeddings WHERE owner_id = %s",
+                    (owner_id,),
+                )
+            else:
+                cur.execute(
+                    "SELECT source_table, source_id, text_content, embedding "
+                    "FROM memory_embeddings"
+                )
             rows = cur.fetchall()
     finally:
         conn.close()
@@ -184,7 +197,8 @@ def _vector_search_python(query_vec: list[float], top_k: int, min_score: float,
 
 def vector_search(query_text: str, config: dict,
                   top_k: int = 5, min_score: float = DEFAULT_MIN_SCORE,
-                  source_tables: list[str] | None = None) -> list[dict]:
+                  source_tables: list[str] | None = None,
+                  owner_id: int | None = None) -> list[dict]:
     emb_cfg = config.get("embedding", {})
     model = emb_cfg.get("model", "")
     api_base = emb_cfg.get("api_base", "")
@@ -198,11 +212,11 @@ def vector_search(query_text: str, config: dict,
 
     if _pgvector_available:
         try:
-            return _vector_search_pgvector(query_vec, top_k, min_score, source_tables)
+            return _vector_search_pgvector(query_vec, top_k, min_score, source_tables, owner_id=owner_id)
         except Exception:
             logger.warning("pgvector search failed, falling back to Python", exc_info=True)
 
-    return _vector_search_python(query_vec, top_k, min_score, source_tables)
+    return _vector_search_python(query_vec, top_k, min_score, source_tables, owner_id=owner_id)
 
 def _profile_to_text(row: dict) -> str:
     return f"{row['category']} {row['subject']}: {row['value']}"
@@ -238,38 +252,60 @@ def _relationship_to_text(row: dict, language: str = "en") -> str:
 def _conversation_to_text(row: dict) -> str:
     return row.get("ai_summary", "") or ""
 
-_SOURCE_TABLES = [
-    (
-        "user_profile",
-        "SELECT id, category, subject, value FROM user_profile WHERE end_time IS NULL AND rejected = false AND human_end_time IS NULL",
-        _profile_to_text,
-    ),
-    (
-        "event_log",
-        "SELECT id, category, summary FROM event_log "
-        "WHERE expires_at IS NULL OR expires_at > NOW()",
-        _event_to_text,
-    ),
-    (
-        "observations",
-        "SELECT id, content, subject FROM observations WHERE rejected = false ORDER BY id DESC LIMIT 500",
-        _observation_to_text,
-    ),
-    (
-        "relationships",
-        "SELECT id, relation, name, details FROM relationships WHERE status = 'active'",
-        _relationship_to_text,
-    ),
-    (
-        "conversation_turns",
-        "SELECT id, ai_summary FROM conversation_turns "
-        "WHERE ai_summary IS NOT NULL AND ai_summary != '' "
-        "ORDER BY id DESC LIMIT 200",
-        _conversation_to_text,
-    ),
-]
+def _source_tables_for(owner_id: int | None):
+    """Return [(table_name, sql, params, to_text_fn), ...] scoped by owner_id."""
+    if owner_id is None:
+        # legacy / global behaviour
+        return [
+            ("user_profile",
+             "SELECT id, category, subject, value FROM user_profile "
+             "WHERE end_time IS NULL AND rejected = false AND human_end_time IS NULL",
+             (), _profile_to_text),
+            ("event_log",
+             "SELECT id, category, summary FROM event_log "
+             "WHERE expires_at IS NULL OR expires_at > NOW()",
+             (), _event_to_text),
+            ("observations",
+             "SELECT id, content, subject FROM observations WHERE rejected = false ORDER BY id DESC LIMIT 500",
+             (), _observation_to_text),
+            ("relationships",
+             "SELECT id, relation, name, details FROM relationships WHERE status = 'active'",
+             (), _relationship_to_text),
+            ("conversation_turns",
+             "SELECT id, ai_summary FROM conversation_turns "
+             "WHERE ai_summary IS NOT NULL AND ai_summary != '' "
+             "ORDER BY id DESC LIMIT 200",
+             (), _conversation_to_text),
+        ]
+    return [
+        ("user_profile",
+         "SELECT id, category, subject, value FROM user_profile "
+         "WHERE end_time IS NULL AND rejected = false AND human_end_time IS NULL "
+         "AND owner_id = %s",
+         (owner_id,), _profile_to_text),
+        ("event_log",
+         "SELECT id, category, summary FROM event_log "
+         "WHERE (expires_at IS NULL OR expires_at > NOW()) AND owner_id = %s",
+         (owner_id,), _event_to_text),
+        ("observations",
+         "SELECT id, content, subject FROM observations "
+         "WHERE rejected = false AND owner_id = %s "
+         "ORDER BY id DESC LIMIT 500",
+         (owner_id,), _observation_to_text),
+        ("relationships",
+         "SELECT id, relation, name, details FROM relationships "
+         "WHERE status = 'active' AND owner_id = %s",
+         (owner_id,), _relationship_to_text),
+        ("conversation_turns",
+         "SELECT id, ai_summary FROM conversation_turns "
+         "WHERE ai_summary IS NOT NULL AND ai_summary != '' "
+         "AND owner_id = %s "
+         "ORDER BY id DESC LIMIT 200",
+         (owner_id,), _conversation_to_text),
+    ]
 
-def embed_all_memories(config: dict):
+
+def embed_all_memories(config: dict, owner_id: int | None = None):
     emb_cfg = config.get("embedding", {})
     if not emb_cfg.get("enabled", True):
         return
@@ -292,19 +328,26 @@ def embed_all_memories(config: dict):
 
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(
-                "SELECT source_table, source_id, content_hash "
-                "FROM memory_embeddings"
-            )
+            if owner_id is not None:
+                cur.execute(
+                    "SELECT source_table, source_id, content_hash "
+                    "FROM memory_embeddings WHERE owner_id = %s",
+                    (owner_id,),
+                )
+            else:
+                cur.execute(
+                    "SELECT source_table, source_id, content_hash "
+                    "FROM memory_embeddings"
+                )
             existing = {
                 (r["source_table"], r["source_id"]): r["content_hash"]
                 for r in cur.fetchall()
             }
 
-        for table_name, query, to_text_fn in _SOURCE_TABLES:
+        for table_name, query, query_params, to_text_fn in _source_tables_for(owner_id):
             try:
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                    cur.execute(query)
+                    cur.execute(query, query_params)
                     rows = cur.fetchall()
             except Exception as e:
                 conn.rollback()
@@ -354,48 +397,64 @@ def embed_all_memories(config: dict):
                             )
                         total_updated += 1
                     else:
+                        _row_owner = owner_id if owner_id is not None else 1
                         if vec_str:
                             cur.execute(
                                 "INSERT INTO memory_embeddings "
-                                "(source_table, source_id, content_hash, text_content, "
+                                "(owner_id, source_table, source_id, content_hash, text_content, "
                                 " embedding, embedding_vec, model) "
-                                "VALUES (%s, %s, %s, %s, %s, %s::vector, %s)",
-                                (table_name, row["id"], content_hash, text,
+                                "VALUES (%s, %s, %s, %s, %s, %s, %s::vector, %s)",
+                                (_row_owner, table_name, row["id"], content_hash, text,
                                  emb_json, vec_str, model),
                             )
                         else:
                             cur.execute(
                                 "INSERT INTO memory_embeddings "
-                                "(source_table, source_id, content_hash, text_content, "
+                                "(owner_id, source_table, source_id, content_hash, text_content, "
                                 " embedding, model) "
-                                "VALUES (%s, %s, %s, %s, %s, %s)",
-                                (table_name, row["id"], content_hash, text,
+                                "VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                                (_row_owner, table_name, row["id"], content_hash, text,
                                  emb_json, model),
                             )
                         total_new += 1
 
                 conn.commit()
 
-        _cleanup_orphaned(conn)
+        _cleanup_orphaned(conn, owner_id=owner_id)
 
     finally:
         conn.close()
 
-def _cleanup_orphaned(conn):
+def _cleanup_orphaned(conn, owner_id: int | None = None):
+    owner_clause = " AND memory_embeddings.owner_id = %s" if owner_id is not None else ""
+    owner_param: tuple = (owner_id,) if owner_id is not None else ()
     cleanup_queries = {
-        "user_profile": "DELETE FROM memory_embeddings WHERE source_table='user_profile' "
-                        "AND source_id NOT IN (SELECT id FROM user_profile WHERE end_time IS NULL AND rejected = false AND human_end_time IS NULL)",
-        "event_log": "DELETE FROM memory_embeddings WHERE source_table='event_log' "
-                     "AND source_id NOT IN (SELECT id FROM event_log "
-                     "WHERE expires_at IS NULL OR expires_at > NOW())",
-        "relationships": "DELETE FROM memory_embeddings WHERE source_table='relationships' "
-                         "AND source_id NOT IN (SELECT id FROM relationships WHERE status='active')",
+        "user_profile": (
+            "DELETE FROM memory_embeddings WHERE source_table='user_profile' "
+            "AND source_id NOT IN (SELECT id FROM user_profile "
+            "WHERE end_time IS NULL AND rejected = false AND human_end_time IS NULL)"
+            + owner_clause,
+            owner_param,
+        ),
+        "event_log": (
+            "DELETE FROM memory_embeddings WHERE source_table='event_log' "
+            "AND source_id NOT IN (SELECT id FROM event_log "
+            "WHERE expires_at IS NULL OR expires_at > NOW())"
+            + owner_clause,
+            owner_param,
+        ),
+        "relationships": (
+            "DELETE FROM memory_embeddings WHERE source_table='relationships' "
+            "AND source_id NOT IN (SELECT id FROM relationships WHERE status='active')"
+            + owner_clause,
+            owner_param,
+        ),
     }
     total_cleaned = 0
-    for table, query in cleanup_queries.items():
+    for table, (query, params) in cleanup_queries.items():
         try:
             with conn.cursor() as cur:
-                cur.execute(query)
+                cur.execute(query, params)
                 total_cleaned += cur.rowcount
             conn.commit()
         except Exception as e:

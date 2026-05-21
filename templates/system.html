@@ -8,18 +8,18 @@
   <button class="banner-btn revert" id="btn-revert" onclick="doRevert()"></button>
 </div>
 <div class="header">
-  <h1 id="header-title">⚙ System — {{ db_name }}</h1>
+  <div>
+    <h1 id="header-title">⚙ {{ page_title }}</h1>
+    <div class="subtitle"><span data-i18n="db_label">{{ nav_i18n.db_label }}</span>: {{ db_name }}</div>
+  </div>
   <div class="header-right">
-    <a href="/chat" class="nav-link" id="nav-chat">Chat</a>
-    <a href="/profile" class="nav-link" id="nav-profile">Profile</a>
-    <a href="/outsource" class="nav-link" id="outsource-nav-link">Tasks</a>
-    <a href="/system" class="nav-link active" id="nav-system">System</a>
+    {% include '_nav.html' %}
     <div class="lang-switch">
       <button class="lang-btn" onclick="setLang('zh')">中文</button>
       <button class="lang-btn" onclick="setLang('en')">EN</button>
       <button class="lang-btn" onclick="setLang('ja')">日本語</button>
     </div>
-    <button class="theme-btn" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme" data-i18n-title="toggle_theme"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button>
+    <button class="theme-btn" id="theme-toggle" onclick="toggleTheme()" title="{{ i18n.toggle_theme }}" data-i18n-title="toggle_theme"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button>
   </div>
 </div>
 
@@ -62,6 +62,7 @@
 {% block scripts %}
 <script>const DB_NAME = {{ db_name | tojson }};</script>
 <script src="/static/js/system-i18n.js"></script>
+<script src="/static/js/system-family.js"></script>
 <script src="/static/js/system-render.js"></script>
 <script src="/static/js/system-edit.js"></script>
 <script src="/static/js/system-actions.js"></script>

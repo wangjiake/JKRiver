@@ -22,17 +22,6 @@ __all__ = [
     "save_observation",
     "load_observations",
     "load_observations_by_time_range",
-    # hypotheses
-    "save_hypothesis",
-    "update_hypothesis_evidence",
-    "load_active_hypotheses",
-    "get_expired_hypotheses",
-    "get_hypothesis_by_subject",
-    "enter_suspicion_mode",
-    "update_suspected_evidence",
-    "resolve_suspicion",
-    "upgrade_hypothesis_decay",
-    "set_hypothesis_status",
     # profile / facts / user_model / relationships / trajectory
     "upsert_profile",
     "load_current_profile",
@@ -124,20 +113,6 @@ from .observations import (  # noqa: F401
     save_observation,
     load_observations,
     load_observations_by_time_range,
-)
-
-# ── hypotheses ──
-from .hypotheses import (  # noqa: F401
-    save_hypothesis,
-    update_hypothesis_evidence,
-    load_active_hypotheses,
-    get_expired_hypotheses,
-    get_hypothesis_by_subject,
-    enter_suspicion_mode,
-    update_suspected_evidence,
-    resolve_suspicion,
-    upgrade_hypothesis_decay,
-    set_hypothesis_status,
 )
 
 # ── profile / facts / user_model / relationships / trajectory ──
